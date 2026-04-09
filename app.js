@@ -317,17 +317,20 @@ const openLightbox = (el, bookmark) => {
     hiRes.onload = () => { hiRes.style.opacity = "1"; };
     lightboxClone.appendChild(hiRes);
 
-    // For videos, add a play button that opens the tweet in a new tab
-    if (bookmark.images[0].type === "video" || bookmark.images[0].type === "animated_gif") {
-      const playBtn = document.createElement("button");
-      playBtn.className = "lightbox-play-btn";
-      playBtn.innerHTML = `<span class="play-pill"><img src="assets/play-icon.svg" class="play-pill-icon" alt=""><span>Play on Twitter</span></span>`;
-      playBtn.style.cssText = "position:absolute;inset:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;z-index:2;pointer-events:auto;";
-      playBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        window.open(bookmark.url, "_blank");
-      });
-      lightboxClone.appendChild(playBtn);
+    // For videos/gifs, overlay a native <video> player
+    if ((bookmark.images[0].type === "video" || bookmark.images[0].type === "animated_gif") && bookmark.images[0].videoUrl) {
+      const isGif = bookmark.images[0].type === "animated_gif";
+      const video = document.createElement("video");
+      video.src = `/proxy-video?url=${encodeURIComponent(bookmark.images[0].videoUrl)}`;
+      video.controls = !isGif;
+      video.autoplay = true;
+      video.loop = isGif;
+      video.muted = isGif;
+      video.playsInline = true;
+      video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:24px;z-index:2;opacity:0;transition:opacity 0.3s ease;";
+      video.addEventListener("playing", () => { video.style.opacity = "1"; }, { once: true });
+      video.addEventListener("click", (e) => e.stopPropagation());
+      lightboxClone.appendChild(video);
     }
   }
   document.body.appendChild(lightboxClone);
@@ -385,11 +388,6 @@ const openLightbox = (el, bookmark) => {
     state.lightboxAnimating = false;
   });
 
-  // Animate play pill in partway through the lightbox animation
-  setTimeout(() => {
-    const pill = lightboxClone?.querySelector(".play-pill");
-    if (pill) pill.classList.add("visible");
-  }, 200);
 };
 
 const closeLightbox = () => {
@@ -399,9 +397,9 @@ const closeLightbox = () => {
   state.lightboxAnimating = true;
   const { element: el } = state.lightboxItem;
 
-  // Hide play pill immediately
-  const pill = lightboxClone?.querySelector(".play-pill");
-  if (pill) pill.classList.remove("visible");
+  // Pause any playing video before closing
+  const video = lightboxClone?.querySelector("video");
+  if (video) video.pause();
 
   overlay.classList.remove("active");
 
