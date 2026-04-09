@@ -106,6 +106,43 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
+.lightbox-copy {
+  position: absolute;
+  top: 84px;
+  right: 24px;
+  z-index: 102;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.lightbox-overlay.active .lightbox-copy {
+  opacity: 1;
+  transform: scale(1);
+  transition-delay: 0.25s;
+}
+
+.lightbox-copy:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.lightbox-copy .lightbox-check-icon {
+  position: absolute;
+  opacity: 0;
+  transform: scale(0.5);
+}
+
 .lightbox-info {
   position: absolute;
   left: 50%;

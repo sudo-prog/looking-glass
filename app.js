@@ -32,6 +32,7 @@ const overlay = document.getElementById("lightbox-overlay");
 const lightboxClose = document.getElementById("lightbox-close");
 const lightboxTitle = document.getElementById("lightbox-title");
 const lightboxLink = document.getElementById("lightbox-link");
+const lightboxCopy = document.getElementById("lightbox-copy");
 
 // --- Masonry layout data (pure data, no DOM) ---
 let layoutItems = []; // flat array: { key, bookmark, x, y, w, h }
@@ -346,6 +347,11 @@ const openLightbox = (el, bookmark) => {
   const lightboxInfo = document.getElementById("lightbox-info");
   lightboxInfo.style.top = `${endY + targetH + 16}px`;
 
+  // Show copy button only for still images
+  const isVideo = bookmark && (bookmark.images[0].type === "video" || bookmark.images[0].type === "animated_gif");
+  lightboxCopy.style.display = isVideo ? "none" : "";
+  lightboxCopy.classList.remove("copied");
+
   // Store for close animation
   state.lightboxItem._startX = startX;
   state.lightboxItem._startY = startY;
@@ -432,6 +438,52 @@ const closeLightbox = () => {
     state.lightboxItem = null;
     state.lightboxAnimating = false;
   });
+};
+
+const copyLightboxImage = async () => {
+  if (!state.lightboxItem?.bookmark) return;
+  const bookmark = state.lightboxItem.bookmark;
+  const imgUrl = twitterImageUrl(bookmark.images[0].url, "4096x4096");
+  try {
+    const resp = await fetch(imgUrl);
+    const blob = await resp.blob();
+    // Convert to PNG for clipboard compatibility
+    const canvas = document.createElement("canvas");
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = URL.createObjectURL(blob);
+    });
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext("2d").drawImage(img, 0, 0);
+    URL.revokeObjectURL(img.src);
+    const pngBlob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/png")
+    );
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": pngBlob }),
+    ]);
+
+    const copyIcon = lightboxCopy.querySelector(".lightbox-copy-icon");
+    const checkIcon = lightboxCopy.querySelector(".lightbox-check-icon");
+    const springIn = { type: "spring", duration: 0.2, bounce: 0.25 };
+    const springOut = { type: "spring", duration: 0.15, bounce: 0 };
+
+    // Animate copy icon out, check icon in
+    Motion.animate(copyIcon, { opacity: 0, scale: 0.5 }, springOut);
+    Motion.animate(checkIcon, { opacity: 1, scale: 1 }, springIn);
+
+    // Revert after 1s
+    setTimeout(() => {
+      Motion.animate(checkIcon, { opacity: 0, scale: 0.5 }, springOut);
+      Motion.animate(copyIcon, { opacity: 1, scale: 1 }, springIn);
+    }, 1000);
+  } catch (err) {
+    console.error("Failed to copy image:", err);
+  }
 };
 
 // --- Input Handlers ---
@@ -676,6 +728,10 @@ const init = async () => {
   lightboxClose.addEventListener("click", (e) => {
     e.stopPropagation();
     closeLightbox();
+  });
+  lightboxCopy.addEventListener("click", (e) => {
+    e.stopPropagation();
+    copyLightboxImage();
   });
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeLightbox();
