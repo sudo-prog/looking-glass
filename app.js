@@ -338,7 +338,7 @@ const openLightbox = (el, bookmark) => {
         video.controls = !isGif;
         video.autoplay = true;
         video.loop = isGif;
-        video.muted = isGif;
+        video.muted = true;
         video.playsInline = true;
         video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:24px;z-index:2;opacity:0;transition:opacity 0.3s ease;";
         video.addEventListener("playing", () => { video.style.opacity = "1"; }, { once: true });
