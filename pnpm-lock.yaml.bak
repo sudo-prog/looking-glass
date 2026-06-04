@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      fuse.js:
+        specifier: ^7.4.1
+        version: 7.4.1
       idb:
         specifier: ^8.0.0
         version: 8.0.3
@@ -307,6 +310,10 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
+  fuse.js@7.4.1:
+    resolution: {integrity: sha512-AY7lKAXK71hi3WgUvDy6oZL67UEHOOtvCAwVdOXHyJd6ZzftBy7QqxuXt4HxmmAhYjmp/YCuOELZtIvAdlZ+fw==}
+    engines: {node: '>=10'}
+
   idb@8.0.3:
     resolution: {integrity: sha512-LtwtVyVYO5BqRvcsKuB2iUMnHwPVByPCXFXOpuU96IZPPoPN6xjOGxZQ74pgSVVLQWtUOYgyeL4GE98BY5D3wg==}
 
@@ -538,6 +545,8 @@ snapshots:
 
   fsevents@2.3.3:
     optional: true
+
+  fuse.js@7.4.1: {}
 
   idb@8.0.3: {}
 

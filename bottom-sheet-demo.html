@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Bottom Sheet Demo — Looking Glass</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d1a;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.6;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .controls button {
+      padding: 10px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #e0e0e0;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .controls button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .controls button:active {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .status {
+      text-align: center;
+      padding: 8px;
+      font-size: 13px;
+      opacity: 0.5;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .canvas-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.15;
+      font-size: 48px;
+      font-weight: 200;
+      letter-spacing: 4px;
+      user-select: none;
+    }
+  </style>
+  <link rel="stylesheet" href="/src/components/mobile/BottomSheet.css" />
+</head>
+<body>
+
+  <div class="header">
+    <h1>iOS Bottom Sheet</h1>
+    <p>Drag the handle · Tap backdrop to dismiss · Flick to snap</p>
+  </div>
+
+  <div class="controls">
+    <button id="btn-open-collapsed">Open Collapsed (15%)</button>
+    <button id="btn-open-half">Open Half (50%)</button>
+    <button id="btn-open-full">Open Full (90%)</button>
+    <button id="btn-close">Close</button>
+  </div>
+
+  <div class="status" id="status">Sheet closed</div>
+
+  <div class="canvas-area">LOOKING GLASS</div>
+
+  <script type="module">
+    import { BottomSheet } from '/src/components/mobile/BottomSheet.js';
+
+    const sheetContent = `
+      <div class="bs-snaps">
+        <div class="bs-snap-dot" data-snap="0"></div>
+        <div class="bs-snap-dot" data-snap="1"></div>
+        <div class="bs-snap-dot" data-snap="2"></div>
+      </div>
+      <h3>Bottom Sheet</h3>
+      <p>This is an iOS-style bottom sheet component. Drag the handle above to resize, or flick quickly to snap.</p>
+      <p>Three snap points: collapsed (15%), half (50%), and full (90%).</p>
+      <div class="bs-content-scroll">
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+        <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p>
+        <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.</p>
+        <p>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.</p>
+        <p>Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur.</p>
+      </div>
+    `;
+
+    const sheet = new BottomSheet({
+      content: sheetContent,
+      onSnap: (fraction) => {
+        const pct = Math.round(fraction * 100);
+        document.getElementById('status').textContent = `Snapped to ${pct}%`;
+        updateDots(fraction);
+      },
+      onDismiss: () => {
+        document.getElementById('status').textContent = 'Sheet dismissed';
+        clearDots();
+      },
+    });
+
+    document.body.appendChild(sheet.element);
+
+    function updateDots(fraction) {
+      const dots = document.querySelectorAll('.bs-snap-dot');
+      const snaps = [0.15, 0.50, 0.90];
+      let closest = 0;
+      let closestDist = Math.abs(fraction - snaps[0]);
+      for (let i = 1; i < snaps.length; i++) {
+        const d = Math.abs(fraction - snaps[i]);
+        if (d < closestDist) { closestDist = d; closest = i; }
+      }
+      dots.forEach((d, i) => d.classList.toggle('active', i === closest));
+    }
+
+    function clearDots() {
+      document.querySelectorAll('.bs-snap-dot').forEach(d => d.classList.remove('active'));
+    }
+
+    document.getElementById('btn-open-collapsed').addEventListener('click', () => {
+      sheet.open(0);
+      document.getElementById('status').textContent = 'Opened at 15%';
+    });
+
+    document.getElementById('btn-open-half').addEventListener('click', () => {
+      sheet.open(1);
+      document.getElementById('status').textContent = 'Opened at 50%';
+    });
+
+    document.getElementById('btn-open-full').addEventListener('click', () => {
+      sheet.open(2);
+      document.getElementById('status').textContent = 'Opened at 90%';
+    });
+
+    document.getElementById('btn-close').addEventListener('click', () => {
+      sheet.close();
+      document.getElementById('status').textContent = 'Sheet closed';
+      clearDots();
+    });
+  </script>
+</body>
+</html>

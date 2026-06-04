@@ -1,0 +1,156 @@
+/* ── Bottom Sheet — iOS-style ─────────────────────────── */
+
+.bs-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* Backdrop */
+.bs-backdrop {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.1s ease-out;
+  pointer-events: auto;
+}
+
+/* Sheet */
+.bs-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 15vh; /* default collapsed */
+  background: var(--color-surface, #1e1e2e);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
+  will-change: height;
+  /* Safe area for iOS notch/home indicator */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Drag handle */
+.bs-handle {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 10px 0 6px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.bs-handle:active {
+  cursor: grabbing;
+}
+
+.bs-handle-bar {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--color-handle, rgba(255, 255, 255, 0.25));
+  transition: background 0.15s;
+}
+
+.bs-handle:hover .bs-handle-bar,
+.bs-handle:active .bs-handle-bar {
+  background: var(--color-handle-active, rgba(255, 255, 255, 0.45));
+}
+
+/* Content area */
+.bs-content {
+  flex: 1;
+  overflow-y: hidden;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px 16px;
+  color: var(--color-text, #e0e0e0);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.bs-content h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.bs-content p {
+  margin: 0 0 12px;
+  opacity: 0.85;
+}
+
+/* Snap indicator dots */
+.bs-snaps {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.bs-snap-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.bs-snap-dot.active {
+  background: rgba(255, 255, 255, 0.7);
+  transform: scale(1.2);
+}
+
+/* Demo page styles */
+.bs-demo-controls {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  flex-wrap: wrap;
+}
+
+.bs-demo-controls button {
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text, #e0e0e0);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.bs-demo-controls button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.bs-demo-controls button:active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Scrollable content inside sheet */
+.bs-content-scroll {
+  max-height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive: on desktop, constrain width */
+@media (min-width: 768px) {
+  .bs-sheet {
+    max-width: 540px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    border-radius: 16px 16px 0 0;
+  }
+}

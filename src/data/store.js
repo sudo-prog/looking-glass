@@ -95,4 +95,20 @@ export const store = {
     const items = await reqPromise(index.getAll(canvasId));
     return items;
   },
+
+  async saveBlob(id, blob) {
+    const s = await tx('blobs', 'readwrite');
+    return reqPromise(s.put({ id, blob }));
+  },
+
+  async getBlob(id) {
+    const s = await tx('blobs');
+    const result = await reqPromise(s.get(id));
+    return result ? result.blob : null;
+  },
+
+  async deleteBlob(id) {
+    const s = await tx('blobs', 'readwrite');
+    return reqPromise(s.delete(id));
+  },
 };

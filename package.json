@@ -10,11 +10,20 @@
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["pwa", "canvas", "bookmarks", "visual-memory"],
+  "keywords": [
+    "pwa",
+    "canvas",
+    "bookmarks",
+    "visual-memory"
+  ],
   "author": "Sudo-Prog",
   "license": "MIT",
   "dependencies": {
-    "idb": "^8.0.0"
+    "fuse.js": "^7.4.1",
+    "html2canvas": "^1.4.1",
+    "idb": "^8.0.0",
+    "jspdf": "^4.2.1",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "vite": "^5.4.0"
