@@ -16,13 +16,13 @@ A local-first, open-source spatial memory system. Forked from [twitter-bookmarks
 ## Quick Start
 
 ```bash
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
 
 ## Tech Stack
 
-- Vanilla JS (no framework lock-in)
+- React 18 + Zustand for state management
 - IndexedDB for local storage
 - Vite for builds (V0.2+)
 - PWA with service worker
