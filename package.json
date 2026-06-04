@@ -1,16 +1,22 @@
 {
-  "name": "bookmarks",
-  "version": "1.0.0",
-  "main": "app.js",
+  "name": "looking-glass",
+  "version": "0.1.0",
+  "description": "Your visual memory — bookmarks, web clips, ideas on an infinite canvas",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": ["pwa", "canvas", "bookmarks", "visual-memory"],
+  "author": "Sudo-Prog",
+  "license": "MIT",
   "dependencies": {
-    "motion": "^12.38.0"
+    "idb": "^8.0.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
   }
 }

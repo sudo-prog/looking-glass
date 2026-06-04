@@ -1,0 +1,78 @@
+/* LOOKING GLASS DESIGN TOKENS
+   Aesthetic: Dark Brutalist / Analog-Digital
+   Inspired by: Braun product design meets early-web directory aesthetics
+   NOT: generic purple SaaS gradients
+*/
+:root {
+  /* ── Color ──────────────────────────── */
+  --color-bg:           #0a0a0f;
+  --color-bg-elevated:  #111118;
+  --color-bg-overlay:   #16161f;
+  --color-border:       #1e1e2e;
+  --color-border-active:#3a3a5c;
+  --color-accent:       #c8fb4a;
+  --color-accent-dim:   rgba(200, 251, 74, 0.12);
+  --color-accent-hover: #d9ff5a;
+  --color-text-primary: #e8e8f0;
+  --color-text-secondary:#7a7a9a;
+  --color-text-muted:   #3d3d5a;
+  --color-text-inverse: #0a0a0f;
+
+  /* Semantic card accents */
+  --card-red:    #ff6b6b;
+  --card-amber:  #ffb347;
+  --card-green:  #69f0ae;
+  --card-blue:   #64b5f6;
+  --card-purple: #ce93d8;
+  --card-none:   var(--color-border);
+
+  /* ── Typography ────────────────────── */
+  --font-display: 'Fragment Mono', 'Courier New', monospace;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-ui:      'DM Mono', 'Courier New', monospace;
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-lg:   18px;
+  --text-xl:   22px;
+  --text-2xl:  28px;
+  --leading-tight:  1.2;
+  --leading-normal: 1.5;
+
+  /* ── Spacing ────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── Radius ─────────────────────────── */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   20px;
+  --radius-pill: 9999px;
+
+  /* ── Shadow ─────────────────────────── */
+  --shadow-card:   0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px var(--color-border);
+  --shadow-lifted: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--color-border-active);
+  --shadow-accent: 0 0 20px rgba(200, 251, 74, 0.15);
+
+  /* ── Motion ─────────────────────────── */
+  --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth:  cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast:   120ms;
+  --duration-normal: 220ms;
+  --duration-slow:   400ms;
+
+  /* ── Canvas ─────────────────────────── */
+  --canvas-grid-color: rgba(255,255,255,0.04);
+  --canvas-grid-size:  40px;
+  --card-min-width:    240px;
+  --card-max-width:    480px;
+  --card-width-default:300px;
+}

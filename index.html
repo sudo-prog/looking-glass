@@ -2,39 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bookmarks</title>
-  <link rel="icon" type="image/png" href="assets/favicon.png">
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="description" content="Your visual memory — bookmarks, web clips, ideas on an infinite canvas">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Looking Glass</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&family=Fragment+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; background: #0a0a0f; color: #e8e8f0; font-family: 'DM Sans', system-ui, sans-serif; }
+    #app { height: 100%; }
+  </style>
 </head>
 <body>
-  <div id="viewport">
-    <div id="container">
-      <div id="grid"></div>
-    </div>
-  </div>
-  <div id="lightbox-overlay" class="lightbox-overlay">
-    <button id="lightbox-close" class="lightbox-close" aria-label="Close">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
-    <button id="lightbox-copy" class="lightbox-copy" aria-label="Copy image">
-      <svg class="lightbox-copy-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-      </svg>
-      <svg class="lightbox-check-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"></polyline>
-      </svg>
-    </button>
-    <div id="lightbox-info" class="lightbox-info">
-      <h2 id="lightbox-title" class="lightbox-title">Bookmark Title</h2>
-      <a id="lightbox-link" class="lightbox-link" href="#" target="_blank" rel="noopener">View original</a>
-    </div>
-  </div>
-  <script src="node_modules/motion/dist/motion.js"></script>
-  <script src="app.js"></script>
+  <div id="app">Loading...</div>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
