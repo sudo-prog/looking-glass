@@ -13,10 +13,10 @@ export class Lightbox {
     el.innerHTML = `
       <div class="lightbox-content">
         <button class="lightbox-close">✕</button>
-        ${item.content.image_url ? `<img src="${item.content.image_url}" alt="">` : ''}
-        <h2>${item.content.title || 'Untitled'}</h2>
-        <p>${item.content.description || ''}</p>
-        ${item.content.url ? `<a href="${item.content.url}" target="_blank" rel="noopener">${item.content.url}</a>` : ''}
+        ${item.content.image_url ? `<img src="${this.escapeHtml(item.content.image_url)}" alt="">` : ''}
+        <h2>${this.escapeHtml(item.content.title || 'Untitled')}</h2>
+        <p>${this.escapeHtml(item.content.description || '')}</p>
+        ${item.content.url ? `<a href="${this.escapeHtml(item.content.url)}" target="_blank" rel="noopener">${this.escapeHtml(item.content.url)}</a>` : ''}
       </div>
     `;
 
@@ -40,5 +40,12 @@ export class Lightbox {
     if (this.el) this.el.remove();
     this.el = null;
     document.removeEventListener('keydown', this._onKey);
+  }
+
+  escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 }

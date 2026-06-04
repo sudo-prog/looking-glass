@@ -8,10 +8,19 @@ export async function fetchMetadata(url) {
     description: '',
     image_url: null,
     favicon_url: null,
-    domain: new URL(url).hostname,
+    domain: '',
     canonical_url: url,
     fetch_status: 'pending',
   };
+
+  let parsed;
+  try {
+    parsed = new URL(url);
+    result.domain = parsed.hostname;
+  } catch {
+    result.fetch_status = 'invalid_url';
+    return result;
+  }
 
   // Try allorigins.win proxy
   try {

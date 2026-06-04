@@ -23,6 +23,7 @@ export class DragManager {
   _onItemPointerDown(e) {
     const card = e.target.closest('.canvas-item');
     if (!card) return;
+    e.stopPropagation(); // Prevent canvas pan when dragging cards
 
     // Multi-select with Shift
     if (e.shiftKey) {
@@ -101,5 +102,14 @@ export class DragManager {
     }
 
     this.dragItem = null;
+  }
+
+  getSelected() {
+    return Array.from(this.selectedItems);
+  }
+
+  clearSelection() {
+    this.selectedItems.forEach(el => el.classList.remove('selected'));
+    this.selectedItems.clear();
   }
 }

@@ -92,7 +92,7 @@ export const store = {
   async exportCanvas(canvasId) {
     const s = await tx('items');
     const index = s.index('canvas_id');
-    const items = reqPromise(index.getAll(canvasId));
+    const items = await reqPromise(index.getAll(canvasId));
     return items;
   },
 };

@@ -47,6 +47,7 @@ class LookingGlass {
 
     const toolbar = new Toolbar(null, {
       'add-url': () => this.addUrl(),
+      'delete': () => this.deleteSelected(),
       'zoom-in': () => this.zoomManager.zoomIn(),
       'zoom-out': () => this.zoomManager.zoomOut(),
       'fit': () => this.zoomManager.fitToContent(),
@@ -77,6 +78,22 @@ class LookingGlass {
 
     // Load saved canvas
     await this.loadCanvas();
+
+    // Keyboard shortcuts
+    this._onKey = (e) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Don't delete if user is typing in an input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        this.deleteSelected();
+      }
+      if (e.key === 'Escape') {
+        this.dragManager.clearSelection();
+      }
+      if (e.key === '+' || e.key === '=') this.zoomManager.zoomIn();
+      if (e.key === '-') this.zoomManager.zoomOut();
+      if (e.key === '0') this.zoomManager.reset();
+    };
+    document.addEventListener('keydown', this._onKey);
 
     // Register service worker
     if ('serviceWorker' in navigator) {
@@ -153,6 +170,22 @@ class LookingGlass {
     this.engine.world.innerHTML = '';
     this.cards.clear();
     store.saveCanvas(this.currentCanvas);
+  }
+
+  async deleteSelected() {
+    const selected = this.dragManager.getSelected();
+    if (!selected.length) return;
+    const confirmed = confirm(`Delete ${selected.length} card(s)?`);
+    if (!confirmed) return;
+    for (const el of selected) {
+      const id = el.dataset.id;
+      this.cards.get(id)?.destroy();
+      this.cards.delete(id);
+      await store.deleteItem(id);
+      this.currentCanvas.items = this.currentCanvas.items.filter(i => i.id !== id);
+    }
+    this.dragManager.clearSelection();
+    await store.saveCanvas(this.currentCanvas);
   }
 
   async exportData() {
