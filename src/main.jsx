@@ -5,10 +5,11 @@
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './components/App';
-import '../styles/tokens.css';
-import '../styles/canvas.css';
-import '../components/mobile/BottomSheet.css';
+import { App } from './components/App.jsx';
+import './styles/tokens.css';
+import './styles/canvas.css';
+import './styles/tiptap.css';
+import './components/mobile/BottomSheet.css';
 
 const container = document.getElementById('app');
 const root = createRoot(container);
