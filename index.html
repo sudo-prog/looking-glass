@@ -11,15 +11,28 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/svg+xml" href="/icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&family=Fragment+Mono&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Fragment+Mono&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; background: #0a0a0f; color: #e8e8f0; font-family: 'DM Sans', system-ui, sans-serif; }
-    #app { height: 100%; }
+    #app { height: 100%; display: flex; align-items: center; justify-content: center; }
+    .lg-loader { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .lg-loader-text { font-family: 'DM Mono', monospace; font-size: 13px; color: #3d3d5a; letter-spacing: 0.1em; text-transform: uppercase; }
+    .lg-loader-dots { display: flex; gap: 6px; }
+    .lg-loader-dots span { width: 6px; height: 6px; border-radius: 50%; background: #c8fb4a; animation: lg-pulse 1.2s ease-in-out infinite; }
+    .lg-loader-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .lg-loader-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes lg-pulse { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
   </style>
 </head>
 <body>
-  <div id="app">Loading...</div>
+  <div id="app">
+    <div class="lg-loader">
+      <div class="lg-loader-text">Loading</div>
+      <div class="lg-loader-dots"><span></span><span></span><span></span></div>
+    </div>
+  </div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

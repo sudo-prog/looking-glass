@@ -3,7 +3,7 @@
  * Global React state for the canvas app
  */
 import { create } from 'zustand';
-import { sqliteStore } from './sqliteStore.js';
+import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES } from '../data/schema.js';
 
 export const useStore = create((set, get) => ({
@@ -27,20 +27,24 @@ export const useStore = create((set, get) => ({
 
   // Initialize
   init: async () => {
-    await sqliteStore.init();
-    let canvases = await sqliteStore.listCanvases();
+    await idbStore.init();
+    let canvases = await idbStore.listCanvases();
     let canvas;
     if (canvases.length === 0) {
-      canvas = await sqliteStore.createCanvas('My Canvas');
+      const id = crypto.randomUUID();
+      const now = Date.now();
+      canvas = { id, name: 'My Canvas', viewport: { x: 0, y: 0, scale: 1 }, created_at: now, updated_at: now };
+      await idbStore.saveCanvas(canvas);
     } else {
       canvas = canvases[0];
     }
-    const items = await sqliteStore.getItems(canvas.id);
+    // Load items for this canvas
+    const items = await idbStore.exportCanvas(canvas.id);
     set({
       canvasId: canvas.id,
       canvasName: canvas.name,
       viewport: canvas.viewport || { x: 0, y: 0, scale: 1 },
-      items,
+      items: items || [],
     });
   },
 
@@ -51,7 +55,7 @@ export const useStore = create((set, get) => ({
       ...overrides,
       canvas_id: state.canvasId,
     });
-    await sqliteStore.addItem(item);
+    await idbStore.upsertItem(item);
     set((s) => ({ items: [...s.items, item] }));
     return item;
   },
@@ -75,7 +79,7 @@ export const useStore = create((set, get) => ({
     const vp = state.viewport;
     const x = (-vp.x + 400) / vp.scale;
     const y = (-vp.y + 300) / vp.scale;
-    const domain = url ? new URL(url).hostname : null;
+    const domain = url ? (() => { try { return new URL(url).hostname; } catch { return null; } })() : null;
     return get().addItem({
       type: ITEM_TYPES.BOOKMARK,
       x,
@@ -112,14 +116,14 @@ export const useStore = create((set, get) => ({
       style: { ...item.style, ...(updates.style || {}) },
       updated_at: Date.now(),
     };
-    await sqliteStore.updateItem(updated);
+    await idbStore.upsertItem(updated);
     set((s) => ({
       items: s.items.map((i) => (i.id === id ? updated : i)),
     }));
   },
 
   deleteItem: async (id) => {
-    await sqliteStore.deleteItem(id);
+    await idbStore.deleteItem(id);
     set((s) => ({
       items: s.items.filter((i) => i.id !== id),
       selectedIds: new Set([...s.selectedIds].filter((sid) => sid !== id)),
@@ -129,7 +133,7 @@ export const useStore = create((set, get) => ({
   deleteSelected: async () => {
     const state = get();
     for (const id of state.selectedIds) {
-      await sqliteStore.deleteItem(id);
+      await idbStore.deleteItem(id);
     }
     set((s) => ({
       items: s.items.filter((i) => !s.selectedIds.has(i.id)),
@@ -157,7 +161,7 @@ export const useStore = create((set, get) => ({
     set({ viewport });
     const state = get();
     if (state.canvasId) {
-      sqliteStore.saveCanvas({ id: state.canvasId, viewport });
+      idbStore.saveCanvas({ id: state.canvasId, name: state.canvasName, viewport });
     }
   },
 
@@ -189,7 +193,14 @@ export const useStore = create((set, get) => ({
       set({ searchQuery: '', searchResults: null });
       return;
     }
-    const results = await sqliteStore.search(query);
+    const q = query.toLowerCase();
+    const state = get();
+    const results = state.items.filter((item) =>
+      (item.content?.title || '').toLowerCase().includes(q) ||
+      (item.content?.description || '').toLowerCase().includes(q) ||
+      (item.content?.text || '').toLowerCase().includes(q) ||
+      (item.content?.url || '').toLowerCase().includes(q)
+    );
     set({ searchQuery: query, searchResults: results });
   },
 
@@ -197,15 +208,19 @@ export const useStore = create((set, get) => ({
 
   // Export / Import
   exportData: async () => {
-    return sqliteStore.exportAll();
+    const state = get();
+    const items = await idbStore.exportCanvas(state.canvasId);
+    return { canvases: [{ id: state.canvasId, name: state.canvasName }], items, exported_at: Date.now() };
   },
 
   importData: async (data) => {
     if (data.items) {
-      await sqliteStore.bulkImport(data.items);
       const state = get();
-      const items = await sqliteStore.getItems(state.canvasId);
-      set({ items });
+      const canvasId = state.canvasId;
+      const itemsWithCanvas = data.items.map((item) => ({ ...item, canvas_id: canvasId }));
+      await idbStore.bulkImport(itemsWithCanvas);
+      const items = await idbStore.exportCanvas(canvasId);
+      set({ items: items || [] });
     }
   },
 
