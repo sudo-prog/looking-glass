@@ -15,6 +15,7 @@ import { Toolbar } from './ui/Toolbar.js';
 import { Sidebar } from './ui/Sidebar.js';
 import { Lightbox } from './ui/Lightbox.js';
 import { Minimap } from './components/minimap/Minimap.js';
+import { ExportDialog } from './utils/export/ExportDialog.js';
 import { BottomSheet } from './components/mobile/BottomSheet.js';
 import { store } from './data/store.js';
 import { createItem, ITEM_TYPES, CANVAS_STATE_SCHEMA } from './data/schema.js';
@@ -606,14 +607,13 @@ class LookingGlass {
 
   // ── Import/Export ───────────────────────
   async exportData() {
-    const data = JSON.stringify(this.currentCanvas, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `looking-glass-${this.currentCanvas.name || 'export'}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const dialog = new ExportDialog(this);
+    dialog.open({
+      canvas: this.currentCanvas,
+      allCanvases: [this.currentCanvas],
+      worldEl: this.engine.world,
+      viewportEl: this.engine.viewport,
+    });
   }
 
   async importData() {

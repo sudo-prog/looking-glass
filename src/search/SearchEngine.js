@@ -1,7 +1,8 @@
 /**
  * LOOKING GLASS — Search Engine
- * Full-text search across all canvas items using Fuse.js.
+ * Full-text search using Fuse.js.
  */
+
 import Fuse from 'fuse.js';
 
 export class SearchEngine {
@@ -12,10 +13,6 @@ export class SearchEngine {
     this.lastResults = [];
   }
 
-  /**
-   * Index items for searching.
-   * @param {Array} items
-   */
   index(items) {
     this.items = items;
     this.fuse = new Fuse(items, {
@@ -34,40 +31,23 @@ export class SearchEngine {
     });
   }
 
-  /**
-   * Search items.
-   * @param {string} query
-   * @returns {{ results: Array, ids: Set, count: number }}
-   */
   search(query) {
     this.lastQuery = query;
     if (!query || !this.fuse) {
       this.lastResults = [];
       return { results: [], ids: new Set(), count: 0 };
     }
-
     const fuseResults = this.fuse.search(query);
     this.lastResults = fuseResults;
     const ids = new Set(fuseResults.map(r => r.item.id));
-
-    return {
-      results: fuseResults,
-      ids,
-      count: fuseResults.length,
-    };
+    return { results: fuseResults, ids, count: fuseResults.length };
   }
 
-  /**
-   * Check if an item matches the last search.
-   */
   isMatch(itemId) {
     if (!this.lastQuery) return true;
     return this.lastResults.some(r => r.item.id === itemId);
   }
 
-  /**
-   * Clear search.
-   */
   clear() {
     this.lastQuery = '';
     this.lastResults = [];

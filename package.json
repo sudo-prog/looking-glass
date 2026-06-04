@@ -19,13 +19,21 @@
   "author": "Sudo-Prog",
   "license": "MIT",
   "dependencies": {
+    "@tiptap/extension-link": "^3.25.0",
+    "@tiptap/extension-underline": "^3.25.0",
+    "@tiptap/react": "^3.25.0",
+    "@tiptap/starter-kit": "^3.25.0",
     "fuse.js": "^7.4.1",
     "html2canvas": "^1.4.1",
     "idb": "^8.0.0",
     "jspdf": "^4.2.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sql.js": "^1.14.1",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
     "vite": "^5.4.0"
   }
 }

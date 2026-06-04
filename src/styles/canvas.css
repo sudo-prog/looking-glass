@@ -150,13 +150,6 @@
 .card-note-icon {
   font-size: var(--text-sm);
 }
-  color: var(--color-text-muted);
-  pointer-events: none;
-}
-
-.card-note-icon {
-  font-size: var(--text-sm);
-}
 
 /* ── Image Card ─────────────────────── */
 .card-image .card-image-body {
