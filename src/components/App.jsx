@@ -10,6 +10,12 @@ import { Sidebar } from '../ui/Sidebar.jsx';
 import { Canvas } from '../canvas/Canvas.jsx';
 import { ExportDialog } from '../utils/export/ExportDialog.jsx';
 import { Lightbox } from '../ui/Lightbox.jsx';
+import { CommandPalette } from '../ui/CommandPalette.jsx';
+import { ContextMenu } from '../ui/ContextMenu.jsx';
+import { Minimap } from '../ui/Minimap.jsx';
+import { ModeToggle } from '../ui/ModeToggle.jsx';
+import { BottomSheet } from '../ui/BottomSheet.jsx';
+import { SpacesSidebar } from '../ui/SpacesSidebar.jsx';
 
 export function App() {
   const initialized = useRef(false);
@@ -38,10 +44,18 @@ export function App() {
     exportDialogOpen,
     canvasName,
     undoCounts,
+    getStats,
   } = useStore();
 
   const [zoom, setZoom] = useState(1);
   const [lightboxItem, setLightboxItem] = useState(null);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
+  const [minimapOpen, setMinimapOpen] = useState(true);
+  const [spacesOpen, setSpacesOpen] = useState(false);
+  const [bottomSheet, setBottomSheet] = useState(null);
+
+  const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark' || (!('lg-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   // Initialize
   useEffect(() => {
@@ -262,6 +276,8 @@ export function App() {
           onSearchClear={clearSearch}
           onExport={handleExport}
           onImport={handleImport}
+          onToggleCommandPalette={() => setCommandPaletteOpen((v) => !v)}
+          onToggleSpaces={() => setSpacesOpen((v) => !v)}
           canUndo={undoCounts.undo > 0}
           canRedo={undoCounts.redo > 0}
           selectedCount={selectedIds.size}
@@ -292,6 +308,65 @@ export function App() {
           item={lightboxItem}
           onClose={() => setLightboxItem(null)}
         />
+      )}
+
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onAction={(action) => {
+          if (action === 'new-note') addNote();
+          setCommandPaletteOpen(false);
+        }}
+        onSearch={() => {}}
+      />
+
+      {contextMenu && (
+        <ContextMenu
+          isOpen={!!contextMenu}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onAction={(actionId) => {
+            if (actionId === 'delete') handleDeleteSelected();
+            setContextMenu(null);
+          }}
+        />
+      )}
+
+      {minimapOpen && (
+        <Minimap
+          items={filteredItems}
+          viewport={viewport}
+          onPan={(x, y) => setViewport({ ...viewport, x: -x * viewport.scale + window.innerWidth / 2, y: -y * viewport.scale + window.innerHeight / 2 })}
+        />
+      )}
+
+      <ModeToggle
+        isDark={isDarkMode}
+        onToggle={() => {
+          const next = isDarkMode ? 'light' : 'dark';
+          localStorage.setItem('lg-theme', next);
+          document.documentElement.setAttribute('data-theme', next);
+        }}
+      />
+
+      <SpacesSidebar
+        isOpen={spacesOpen}
+        spaces={[{ id: 'default', name: 'My Canvas', count: filteredItems.length }]}
+        activeSpaceId="default"
+        onClose={() => setSpacesOpen(false)}
+        onSelectSpace={() => {}}
+        onNewSpace={() => {}}
+      />
+
+      {bottomSheet && (
+        <BottomSheet
+          isOpen={!!bottomSheet}
+          onClose={() => setBottomSheet(null)}
+          snap={bottomSheet.snap}
+        >
+          {bottomSheet.content}
+        </BottomSheet>
       )}
     </div>
   );

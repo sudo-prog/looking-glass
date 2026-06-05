@@ -4,7 +4,12 @@
  * Converts CanvasEngine logic to React state + refs.
  */
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { CanvasCard } from '../components/CanvasCard.jsx';
+import { BookmarkCard } from '../cards/BookmarkCard.tsx';
+import { NoteCard } from '../cards/NoteCard.tsx';
+import { ImageCard } from '../cards/ImageCard.tsx';
+import { WebClipCard } from '../cards/WebClipCard.tsx';
+import { GroupCard } from '../cards/GroupCard.tsx';
+import { ITEM_TYPES } from '../data/schema.js';
 
 export function Canvas({
   items,
@@ -163,19 +168,25 @@ export function Canvas({
           willChange: 'transform',
         }}
       >
-        {items.map((item) => (
-          <CanvasCard
-            key={item.id}
-            item={item}
-            isSelected={selectedIds.has(item.id)}
-            scale={transform.scale}
-            onSelect={(multi) => onSelectItem(item.id, multi)}
-            onDragStart={(e) => handleCardDragStart(e, item.id, item.x, item.y)}
-            onSave={(updates) => onItemSave(item.id, updates)}
-            onDelete={() => onItemDelete(item.id)}
-            onLightbox={() => onLightbox(item)}
-          />
-        ))}
+        {items.map((item) => {
+          const cardProps = {
+            item,
+            isSelected: selectedIds.has(item.id),
+            onSelect: (multi) => onSelectItem(item.id, multi),
+            onDragStart: (e) => handleCardDragStart(e, item.id, item.x, item.y),
+            onSave: (updates) => onItemSave(item.id, updates),
+            onDelete: () => onItemDelete(item.id),
+            onLightbox: () => onLightbox(item),
+          };
+          switch (item.type) {
+            case ITEM_TYPES.BOOKMARK: return <BookmarkCard key={item.id} {...cardProps} />;
+            case ITEM_TYPES.NOTE: return <NoteCard key={item.id} {...cardProps} />;
+            case ITEM_TYPES.IMAGE: return <ImageCard key={item.id} {...cardProps} />;
+            case ITEM_TYPES.WEB_CLIP: return <WebClipCard key={item.id} {...cardProps} />;
+            case ITEM_TYPES.GROUP: return <GroupCard key={item.id} {...cardProps} childCount={0} />;
+            default: return <BookmarkCard key={item.id} {...cardProps} />;
+          }
+        })}
       </div>
     </div>
   );

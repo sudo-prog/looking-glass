@@ -13,7 +13,7 @@ import {
   ArrowSquareOut,
   PencilSimple,
   CopySimple,
-  Brackets,
+  BracketsCurly,
   Archive,
   Trash,
 } from '@phosphor-icons/react';
@@ -121,7 +121,7 @@ export function ContextMenu({
         }}
         type="button"
       >
-        <Brackets size={20} weight="regular" />
+        <BracketsCurly size={20} weight="regular" />
         <span>GROUP</span>
       </button>
 
