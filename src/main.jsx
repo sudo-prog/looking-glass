@@ -8,6 +8,8 @@ import { createRoot } from 'react-dom/client';
 import { App } from './components/App.jsx';
 import './styles/tokens.css';
 import './styles/reset.css';
+import './styles/a11y.css';
+import './styles/responsive.css';
 import './styles/canvas.css';
 import './styles/tiptap.css';
 import './styles/glass-fallback.css';
