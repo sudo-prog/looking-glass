@@ -61,8 +61,8 @@ export function Toolbar({
   canUndo,
   canRedo,
   selectedCount,
-  onToggleSpaces,
-  onToggleCommandPalette,
+  onToggleSpaces = () => {},
+  onToggleCommandPalette = () => {},
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(searchQuery || '');
