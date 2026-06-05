@@ -1,45 +1,46 @@
-/* LOOKING GLASS DESIGN TOKENS
-   Aesthetic: Dark Brutalist / Analog-Digital
-   Inspired by: Braun product design meets early-web directory aesthetics
-   NOT: generic purple SaaS gradients
-*/
+/* ════════════════════════════════════════════════
+   LOOKING GLASS — DESIGN TOKENS v2.0
+   Nothing Design Skill v3.0.0 × WebGPU Glass
+   ════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
 :root {
-  /* ── Color ──────────────────────────── */
-  --color-bg:           #0a0a0f;
-  --color-bg-elevated:  #111118;
-  --color-bg-overlay:   #16161f;
-  --color-border:       #1e1e2e;
-  --color-border-active:#3a3a5c;
-  --color-accent:       #c8fb4a;
-  --color-accent-dim:   rgba(200, 251, 74, 0.12);
-  --color-accent-hover: #d9ff5a;
-  --color-text-primary: #e8e8f0;
-  --color-text-secondary:#7a7a9a;
-  --color-text-muted:   #3d3d5a;
-  --color-text-inverse: #0a0a0f;
+  /* Fonts */
+  --font-display: 'Doto', 'Space Grotesk', monospace;
+  --font-body:   'Space Grotesk', system-ui, sans-serif;
+  --font-ui:     'Space Mono', 'Courier New', monospace;
 
-  /* Semantic card accents */
-  --card-red:    #ff6b6b;
-  --card-amber:  #ffb347;
-  --card-green:  #69f0ae;
-  --card-blue:   #64b5f6;
-  --card-purple: #ce93d8;
-  --card-none:   var(--color-border);
+  /* Type scale */
+  --text-hero:    72px;
+  --text-display: 48px;
+  --text-2xl:     28px;
+  --text-xl:      22px;
+  --text-lg:      18px;
+  --text-base:    15px;
+  --text-sm:      13px;
+  --text-xs:      11px;
+  --text-2xs:     9px;
 
-  /* ── Typography ────────────────────── */
-  --font-display: 'Fragment Mono', 'Courier New', monospace;
-  --font-body:    'DM Sans', system-ui, sans-serif;
-  --font-ui:      'DM Mono', 'Courier New', monospace;
-  --text-xs:   11px;
-  --text-sm:   13px;
-  --text-base: 15px;
-  --text-lg:   18px;
-  --text-xl:   22px;
-  --text-2xl:  28px;
+  /* Weights */
+  --weight-light:   300;
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+  --weight-bold:    700;
+
+  /* Line height */
   --leading-tight:  1.2;
+  --leading-snug:   1.35;
   --leading-normal: 1.5;
 
-  /* ── Spacing ────────────────────────── */
+  /* Letter spacing */
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0em;
+  --tracking-wide:   0.06em;
+  --tracking-widest: 0.15em;
+
+  /* Spacing */
   --space-1:  4px;
   --space-2:  8px;
   --space-3:  12px;
@@ -49,30 +50,159 @@
   --space-8:  32px;
   --space-10: 40px;
   --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
 
-  /* ── Radius ─────────────────────────── */
+  /* Radius */
+  --radius-xs:   2px;
   --radius-sm:   4px;
   --radius-md:   8px;
   --radius-lg:   12px;
-  --radius-xl:   20px;
+  --radius-xl:   16px;
+  --radius-2xl:  20px;
   --radius-pill: 9999px;
 
-  /* ── Shadow ─────────────────────────── */
-  --shadow-card:   0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px var(--color-border);
-  --shadow-lifted: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--color-border-active);
-  --shadow-accent: 0 0 20px rgba(200, 251, 74, 0.15);
+  /* Motion */
+  --ease-out: cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-in:  cubic-bezier(0.4, 0.0, 1.0, 1);
+  --ease:     cubic-bezier(0.4, 0.0, 0.2, 1);
+  --duration-instant:   80ms;
+  --duration-fast:      160ms;
+  --duration-standard:  240ms;
+  --duration-deliberate: 320ms;
+  --duration-canvas:    200ms;
 
-  /* ── Motion ─────────────────────────── */
-  --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-smooth:  cubic-bezier(0.4, 0, 0.2, 1);
-  --duration-fast:   120ms;
-  --duration-normal: 220ms;
-  --duration-slow:   400ms;
+  /* Z-index */
+  --z-canvas:        0;
+  --z-canvas-ui:     10;
+  --z-toolbar:       100;
+  --z-tooltip:       200;
+  --z-dropdown:      300;
+  --z-modal:         400;
+  --z-bottom-sheet:  500;
+  --z-lightbox:      600;
+  --z-notification:  700;
+  --z-debug:         9999;
 
-  /* ── Canvas ─────────────────────────── */
-  --canvas-grid-color: rgba(255,255,255,0.04);
-  --canvas-grid-size:  40px;
-  --card-min-width:    240px;
-  --card-max-width:    480px;
-  --card-width-default:300px;
+  /* Glass blur levels */
+  --glass-blur-sm:   6px;
+  --glass-blur-md:  14px;
+  --glass-blur-lg:  20px;
+  --glass-blur-xl:  32px;
+  --glass-blur-2xl: 40px;
+}
+
+/* ── DARK MODE (default) ─────────────────────────── */
+:root,
+[data-theme="dark"] {
+  /* Surfaces */
+  --color-bg:          #0A0A0A;
+  --color-bg-raised:   #111111;
+  --color-bg-overlay:  #181818;
+  --color-bg-card:     #141414;
+
+  /* Borders */
+  --color-border:        rgba(255, 255, 255, 0.08);
+  --color-border-active: rgba(255, 255, 255, 0.20);
+  --color-border-focus:  rgba(255, 255, 255, 0.35);
+
+  /* Gray scale */
+  --color-gray-900: #1A1A1A;
+  --color-gray-800: #2A2A2A;
+  --color-gray-600: #555555;
+  --color-gray-400: #888888;
+  --color-gray-200: #BBBBBB;
+
+  /* Text — four stops only */
+  --text-display:   #FFFFFF; /* 100% — hero numbers, one per screen */
+  --text-primary:   #F5F5F5; /* 90% — body, card titles */
+  --text-secondary: #999999; /* 60% — metadata, labels */
+  --text-disabled:  #444444; /* 40% — disabled, timestamps */
+
+  /* Accent — an interrupt, never a decoration */
+  --color-accent:  #D71921;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+
+  /* Canvas */
+  --canvas-dot-color:  rgba(255, 255, 255, 0.10);
+  --canvas-grid-color: rgba(255, 255, 255, 0.04);
+  --canvas-bg:         #0A0A0A;
+
+  /* Glass */
+  --glass-tint:         rgba(255, 255, 255, 0.04);
+  --glass-specular:     rgba(255, 255, 255, 0.25);
+  --glass-bezel-shadow: rgba(0, 0, 0, 0.12);
+  --glass-cast-shadow:  rgba(0, 0, 0, 0.55);
+  --glass-frost:        rgba(10, 10, 10, 0.60);
+
+  /* States */
+  --state-hover:             rgba(255, 255, 255, 0.06);
+  --state-active:            rgba(255, 255, 255, 0.10);
+  --state-focus-ring:        2px solid rgba(255, 255, 255, 0.60);
+  --state-focus-offset:      3px;
+  --state-disabled-opacity:  0.35;
+
+  transition: background-color 280ms var(--ease-out), color 280ms var(--ease-out);
+}
+
+/* ── LIGHT MODE ──────────────────────────────────── */
+[data-theme="light"] {
+  /* Surfaces — warm off-white paper, never clinical white */
+  --color-bg:          #F5F2EE;
+  --color-bg-raised:   #EDE9E3;
+  --color-bg-overlay:  #E5E0D8;
+  --color-bg-card:     #F8F6F2;
+
+  /* Borders */
+  --color-border:        rgba(0, 0, 0, 0.08);
+  --color-border-active: rgba(0, 0, 0, 0.18);
+  --color-border-focus:  rgba(0, 0, 0, 0.32);
+
+  /* Gray scale — warm toned */
+  --color-gray-900: #E0DBD3;
+  --color-gray-800: #C8C2B8;
+  --color-gray-600: #8C877F;
+  --color-gray-400: #5A5550;
+  --color-gray-200: #2E2B27;
+
+  /* Text */
+  --text-display:   #0A0A0A;
+  --text-primary:   #1A1815;
+  --text-secondary: #6B6560;
+  --text-disabled:  #B0AA9F;
+
+  /* Accent — unchanged */
+  --color-accent:  #D71921;
+  --color-success: #16A34A;
+  --color-warning: #D97706;
+
+  /* Canvas */
+  --canvas-dot-color:  rgba(0, 0, 0, 0.08);
+  --canvas-grid-color: rgba(0, 0, 0, 0.04);
+  --canvas-bg:         #F5F2EE;
+
+  /* Glass */
+  --glass-tint:         rgba(255, 255, 255, 0.55);
+  --glass-specular:     rgba(255, 255, 255, 0.70);
+  --glass-bezel-shadow: rgba(0, 0, 0, 0.08);
+  --glass-cast-shadow:  rgba(0, 0, 0, 0.15);
+  --glass-frost:        rgba(240, 236, 229, 0.75);
+
+  /* States */
+  --state-hover:             rgba(0, 0, 0, 0.05);
+  --state-active:            rgba(0, 0, 0, 0.10);
+  --state-focus-ring:        2px solid rgba(0, 0, 0, 0.50);
+  --state-focus-offset:      3px;
+  --state-disabled-opacity:  0.35;
+}
+
+/* ── REDUCED MOTION ──────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
