@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Your visual memory — bookmarks, web clips, ideas on an infinite canvas",
   "type": "module",
-  "packageManager": "npm@10.0.0",
+  "packageManager": "pnpm@9.0.0",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -29,6 +29,7 @@
     "jspdf": "^2.5.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.4.1",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

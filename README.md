@@ -22,11 +22,15 @@ npm run dev
 
 ## Tech Stack
 
-- React 18 + Zustand for state management
+- React 18 + Zustand + Vite + WebGPU
 - IndexedDB for local storage
-- Vite for builds (V0.2+)
 - PWA with service worker
 - GitHub Pages deployment
+- @tiptap for rich text editing
+- @phosphor-icons/react for iconography
+- html2canvas + jspdf for export
+- react-hot-toast for notifications
+- WebGPU-powered liquid glass surfaces
 
 ## Roadmap
 
