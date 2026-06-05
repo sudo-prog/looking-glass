@@ -10,6 +10,8 @@ import './styles/tokens.css';
 import './styles/reset.css';
 import './styles/canvas.css';
 import './styles/tiptap.css';
+import './styles/glass-fallback.css';
+import './styles/ui-chrome.css';
 import './components/mobile/BottomSheet.css';
 
 const container = document.getElementById('app');
