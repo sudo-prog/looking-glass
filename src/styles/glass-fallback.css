@@ -1,0 +1,266 @@
+/* ════════════════════════════════════════════════
+   LOOKING GLASS — GLASS FALLBACK CSS
+   Tier 2 (CSS backdrop-filter) + Tier 3 (flat) glass styles
+   Source: Design Brief V2 Part IV — WebGPU Fallback Three Tiers
+   ════════════════════════════════════════════════ */
+
+/*
+  Tier 2 — CSS backdrop-filter (Safari, Firefox)
+  Applied when WebGPU is unavailable but backdrop-filter is supported.
+*/
+
+/* ── Dark mode base glass surface ── */
+[data-theme="dark"] .glass-surface {
+  background: rgba(14, 14, 14, 0.70);
+  backdrop-filter: blur(20px) saturate(110%);
+  -webkit-backdrop-filter: blur(20px) saturate(110%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.20),
+    0 8px 32px rgba(0, 0, 0, 0.55);
+}
+
+/* ── Light mode base glass surface ── */
+[data-theme="light"] .glass-surface {
+  background: rgba(240, 236, 229, 0.75);
+  backdrop-filter: blur(20px) saturate(130%);
+  -webkit-backdrop-filter: blur(20px) saturate(130%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    0 1px 4px rgba(0, 0, 0, 0.10);
+}
+
+/* ═══════════════════════════════════════
+   TIER 2 — Per-Surface Overrides
+   Each surface gets its own blur/refraction
+   via CSS custom properties and filters.
+   ═══════════════════════════════════════ */
+
+/* ── GLASS-1: Canvas Cards ──
+   Frosted acrylic resting on the canvas.
+   blurRadius: 6px, light blur, subtle refraction. */
+[data-theme="dark"] .glass-card {
+  background: rgba(14, 14, 14, 0.65);
+  backdrop-filter: blur(6px) saturate(105%);
+  -webkit-backdrop-filter: blur(6px) saturate(105%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.45);
+  border-radius: 12px;
+}
+
+[data-theme="light"] .glass-card {
+  background: rgba(240, 236, 229, 0.70);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.60),
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+}
+
+/* ── GLASS-2: Toolbar ──
+   Premium hardware control surface.
+   blurRadius: 20px, moderate refraction. */
+[data-theme="dark"] .glass-toolbar {
+  background: rgba(14, 14, 14, 0.75);
+  backdrop-filter: blur(20px) saturate(115%);
+  -webkit-backdrop-filter: blur(20px) saturate(115%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.20),
+    0 8px 32px rgba(0, 0, 0, 0.55);
+  border-radius: 20px;
+}
+
+[data-theme="light"] .glass-toolbar {
+  background: rgba(240, 236, 229, 0.80);
+  backdrop-filter: blur(20px) saturate(135%);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    0 1px 4px rgba(0, 0, 0, 0.10);
+  border-radius: 20px;
+}
+
+/* ── GLASS-3: Command Palette ──
+   Hero glass element — large sharp pane catching ambient light.
+   blurRadius: 32px, highest refraction in the system. */
+[data-theme="dark"] .glass-command-palette {
+  background: rgba(14, 14, 14, 0.80);
+  backdrop-filter: blur(32px) saturate(120%);
+  -webkit-backdrop-filter: blur(32px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 16px 48px rgba(0, 0, 0, 0.65),
+    0 4px 16px rgba(0, 0, 0, 0.40);
+  border-radius: 16px;
+}
+
+[data-theme="light"] .glass-command-palette {
+  background: rgba(240, 236, 229, 0.85);
+  backdrop-filter: blur(32px) saturate(140%);
+  -webkit-backdrop-filter: blur(32px) saturate(140%);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.70),
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.10);
+  border-radius: 16px;
+}
+
+/* ── GLASS-4: Context Menu ──
+   Small and surgical. blurRadius: 14px. */
+[data-theme="dark"] .glass-context-menu {
+  background: rgba(14, 14, 14, 0.72);
+  backdrop-filter: blur(14px) saturate(110%);
+  -webkit-backdrop-filter: blur(14px) saturate(110%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 24px rgba(0, 0, 0, 0.50);
+  border-radius: 8px;
+}
+
+[data-theme="light"] .glass-context-menu {
+  background: rgba(240, 236, 229, 0.78);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.60),
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 1px 4px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+}
+
+/* ── GLASS-5: Lightbox / Media Viewer ──
+   Thick glass. Cinematic — content is the star, glass is the stage.
+   blurRadius: 40px, maximum blur. */
+[data-theme="dark"] .glass-lightbox {
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(40px) saturate(125%);
+  -webkit-backdrop-filter: blur(40px) saturate(125%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    0 24px 64px rgba(0, 0, 0, 0.75),
+    0 8px 24px rgba(0, 0, 0, 0.50);
+  border-radius: 24px;
+}
+
+[data-theme="light"] .glass-lightbox {
+  background: rgba(240, 236, 229, 0.88);
+  backdrop-filter: blur(40px) saturate(145%);
+  -webkit-backdrop-filter: blur(40px) saturate(145%);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 12px 40px rgba(0, 0, 0, 0.20),
+    0 4px 12px rgba(0, 0, 0, 0.12);
+  border-radius: 24px;
+}
+
+/* ═══════════════════════════════════════
+   TIER 3 — Flat (legacy / low-power mode)
+   No backdrop-filter. Solid backgrounds with borders.
+   ═══════════════════════════════════════ */
+
+/* ── Dark mode flat surfaces ── */
+[data-theme="dark"] .glass-card--flat,
+[data-theme="dark"] .glass-toolbar--flat,
+[data-theme="dark"] .glass-command-palette--flat,
+[data-theme="dark"] .glass-context-menu--flat,
+[data-theme="dark"] .glass-lightbox--flat {
+  background: #1A1A1A;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: none;
+}
+
+/* ── Light mode flat surfaces ── */
+[data-theme="light"] .glass-card--flat,
+[data-theme="light"] .glass-toolbar--flat,
+[data-theme="light"] .glass-command-palette--flat,
+[data-theme="light"] .glass-context-menu--flat,
+[data-theme="light"] .glass-lightbox--flat {
+  background: #EDE9E3;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  box-shadow: none;
+}
+
+/* ── Flat per-surface border-radius (preserved) ── */
+[data-theme="dark"] .glass-card--flat,
+[data-theme="light"] .glass-card--flat {
+  border-radius: 12px;
+}
+
+[data-theme="dark"] .glass-toolbar--flat,
+[data-theme="light"] .glass-toolbar--flat {
+  border-radius: 20px;
+}
+
+[data-theme="dark"] .glass-command-palette--flat,
+[data-theme="light"] .glass-command-palette--flat {
+  border-radius: 16px;
+}
+
+[data-theme="dark"] .glass-context-menu--flat,
+[data-theme="light"] .glass-context-menu--flat {
+  border-radius: 8px;
+}
+
+[data-theme="dark"] .glass-lightbox--flat,
+[data-theme="light"] .glass-lightbox--flat {
+  border-radius: 24px;
+}
+
+/* ═══════════════════════════════════════
+   REDUCED MOTION
+   Strip all blur transitions when user
+   prefers reduced motion.
+   ═══════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .glass-surface,
+  .glass-card,
+  .glass-toolbar,
+  .glass-command-palette,
+  .glass-context-menu,
+  .glass-lightbox {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  [data-theme="dark"] .glass-surface,
+  [data-theme="dark"] .glass-card,
+  [data-theme="dark"] .glass-toolbar,
+  [data-theme="dark"] .glass-command-palette,
+  [data-theme="dark"] .glass-context-menu,
+  [data-theme="dark"] .glass-lightbox {
+    background: #1A1A1A;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: none;
+  }
+
+  [data-theme="light"] .glass-surface,
+  [data-theme="light"] .glass-card,
+  [data-theme="light"] .glass-toolbar,
+  [data-theme="light"] .glass-command-palette,
+  [data-theme="light"] .glass-context-menu,
+  [data-theme="light"] .glass-lightbox {
+    background: #EDE9E3;
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    box-shadow: none;
+  }
+}
