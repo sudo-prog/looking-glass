@@ -1,4 +1,4 @@
-const CACHE_NAME = 'looking-glass-v1';
+const CACHE_NAME = 'looking-glass-v2';
 const SHELL_FILES = ['/', '/index.html'];
 
 self.addEventListener('install', (e) => {
@@ -14,8 +14,18 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  // Network-first for documents, scripts, and styles to always get latest
   if (e.request.destination === 'document' || e.request.destination === 'script' || e.request.destination === 'style') {
-    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    e.respondWith(
+      fetch(e.request)
+        .then(response => {
+          // Update cache with fresh response
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(e.request))
+    );
     return;
   }
   e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
