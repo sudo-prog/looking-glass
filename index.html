@@ -1,64 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0A0A0A">
-  <meta name="description" content="Your visual memory — bookmarks, web clips, ideas on an infinite canvas">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Looking Glass">
-  <title>Looking Glass</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <script>
-    (function() {
-      var saved = localStorage.getItem('lg-theme');
-      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-theme', theme);
-      var meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) {
-        meta.setAttribute('content', theme === 'dark' ? '#0A0A0A' : '#F5F2EE');
-      }
-    })();
-  </script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; background: #0A0A0A; color: #F5F5F5; font-family: 'Space Grotesk', sans-serif; font-size: 14px; }
-    html[data-theme="light"], html[data-theme="light"] body { background: #F5F2EE; color: #1A1815; }
-    #app { height: 100%; display: flex; align-items: center; justify-content: center; }
-    .lg-loader { display: flex; flex-direction: column; align-items: center; gap: 24px; }
-    .lg-loader-mark {
-      width: 64px; height: 64px;
-      background: linear-gradient(135deg, #e02020, #cc1818);
-      border-radius: 16px;
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700;
-      color: #fff; letter-spacing: -0.04em;
-      box-shadow: 0 4px 24px rgba(224, 32, 32, 0.35);
-      animation: lg-mark-pulse 2s ease-in-out infinite;
-    }
-    .lg-loader-text { font-family: 'Space Mono', monospace; font-size: 11px; color: #666; letter-spacing: 0.3em; text-transform: uppercase; }
-    .lg-loader-dots { display: flex; gap: 6px; }
-    .lg-loader-dots span { width: 6px; height: 6px; border-radius: 50%; background: #e02020; animation: lg-pulse 1.2s ease-in-out infinite; }
-    .lg-loader-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .lg-loader-dots span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes lg-pulse { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
-    @keyframes lg-mark-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 4px 24px rgba(224,32,32,0.35); } 50% { transform: scale(1.05); box-shadow: 0 4px 40px rgba(224,32,32,0.5); } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0A0A0A">
+
+<meta name="description" content="Your visual memory — bookmarks, web clips, ideas on an infinite canvas">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Looking Glass">
+<title>Looking Glass</title>
+<!-- PWA -->
+<link rel="manifest" href="/looking-glass/manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="/looking-glass/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/looking-glass/icons/icon-192.png">
+<!-- Fonts — Nothing design system: Space Grotesk + Space Mono + Doto -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Doto:wght@100..900&display=swap" rel="stylesheet">
+<!-- Theme init — must run before paint to prevent flash -->
+<script>
+(function() {
+  const saved = localStorage.getItem('lg-theme');
+  const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  const theme = (saved === 'dark' || saved === 'light') ? saved : preferred;
+  document.documentElement.setAttribute('data-theme', theme);
+  const tc = document.querySelector('meta[name="theme-color"]');
+  if (tc) tc.setAttribute('content', theme === 'dark' ? '#0A0A0A' : '#F5F2EE');
+})();
+</script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+[data-theme="dark"] { background: #0A0A0A; color: #F5F5F5; }
+[data-theme="light"] { background: #F5F2EE; color: #1A1815; }
+body { font-family: 'Space Grotesk', system-ui, sans-serif; }
+#app { height: 100%; display: flex; }
+</style>
 </head>
 <body>
-  <div id="app">
-    <div class="lg-loader">
-      <div class="lg-loader-mark">LG</div>
-      <div class="lg-loader-text">Looking Glass</div>
-      <div class="lg-loader-dots"><span></span><span></span><span></span></div>
-    </div>
-  </div>
-  <script type="module" src="/src/main.jsx"></script>
+<div id="app">
+<!-- Styled loading state — replaced by React on mount -->
+<div id="lg-loader" style="
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:16px; height:100%; width:100%;
+">
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <rect x="4" y="4" width="10" height="10" rx="2" fill="#D71921" opacity="0.9"/>
+  <rect x="18" y="4" width="10" height="10" rx="2" fill="#D71921" opacity="0.5"/>
+  <rect x="4" y="18" width="10" height="10" rx="2" fill="#D71921" opacity="0.5"/>
+  <rect x="18" y="18" width="10" height="10" rx="2" fill="#D71921" opacity="0.2"/>
+</svg>
+<span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.2em;color:#666;">
+LOOKING GLASS
+</span>
+</div>
+</div>
+<script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

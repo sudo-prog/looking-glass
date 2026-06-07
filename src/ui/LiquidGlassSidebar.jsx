@@ -1,24 +1,77 @@
 import { useState, useRef, useEffect } from 'react';
-import { SquaresFour, Plus, MagnifyingGlass, BookmarkSimple, FolderOpen, Tag, Sparkle, GearSix, CaretLeft, CaretRight, X } from '@phosphor-icons/react';
-import { useStore } from '../store/useStore.js';
-import AIModal from './AIModal.jsx';
+import {
+  SquaresFour,
+  MagnifyingGlass,
+  FolderOpen,
+  Tag,
+  BookmarkSimple,
+  Sparkle,
+  GearSix,
+  CaretLeft,
+  CaretRight,
+  X,
+  House,
+  Compass,
+  Archive,
+  Hash,
+  Star,
+} from '@phosphor-icons/react';
+import AIModal from './AIModal';
 import './LiquidGlassSidebar.css';
 
 const NAV_ITEMS = [
-  { id: 'canvas', label: 'CANVAS', Icon: SquaresFour },
-  { id: 'search', label: 'SEARCH', Icon: MagnifyingGlass },
-  { id: 'library', label: 'LIBRARY', Icon: FolderOpen },
-  { id: 'tags', label: 'TAGS', Icon: Tag },
-  { id: 'saved', label: 'BOOKMARKS', Icon: BookmarkSimple },
+  { id: 'canvas',    label: 'CANVAS',    Icon: SquaresFour },
+  { id: 'search',    label: 'SEARCH',    Icon: MagnifyingGlass },
+  { id: 'library',   label: 'LIBRARY',   Icon: FolderOpen },
+  { id: 'tags',      label: 'TAGS',      Icon: Tag },
+  { id: 'saved',     label: 'BOOKMARKS', Icon: BookmarkSimple },
+];
+
+const FULL_MENU_SECTIONS = [
+  {
+    title: 'SPACES',
+    items: [
+      { id: 'home',    label: 'HOME',    Icon: House },
+      { id: 'explore', label: 'EXPLORE', Icon: Compass },
+    ],
+  },
+  {
+    title: 'LIBRARY',
+    items: [
+      { id: 'archive', label: 'ARCHIVE', Icon: Archive },
+      { id: 'tags',    label: 'ALL TAGS', Icon: Hash },
+      { id: 'starred', label: 'STARRED',  Icon: Star },
+    ],
+  },
 ];
 
 export default function LiquidGlassSidebar() {
-  const [isExpanded, setIsExpanded] = useState(true);
+  // State 0 = collapsed (icon buttons only)
+  // State 1 = expanded (standard sidebar with labels)
+  // State 2 = full menu (wide drawer with sections)
+  const [sidebarState, setSidebarState] = useState(1);
   const [activeItem, setActiveItem] = useState('canvas');
   const [showAIModal, setShowAIModal] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const sidebarRef = useRef(null);
 
+  const isCollapsed = sidebarState === 0;
+  const isExpanded  = sidebarState === 1;
+  const isFullMenu  = sidebarState === 2;
+
+  // Cycle: collapsed(0) → expanded(1) → fullmenu(2) → expanded(1) → collapsed(0)...
+  const handleToggle = () => {
+    setSidebarState(prev => {
+      if (prev === 0) return 1; // collapsed → expanded
+      if (prev === 1) return 2; // expanded → full menu
+      return 1;                 // full menu → expanded
+    });
+  };
+
+  const handleExpandFromCollapsed = () => {
+    if (isCollapsed) setSidebarState(1);
+  };
+
+  // Wire to WebGPU glass renderer on mount
   useEffect(() => {
     if (!sidebarRef.current) return;
     window.dispatchEvent(new CustomEvent('glass-surface-mount', {
@@ -26,93 +79,132 @@ export default function LiquidGlassSidebar() {
         id: 'sidebar',
         element: sidebarRef.current,
         uniforms: {
-          dark: { refractionStrength: 0.22, blurRadius: 20, specularIntensity: 0.30, shadowIntensity: 0.15 },
-          light: { refractionStrength: 0.18, blurRadius: 20, specularIntensity: 0.50, shadowIntensity: 0.10 }
-        }
-      }
+          dark:  { refractionStrength: 0.22, blurRadius: 20, specularIntensity: 0.30, shadowIntensity: 0.15 },
+          light: { refractionStrength: 0.18, blurRadius: 20, specularIntensity: 0.50, shadowIntensity: 0.10 },
+        },
+      },
     }));
     return () => {
       window.dispatchEvent(new CustomEvent('glass-surface-unmount', { detail: { id: 'sidebar' } }));
     };
   }, []);
 
+  const classNames = [
+    'lg-sidebar',
+    isCollapsed ? 'lg-sidebar--collapsed' : '',
+    isExpanded  ? 'lg-sidebar--expanded'  : '',
+    isFullMenu  ? 'lg-sidebar--fullmenu'  : '',
+  ].filter(Boolean).join(' ');
+
   return (
     <>
       <aside
         ref={sidebarRef}
-        className={`lg-sidebar ${isExpanded ? 'lg-sidebar--expanded' : 'lg-sidebar--collapsed'}`}
+        className={classNames}
         aria-label="Looking Glass navigation"
       >
-        {/* Header */}
+        {/* ── Header ──────────────────────── */}
         <div className="lg-sidebar__header">
-          <div className="lg-sidebar__brand">
-            <div className="lg-sidebar__mark">LG</div>
-            {isExpanded && <span className="lg-sidebar__brand-name">LOOKING GLASS</span>}
+          <div className="lg-sidebar__brand" aria-hidden="true">
+            <div className="lg-sidebar__brand-mark">LG</div>
+            {!isCollapsed && (
+              <span className="lg-sidebar__brand-name">LOOKING GLASS</span>
+            )}
           </div>
           <button
             className="lg-sidebar__toggle"
-            onClick={() => setIsExpanded(!isExpanded)}
-            aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            onClick={handleToggle}
+            aria-label={isFullMenu ? 'Collapse menu' : isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            aria-expanded={!isCollapsed}
           >
-            {isExpanded ? <CaretLeft size={14} weight="bold" /> : <CaretRight size={14} weight="bold" />}
+            {isFullMenu ? <CaretLeft size={16} weight="regular" /> :
+             isExpanded ? <CaretLeft size={16} weight="regular" /> :
+                          <CaretRight size={16} weight="regular" />}
           </button>
         </div>
 
-        {/* Nav items */}
-        <nav className="lg-sidebar__nav" role="navigation" aria-label="Main navigation">
+        {/* ── Navigation ──────────────────── */}
+        <nav className="lg-sidebar__nav" aria-label="Main navigation">
           {NAV_ITEMS.map(({ id, label, Icon }) => (
             <button
               key={id}
-              className={`lg-sidebar__nav-item ${activeItem === id ? 'lg-sidebar__nav-item--active' : ''}`}
-              onClick={() => setActiveItem(id)}
-              aria-label={label}
-              title={!isExpanded ? label : undefined}
+              className={`lg-sidebar__nav-item${activeItem === id ? ' lg-sidebar__nav-item--active' : ''}`}
+              onClick={() => { setActiveItem(id); if (isCollapsed) handleExpandFromCollapsed(); }}
+              aria-current={activeItem === id ? 'page' : undefined}
+              title={isCollapsed ? label : undefined}
             >
-              <Icon size={20} weight={activeItem === id ? 'fill' : 'regular'} />
-              {isExpanded && <span className="lg-sidebar__nav-label">{label}</span>}
+              <Icon size={20} weight="regular" className="lg-sidebar__nav-icon" />
+              {!isCollapsed && (
+                <span className="lg-sidebar__nav-label">{label}</span>
+              )}
+              {isCollapsed && (
+                <span className="lg-sidebar__tooltip" role="tooltip">{label}</span>
+              )}
             </button>
           ))}
         </nav>
 
-        {/* Spacer */}
+        {/* ── Full Menu Section (only in state 2) ── */}
+        {isFullMenu && (
+          <div className="lg-sidebar__fullmenu">
+            {FULL_MENU_SECTIONS.map((section) => (
+              <div key={section.title} className="lg-sidebar__fullmenu-section">
+                <span className="lg-sidebar__fullmenu-title">{section.title}</span>
+                {section.items.map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    className="lg-sidebar__fullmenu-item"
+                    onClick={() => setActiveItem(id)}
+                  >
+                    <Icon size={16} weight="regular" />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Spacer ──────────────────────── */}
         <div className="lg-sidebar__spacer" />
 
-        {/* AI Assistant button */}
-        <div className="lg-sidebar__ai-section">
-          <button
-            className="lg-sidebar__ai-btn"
-            onClick={() => setShowAIModal(true)}
-            aria-label="Open AI Assistant"
-          >
-            <div className="lg-sidebar__ai-icon-wrap">
-              <Sparkle size={18} weight="fill" />
-            </div>
-            {isExpanded && (
-              <div className="lg-sidebar__ai-text">
-                <span className="lg-sidebar__ai-title">AI ASSISTANT</span>
-                <span className="lg-sidebar__ai-subtitle">Powered by AI</span>
-              </div>
-            )}
-          </button>
-        </div>
-
-        {/* Footer */}
-        <div className="lg-sidebar__footer">
-          {isExpanded && (
-            <div className="lg-sidebar__version">
-              <span>V0.1 · LIQUID GLASS</span>
+        {/* ── AI Assistant ────────────────── */}
+        <button
+          className="lg-sidebar__ai-btn"
+          onClick={() => setShowAIModal(true)}
+          aria-label="Open AI assistant setup"
+          title={isCollapsed ? 'AI ASSISTANT' : undefined}
+        >
+          <div className="lg-sidebar__ai-icon-wrap">
+            <Sparkle size={20} weight="regular" />
+          </div>
+          {!isCollapsed && (
+            <div className="lg-sidebar__ai-text">
+              <span className="lg-sidebar__ai-title">AI ASSISTANT</span>
+              <span className="lg-sidebar__ai-sub">TAG · SEARCH · ORGANIZE</span>
             </div>
           )}
+        </button>
+
+        {/* ── Footer ──────────────────────── */}
+        <div className="lg-sidebar__footer">
+          {isExpanded && (
+            <span className="lg-sidebar__version">V0.1 · LIQUID GLASS</span>
+          )}
+          {isFullMenu && (
+            <span className="lg-sidebar__version">V0.1 · LIQUID GLASS</span>
+          )}
           <button
-            className="lg-sidebar__settings"
-            onClick={() => setShowSettings(!showSettings)}
-            aria-label="Settings"
+            className="lg-sidebar__settings-btn"
+            aria-label="Open settings"
+            title="SETTINGS"
           >
-            <GearSix size={18} weight="regular" />
+            <GearSix size={16} weight="regular" />
           </button>
         </div>
       </aside>
 
+      {/* ── AI Modal ────────────────────── */}
       <AIModal isOpen={showAIModal} onClose={() => setShowAIModal(false)} />
     </>
   );

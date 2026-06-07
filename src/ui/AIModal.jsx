@@ -1,252 +1,245 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useStore } from '../store/useStore.js';
-import { X, Eye, EyeSlash, CheckCircle, WarningCircle } from '@phosphor-icons/react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Sparkle, Eye, EyeSlash, Warning } from '@phosphor-icons/react';
 import './AIModal.css';
 
 const PROVIDERS = [
-  { id: 'openrouter', label: 'OpenRouter' },
-  { id: 'anthropic', label: 'Anthropic' },
-  { id: 'openai', label: 'OpenAI' },
-  { id: 'litellm', label: 'LiteLLM (self-hosted)' },
+  { id: 'openrouter', label: 'OPENROUTER',             placeholder: 'sk-or-...' },
+  { id: 'anthropic',  label: 'ANTHROPIC',              placeholder: 'sk-ant-...' },
+  { id: 'openai',     label: 'OPENAI',                 placeholder: 'sk-...' },
+  { id: 'litellm',    label: 'LITELLM (SELF-HOSTED)',  placeholder: 'http://localhost:4000' },
 ];
 
 const MODELS = {
   openrouter: [
-    { id: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
-    { id: 'anthropic/claude-opus-4', label: 'Claude Opus 4' },
-    { id: 'openai/gpt-4o', label: 'GPT-4o' },
-    { id: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
-    { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-    { id: 'meta-llama/llama-4-maverick', label: 'Llama 4 Maverick' },
+    'anthropic/claude-sonnet-4-5',
+    'anthropic/claude-3.5-sonnet',
+    'openai/gpt-4o',
   ],
   anthropic: [
-    { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
-    { id: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
-    { id: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+    'claude-sonnet-4-5',
+    'claude-3-5-sonnet-20241022',
+    'claude-3-haiku-20240307',
   ],
   openai: [
-    { id: 'gpt-4o', label: 'GPT-4o' },
-    { id: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-    { id: 'o1', label: 'o1' },
-    { id: 'o3-mini', label: 'o3-mini' },
+    'gpt-4o',
+    'gpt-4o-mini',
+    'gpt-4-turbo',
   ],
   litellm: [
-    { id: 'gpt-4o', label: 'GPT-4o (via LiteLLM)' },
-    { id: 'claude-sonnet-4', label: 'Claude Sonnet 4 (via LiteLLM)' },
-    { id: 'custom', label: 'Custom Model' },
+    'claude-3-5-sonnet-20241022',
+    'gpt-4o',
+    'gemini/gemini-2.0-flash',
   ],
 };
 
-// Simple obfuscation: reverse + base64
-function obfuscateKey(key) {
-  try {
-    return btoa(key.split('').reverse().join(''));
-  } catch {
-    return '';
-  }
-}
-
-function deobfuscateKey(encoded) {
-  try {
-    return atob(encoded).split('').reverse().join('');
-  } catch {
-    return '';
-  }
-}
-
-function getStoredKey(provider) {
-  const stored = localStorage.getItem(`lg-ai-key-${provider}`);
-  return stored ? deobfuscateKey(stored) : '';
-}
-
-function storeKey(provider, key) {
-  localStorage.setItem(`lg-ai-key-${provider}`, obfuscateKey(key));
-}
-
-function clearStoredKey(provider) {
-  localStorage.removeItem(`lg-ai-key-${provider}`);
-}
+// Minimal obfuscation — NOT real encryption.
+// Note: replace with Web Crypto API (AES-GCM) for production.
+const obfuscate = (key) => btoa(key.split('').reverse().join(''));
+const deobfuscate = (enc) => atob(enc).split('').reverse().join('');
 
 export default function AIModal({ isOpen, onClose }) {
   const [provider, setProvider] = useState('openrouter');
-  const [model, setModel] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [model, setModel] = useState(MODELS.openrouter[0]);
   const [showKey, setShowKey] = useState(false);
-  const [status, setStatus] = useState('idle'); // idle | testing | ok | error
-  const [statusMessage, setStatusMessage] = useState('');
-  const overlayRef = useRef(null);
+  const [status, setStatus] = useState('idle'); // 'idle' | 'testing' | 'ok' | 'error'
+  const [errorMsg, setErrorMsg] = useState('');
+  const modalRef = useRef(null);
+  const inputRef = useRef(null);
 
-  // Load stored key on provider change
+  // Load saved settings on open
   useEffect(() => {
     if (!isOpen) return;
-    const stored = getStoredKey(provider);
-    setApiKey(stored);
-    const models = MODELS[provider];
-    if (models && models.length > 0) {
-      setModel(models[0].id);
-    }
+    try {
+      const saved = JSON.parse(localStorage.getItem('lg-ai-config') || '{}');
+      if (saved.provider) setProvider(saved.provider);
+      if (saved.model) setModel(saved.model);
+      if (saved.key) setApiKey(deobfuscate(saved.key));
+    } catch {}
+    // Focus first input
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [isOpen]);
+
+  // Update model default when provider changes
+  useEffect(() => {
+    setModel(MODELS[provider]?.[0] || '');
     setStatus('idle');
-    setStatusMessage('');
-  }, [provider, isOpen]);
+    setErrorMsg('');
+  }, [provider]);
 
-  // Escape to close
+  // Keyboard: Escape closes
   useEffect(() => {
     if (!isOpen) return;
-    const handler = (e) => {
+    const onKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, [isOpen, onClose]);
 
-  const handleOverlayClick = useCallback((e) => {
-    if (e.target === overlayRef.current) onClose();
-  }, [onClose]);
-
-  const handleTest = useCallback(async () => {
+  const handleSave = () => {
     if (!apiKey.trim()) {
       setStatus('error');
-      setStatusMessage('Please enter an API key');
+      setErrorMsg('[ERROR: API KEY REQUIRED]');
+      return;
+    }
+    // Store obfuscated — client-side only
+    localStorage.setItem('lg-ai-config', JSON.stringify({
+      provider,
+      model,
+      key: obfuscate(apiKey.trim()),
+    }));
+    setStatus('ok');
+    setTimeout(onClose, 600);
+  };
+
+  const handleTest = async () => {
+    if (!apiKey.trim()) {
+      setStatus('error');
+      setErrorMsg('[ERROR: ENTER API KEY FIRST]');
       return;
     }
     setStatus('testing');
-    setStatusMessage('Testing connection...');
-
-    // Simulate a quick test — in production this would make a real API call
+    setErrorMsg('');
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      // For demo purposes, accept any key longer than 10 chars
-      if (apiKey.trim().length > 10) {
+      const res = await fetch(
+        provider === 'openrouter' ? 'https://openrouter.ai/api/v1/models' :
+        provider === 'anthropic'  ? 'https://api.anthropic.com/v1/models' :
+        provider === 'openai'     ? 'https://api.openai.com/v1/models' :
+        `${apiKey.includes('http') ? apiKey : 'http://localhost:4000'}/models`,
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey.trim()}`,
+            ...(provider === 'anthropic' ? { 'x-api-key': apiKey.trim(), 'anthropic-version': '2023-06-01' } : {}),
+          },
+        }
+      );
+      if (res.ok) {
         setStatus('ok');
-        setStatusMessage('Connection successful!');
       } else {
         setStatus('error');
-        setStatusMessage('Invalid key format');
+        setErrorMsg(`[ERROR: ${res.status} — CHECK KEY]`);
       }
-    } catch {
+    } catch (e) {
       setStatus('error');
-      setStatusMessage('Connection failed');
+      setErrorMsg('[ERROR: NETWORK — CHECK PROVIDER URL]');
     }
-  }, [apiKey]);
-
-  const handleSave = useCallback(() => {
-    if (!apiKey.trim()) {
-      clearStoredKey(provider);
-    } else {
-      storeKey(provider, apiKey.trim());
-    }
-    setStatus('ok');
-    setStatusMessage('Settings saved');
-    setTimeout(() => {
-      onClose();
-    }, 600);
-  }, [apiKey, provider, onClose]);
+  };
 
   if (!isOpen) return null;
 
-  const availableModels = MODELS[provider] || [];
+  const currentProvider = PROVIDERS.find(p => p.id === provider);
 
   return (
-    <div
-      className="ai-modal__overlay"
-      ref={overlayRef}
-      onClick={handleOverlayClick}
-      role="dialog"
-      aria-modal="true"
-      aria-label="AI Provider Setup"
-    >
-      <div className="ai-modal__box">
+    <div className="lg-ai-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div
+        className="lg-ai-modal"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-modal-title"
+      >
         {/* Header */}
-        <div className="ai-modal__header">
-          <h2 className="ai-modal__title">AI PROVIDER SETUP</h2>
-          <button className="ai-modal__close" onClick={onClose} aria-label="Close">
-            <X size={18} weight="bold" />
+        <div className="lg-ai-modal__header">
+          <div className="lg-ai-modal__title-row">
+            <Sparkle size={16} weight="regular" className="lg-ai-modal__title-icon" />
+            <h2 id="ai-modal-title" className="lg-ai-modal__title">AI ASSISTANT</h2>
+          </div>
+          <button className="lg-ai-modal__close" onClick={onClose} aria-label="Close AI assistant">
+            <X size={16} weight="regular" />
           </button>
         </div>
 
+        {/* Divider */}
+        <div className="lg-ai-modal__divider" />
+
         {/* Body */}
-        <div className="ai-modal__body">
-          {/* Provider */}
-          <div className="ai-modal__field">
-            <label className="ai-modal__label" htmlFor="ai-provider">PROVIDER</label>
+        <div className="lg-ai-modal__body">
+          {/* Provider select */}
+          <div className="lg-ai-modal__field">
+            <label className="lg-ai-modal__label" htmlFor="ai-provider">PROVIDER</label>
             <select
               id="ai-provider"
-              className="ai-modal__select"
+              className="lg-ai-modal__select"
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
             >
-              {PROVIDERS.map((p) => (
+              {PROVIDERS.map(p => (
                 <option key={p.id} value={p.id}>{p.label}</option>
               ))}
             </select>
           </div>
 
-          {/* Model */}
-          <div className="ai-modal__field">
-            <label className="ai-modal__label" htmlFor="ai-model">MODEL</label>
+          {/* Model select */}
+          <div className="lg-ai-modal__field">
+            <label className="lg-ai-modal__label" htmlFor="ai-model">MODEL</label>
             <select
               id="ai-model"
-              className="ai-modal__select"
+              className="lg-ai-modal__select"
               value={model}
               onChange={(e) => setModel(e.target.value)}
             >
-              {availableModels.map((m) => (
-                <option key={m.id} value={m.id}>{m.label}</option>
+              {(MODELS[provider] || []).map(m => (
+                <option key={m} value={m}>{m}</option>
               ))}
             </select>
           </div>
 
-          {/* API Key */}
-          <div className="ai-modal__field">
-            <label className="ai-modal__label" htmlFor="ai-key">API KEY</label>
-            <div className="ai-modal__key-row">
+          {/* API key input */}
+          <div className="lg-ai-modal__field">
+            <label className="lg-ai-modal__label" htmlFor="ai-key">API KEY</label>
+            <div className="lg-ai-modal__key-wrap">
               <input
+                ref={inputRef}
                 id="ai-key"
-                className="ai-modal__input"
                 type={showKey ? 'text' : 'password'}
+                className={`lg-ai-modal__input ${status === 'error' ? 'lg-ai-modal__input--error' : ''}`}
                 value={apiKey}
-                onChange={(e) => { setApiKey(e.target.value); setStatus('idle'); }}
-                placeholder="Enter your API key"
+                onChange={(e) => { setApiKey(e.target.value); setStatus('idle'); setErrorMsg(''); }}
+                placeholder={currentProvider?.placeholder || 'Enter API key'}
                 autoComplete="off"
+                spellCheck={false}
               />
               <button
-                className="ai-modal__key-toggle"
+                className="lg-ai-modal__key-toggle"
+                onClick={() => setShowKey(v => !v)}
+                aria-label={showKey ? 'Hide API key' : 'Show API key'}
                 type="button"
-                onClick={() => setShowKey(!showKey)}
-                aria-label={showKey ? 'Hide key' : 'Show key'}
               >
-                {showKey ? <EyeSlash size={16} /> : <Eye size={16} />}
+                {showKey
+                  ? <EyeSlash size={16} weight="regular" />
+                  : <Eye size={16} weight="regular" />}
               </button>
             </div>
+            {/* Security notice */}
+            <p className="lg-ai-modal__notice">
+              <Warning size={12} weight="regular" />
+              STORED CLIENT-SIDE ONLY · NEVER TRANSMITTED TO OUR SERVERS
+            </p>
           </div>
 
-          {/* Status */}
-          {status !== 'idle' && (
-            <div className={`ai-modal__status ai-modal__status--${status}`}>
-              {status === 'ok' && <CheckCircle size={14} weight="fill" />}
-              {status === 'error' && <WarningCircle size={14} weight="fill" />}
-              {status === 'testing' && (
-                <span className="ai-modal__spinner" />
-              )}
-              <span>{statusMessage}</span>
-            </div>
+          {/* Status display */}
+          {status === 'error' && (
+            <p className="lg-ai-modal__error">{errorMsg}</p>
+          )}
+          {status === 'ok' && (
+            <p className="lg-ai-modal__success">[CONNECTED]</p>
+          )}
+          {status === 'testing' && (
+            <p className="lg-ai-modal__testing">[TESTING...]</p>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="ai-modal__footer">
-          <button
-            className="ai-modal__btn ai-modal__btn--secondary"
-            onClick={handleTest}
-            disabled={status === 'testing'}
-          >
-            {status === 'testing' ? 'TESTING...' : 'TEST CONNECTION'}
+        {/* Divider */}
+        <div className="lg-ai-modal__divider" />
+
+        {/* Footer actions */}
+        <div className="lg-ai-modal__footer">
+          <button className="lg-ai-modal__btn-secondary" onClick={handleTest} disabled={status === 'testing'}>
+            TEST CONNECTION
           </button>
-          <button
-            className="ai-modal__btn ai-modal__btn--primary"
-            onClick={handleSave}
-          >
-            SAVE
+          <button className="lg-ai-modal__btn-primary" onClick={handleSave}>
+            SAVE &amp; CONNECT
           </button>
         </div>
       </div>
