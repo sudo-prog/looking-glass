@@ -13,9 +13,9 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 const SNAP_POINTS = {
-  full: 15,    // 15% from top = 85% visible (full screen)
+  peek: 85,    // 85% from top = 15% visible (peek)
   default: 50, // 50% from top = 50% visible
-  peek: 90,    // 90% from top = 10% visible (peek)
+  full: 10,    // 10% from top = 90% visible (full screen)
 };
 
 export function BottomSheet({
@@ -99,8 +99,8 @@ export function BottomSheet({
       }
     }
 
-    // If dragged past full toward bottom (past full + 15), close
-    if (currentY > SNAP_POINTS.full + 15) {
+    // If dragged past the default snap point toward the bottom (peek direction), close
+    if (currentY > SNAP_POINTS.default + 20) {
       handleClose();
     } else {
       setCurrentY(closest);

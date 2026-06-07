@@ -47,11 +47,16 @@ export function Canvas({
   // Keep transformRef in sync
   useEffect(() => { transformRef.current = transform; }, [transform]);
 
-  // Sync viewport from store (only when external change, not from local wheel/pan)
+  // Sync viewport from store (only when changed externally, not from local wheel/pan)
   const lastExternalViewport = useRef(null);
+  const isInternalChange = useRef(false);
   useEffect(() => {
     // Skip if this viewport was just set by us (wheel/pan)
     if (lastExternalViewport.current === viewport) return;
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
     setTransform(viewport);
   }, [viewport]);
 
@@ -90,8 +95,9 @@ export function Canvas({
         scale: newScale,
       };
       setTransform(newTransform);
-      lastExternalViewport.current = newTransform;
+      isInternalChange.current = true;
       onViewportChange(newTransform);
+      lastExternalViewport.current = newTransform;
     };
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
@@ -168,6 +174,7 @@ export function Canvas({
     if (isPanning.current) {
       isPanning.current = false;
       if (viewportRef.current) viewportRef.current.style.cursor = 'grab';
+      isInternalChange.current = true;
       lastExternalViewport.current = transformRef.current;
       onViewportChange(transformRef.current);
     }

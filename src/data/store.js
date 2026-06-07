@@ -55,7 +55,11 @@ function reqPromise(req) {
 }
 
 export const store = {
-  async init() { return openDB(); },
+  async init() {
+    const database = await openDB();
+    db = database;
+    return database;
+  },
 
   async getCanvas(id) {
     const s = await tx('canvases');

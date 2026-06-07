@@ -342,7 +342,7 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
               <>
                 <div className="stack-count-badge">{count}</div>
                 <div className="stack-top-title">{topItem.content?.title || 'Stack'}</div>
-                <div className="stack-hint" onClick={toggleFan}>
+                <div className="stack-hint" onClick={toggleFan} onPointerDown={(e) => e.stopPropagation()}>
                   {fanned ? 'Click to stack' : 'Click to fan'}
                 </div>
               </>
