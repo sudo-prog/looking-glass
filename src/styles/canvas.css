@@ -11,9 +11,6 @@
   background-color: var(--canvas-bg);
   background-image: radial-gradient(circle, var(--canvas-dot-color) 1px, transparent 1px);
   background-size: 32px 32px;
-  /* Alternative grids (user-selectable): */
-  /* Fine line grid: 1px rgba lines at 40px intervals, 4% opacity */
-  /* Plain surface: No grid, background color only */
 }
 
 /* Canvas container */
@@ -21,4 +18,190 @@
   height: 100%;
   width: 100%;
   position: relative;
+}
+
+/* ════════════════════════════════════════════════
+   CARD BASE STYLES
+   ════════════════════════════════════════════════ */
+
+.canvas-card {
+  position: absolute;
+  min-width: 200px;
+  max-width: 400px;
+  width: 280px;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+  overflow: hidden;
+}
+
+.canvas-card:hover {
+  border-color: var(--color-border-active);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.canvas-card.selected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(215, 25, 33, 0.25), 0 4px 20px rgba(0, 0, 0, 0.22);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+.card-handle {
+  color: var(--text-disabled);
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.card-handle:active {
+  cursor: grabbing;
+}
+
+.card-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-weight: var(--weight-medium);
+}
+
+.card-note-icon {
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+
+.card-body {
+  padding: var(--space-3);
+}
+
+.card-body img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  display: block;
+}
+
+.card-desc {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-normal);
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--text-disabled);
+}
+
+.card-link {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.card-link:hover {
+  text-decoration: underline;
+}
+
+.card-domain {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ════════════════════════════════════════════════
+   NOTE CARD EDITOR
+   ════════════════════════════════════════════════ */
+
+.card-note-editor {
+  min-height: 60px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+  border: none;
+  background: transparent;
+}
+
+.card-note-editor:focus {
+  background: var(--state-hover);
+  border-radius: var(--radius-sm);
+}
+
+.card-note-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-disabled);
+  pointer-events: none;
+}
+
+/* ════════════════════════════════════════════════
+   IMAGE CARD
+   ════════════════════════════════════════════════ */
+
+.card-image .card-body {
+  padding: 0;
+}
+
+.card-image .card-body img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  display: block;
+}
+
+/* ════════════════════════════════════════════════
+   GROUP CARD
+   ════════════════════════════════════════════════ */
+
+.card-group {
+  border-style: dashed;
+  border-width: 2px;
+  background: var(--state-hover);
+}
+
+.card-group .card-header {
+  cursor: pointer;
+}
+
+.card-group .group-count {
+  color: var(--text-disabled);
+  font-size: var(--text-xs);
+}
+
+/* ════════════════════════════════════════════════
+   LIGHT / DARK MODE CARD ADJUSTMENTS
+   ════════════════════════════════════════════════ */
+
+[data-theme="light"] .canvas-card {
+  background: var(--color-bg-card);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .canvas-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .canvas-card.selected {
+  box-shadow: 0 0 0 2px rgba(215, 25, 33, 0.2), 0 4px 20px rgba(0, 0, 0, 0.12);
 }
