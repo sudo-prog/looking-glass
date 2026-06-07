@@ -15,6 +15,9 @@ import {
   Archive,
   Hash,
   Star,
+  MagnifyingGlass as SearchIcon,
+  Organize,
+  ListChecks,
 } from '@phosphor-icons/react';
 import AIModal from './AIModal';
 import './LiquidGlassSidebar.css';
@@ -45,8 +48,15 @@ const FULL_MENU_SECTIONS = [
   },
 ];
 
+const AI_QUICK_ACTIONS = [
+  { id: 'ai-tag',        label: 'TAG',        Icon: Tag },
+  { id: 'ai-search',     label: 'SEARCH',     Icon: SearchIcon },
+  { id: 'ai-organize',   label: 'ORGANIZE',   Icon: ListChecks },
+  { id: 'ai-summarize',  label: 'SUMMARIZE',  Icon: Organize },
+];
+
 export default function LiquidGlassSidebar() {
-  // State 0 = collapsed (icon buttons only)
+  // State 0 = collapsed (FAB button only)
   // State 1 = expanded (standard sidebar with labels)
   // State 2 = full menu (wide drawer with sections)
   const [sidebarState, setSidebarState] = useState(0);
@@ -85,9 +95,26 @@ export default function LiquidGlassSidebar() {
     };
   }, []);
 
+  // ── State 0: Floating Action Button ──
+  if (isCollapsed) {
+    return (
+      <>
+        <button
+          ref={sidebarRef}
+          className="lg-sidebar-fab"
+          onClick={handleToggle}
+          aria-label="Open sidebar"
+          title="LOOKING GLASS"
+        >
+          <Sparkle size={22} weight="regular" />
+        </button>
+        <AIModal isOpen={showAIModal} onClose={() => setShowAIModal(false)} />
+      </>
+    );
+  }
+
   const classNames = [
     'lg-sidebar',
-    isCollapsed ? 'lg-sidebar--collapsed' : '',
     isExpanded  ? 'lg-sidebar--expanded'  : '',
     isFullMenu  ? 'lg-sidebar--fullmenu'  : '',
   ].filter(Boolean).join(' ');
@@ -103,19 +130,16 @@ export default function LiquidGlassSidebar() {
         <div className="lg-sidebar__header">
           <div className="lg-sidebar__brand" aria-hidden="true">
             <div className="lg-sidebar__brand-mark">LG</div>
-            {!isCollapsed && (
-              <span className="lg-sidebar__brand-name">LOOKING GLASS</span>
-            )}
+            <span className="lg-sidebar__brand-name">LOOKING GLASS</span>
           </div>
           <button
             className="lg-sidebar__toggle"
             onClick={handleToggle}
-            aria-label={isFullMenu ? 'Collapse menu' : isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-            aria-expanded={!isCollapsed}
+            aria-label={isFullMenu ? 'Collapse menu' : 'Collapse sidebar'}
+            aria-expanded={true}
           >
             {isFullMenu ? <CaretLeft size={16} weight="regular" /> :
-             isExpanded ? <CaretLeft size={16} weight="regular" /> :
-                          <CaretRight size={16} weight="regular" />}
+                          <CaretLeft size={16} weight="regular" />}
           </button>
         </div>
 
@@ -125,17 +149,11 @@ export default function LiquidGlassSidebar() {
             <button
               key={id}
               className={`lg-sidebar__nav-item${activeItem === id ? ' lg-sidebar__nav-item--active' : ''}`}
-              onClick={() => { setActiveItem(id); if (isCollapsed) handleExpandFromCollapsed(); }}
+              onClick={() => setActiveItem(id)}
               aria-current={activeItem === id ? 'page' : undefined}
-              title={isCollapsed ? label : undefined}
             >
               <Icon size={20} weight="regular" className="lg-sidebar__nav-icon" />
-              {!isCollapsed && (
-                <span className="lg-sidebar__nav-label">{label}</span>
-              )}
-              {isCollapsed && (
-                <span className="lg-sidebar__tooltip" role="tooltip">{label}</span>
-              )}
+              <span className="lg-sidebar__nav-label">{label}</span>
             </button>
           ))}
         </nav>
@@ -158,6 +176,21 @@ export default function LiquidGlassSidebar() {
                 ))}
               </div>
             ))}
+
+            {/* ── AI Quick Actions ────────── */}
+            <div className="lg-sidebar__fullmenu-section">
+              <span className="lg-sidebar__fullmenu-title">AI ACTIONS</span>
+              {AI_QUICK_ACTIONS.map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  className="lg-sidebar__fullmenu-item lg-sidebar__fullmenu-item--ai"
+                  onClick={() => setShowAIModal(true)}
+                >
+                  <Icon size={16} weight="regular" />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -169,27 +202,19 @@ export default function LiquidGlassSidebar() {
           className="lg-sidebar__ai-btn"
           onClick={() => setShowAIModal(true)}
           aria-label="Open AI assistant setup"
-          title={isCollapsed ? 'AI ASSISTANT' : undefined}
         >
           <div className="lg-sidebar__ai-icon-wrap">
             <Sparkle size={20} weight="regular" />
           </div>
-          {!isCollapsed && (
-            <div className="lg-sidebar__ai-text">
-              <span className="lg-sidebar__ai-title">AI ASSISTANT</span>
-              <span className="lg-sidebar__ai-sub">TAG · SEARCH · ORGANIZE</span>
-            </div>
-          )}
+          <div className="lg-sidebar__ai-text">
+            <span className="lg-sidebar__ai-title">AI ASSISTANT</span>
+            <span className="lg-sidebar__ai-sub">TAG · SEARCH · ORGANIZE</span>
+          </div>
         </button>
 
         {/* ── Footer ──────────────────────── */}
         <div className="lg-sidebar__footer">
-          {isExpanded && (
-            <span className="lg-sidebar__version">V0.1 · LIQUID GLASS</span>
-          )}
-          {isFullMenu && (
-            <span className="lg-sidebar__version">V0.1 · LIQUID GLASS</span>
-          )}
+          <span className="lg-sidebar__version">V0.1 · LIQUID GLASS</span>
           <button
             className="lg-sidebar__settings-btn"
             aria-label="Open settings"
