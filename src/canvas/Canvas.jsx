@@ -1,7 +1,7 @@
 /**
  * LOOKING GLASS — Canvas Component (React)
  * Infinite canvas with pan/zoom using CSS transforms.
- * Converts CanvasEngine logic to React state + refs.
+ * Supports drag-to-stack and drag-to-folder creation.
  */
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { BookmarkCard } from '../cards/BookmarkCard.tsx';
@@ -9,6 +9,9 @@ import { NoteCard } from '../cards/NoteCard.tsx';
 import { ImageCard } from '../cards/ImageCard.tsx';
 import { WebClipCard } from '../cards/WebClipCard.tsx';
 import { GroupCard } from '../cards/GroupCard.tsx';
+import { StackCard } from '../cards/StackCard.tsx';
+import { FolderCard } from '../cards/FolderCard.tsx';
+import { DropModePicker } from '../ui/DropModePicker.tsx';
 import { ITEM_TYPES } from '../data/schema.js';
 
 export function Canvas({
@@ -22,6 +25,10 @@ export function Canvas({
   onItemSave,
   onItemDelete,
   onLightbox,
+  onCreateStack,
+  onAddToStack,
+  onCreateFolder,
+  onAddToFolder,
 }) {
   const viewportRef = useRef(null);
   const worldRef = useRef(null);
@@ -30,12 +37,11 @@ export function Canvas({
   const lastPointer = useRef({ x: 0, y: 0 });
   const rafId = useRef(null);
   const dragItem = useRef(null);
+  const dragItemId = useRef(null);
   const dragStart = useRef({ x: 0, y: 0, itemX: 0, itemY: 0 });
+  const [dropPicker, setDropPicker] = useState(null);
 
-  // Sync viewport from store
-  useEffect(() => {
-    setTransform(viewport);
-  }, [viewport.x, viewport.y, viewport.scale]);
+  useEffect(() => { setTransform(viewport); }, [viewport.x, viewport.y, viewport.scale]);
 
   const applyTransform = useCallback((t) => {
     if (worldRef.current) {
@@ -43,20 +49,57 @@ export function Canvas({
     }
   }, []);
 
-  useEffect(() => {
-    applyTransform(transform);
-  }, [transform, applyTransform]);
+  useEffect(() => { applyTransform(transform); }, [transform, applyTransform]);
 
-  // Pointer events for panning
+  // Hit-test: find card under the dragged element
+  const hitTestCardUnderneath = useCallback((draggedEl, clientX, clientY) => {
+    draggedEl.style.visibility = 'hidden';
+    const elemBelow = document.elementFromPoint(clientX, clientY);
+    draggedEl.style.visibility = '';
+    if (!elemBelow) return null;
+    const targetCard = elemBelow.closest('.canvas-card');
+    if (!targetCard) return null;
+    const targetId = targetCard.dataset.id;
+    if (!targetId || targetId === dragItemId.current) return null;
+    return items.find((i) => i.id === targetId) || null;
+  }, [items]);
+
+  const showDropPicker = useCallback((targetItem) => {
+    const cardEl = document.querySelector(`[data-id="${targetItem.id}"]`);
+    if (!cardEl) return;
+    const rect = cardEl.getBoundingClientRect();
+    setDropPicker({
+      x: rect.left + rect.width / 2 - 80,
+      y: rect.top - 50,
+      targetItem,
+    });
+  }, []);
+
+  const closeDropPicker = useCallback(() => { setDropPicker(null); }, []);
+
+  const handlePickerStack = useCallback(() => {
+    if (!dropPicker) return;
+    const { targetItem } = dropPicker;
+    closeDropPicker();
+    if (dragItemId.current) {
+      onCreateStack([targetItem.id, dragItemId.current]);
+    }
+  }, [dropPicker, closeDropPicker, onCreateStack]);
+
+  const handlePickerFolder = useCallback(() => {
+    if (!dropPicker) return;
+    const { targetItem } = dropPicker;
+    closeDropPicker();
+    if (dragItemId.current) {
+      onCreateFolder('New Folder', [targetItem.id, dragItemId.current]);
+    }
+  }, [dropPicker, closeDropPicker, onCreateFolder]);
+
   const handlePointerDown = useCallback((e) => {
-    // Check if clicking on a card
     if (e.target.closest('.canvas-card')) return;
-
-    // Click on empty canvas clears selection
     if (e.target === viewportRef.current || e.target === worldRef.current) {
       onClearSelection();
     }
-
     isPanning.current = true;
     lastPointer.current = { x: e.clientX, y: e.clientY };
     viewportRef.current.setPointerCapture(e.pointerId);
@@ -69,17 +112,10 @@ export function Canvas({
       rafId.current = requestAnimationFrame(() => {
         const dx = e.clientX - lastPointer.current.x;
         const dy = e.clientY - lastPointer.current.y;
-        const newTransform = {
-          ...transform,
-          x: transform.x + dx,
-          y: transform.y + dy,
-        };
         lastPointer.current = { x: e.clientX, y: e.clientY };
-        setTransform(newTransform);
+        setTransform((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
       });
     }
-
-    // Handle item dragging
     if (dragItem.current) {
       if (rafId.current) cancelAnimationFrame(rafId.current);
       rafId.current = requestAnimationFrame(() => {
@@ -89,54 +125,71 @@ export function Canvas({
         dragItem.current.style.top = `${dragStart.current.itemY + dy}px`;
       });
     }
-  }, [transform]);
+  }, [transform.scale]);
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerUp = useCallback((e) => {
     if (isPanning.current) {
       isPanning.current = false;
       if (viewportRef.current) viewportRef.current.style.cursor = 'grab';
       onViewportChange(transform);
     }
 
-    // Finalize item drag
     if (dragItem.current) {
       const finalX = parseFloat(dragItem.current.style.left);
       const finalY = parseFloat(dragItem.current.style.top);
       const itemId = dragItem.current.dataset.id;
+      const draggedEl = dragItem.current;
+
+      // Hit-test for drop target
+      if (e && e.clientX !== undefined) {
+        const targetItem = hitTestCardUnderneath(draggedEl, e.clientX, e.clientY);
+        if (targetItem) {
+          if (targetItem.type === ITEM_TYPES.STACK) {
+            onAddToStack(targetItem.id, itemId);
+          } else if (targetItem.type === ITEM_TYPES.FOLDER) {
+            onAddToFolder(targetItem.id, itemId);
+          } else {
+            // Regular card — show picker
+            dragItem.current = null;
+            dragItemId.current = null;
+            onItemMove(itemId, finalX, finalY);
+            showDropPicker(targetItem);
+            return;
+          }
+        }
+      }
+
       onItemMove(itemId, finalX, finalY);
       dragItem.current = null;
+      dragItemId.current = null;
     }
-  }, [transform, onViewportChange, onItemMove]);
+  }, [transform, onViewportChange, onItemMove, hitTestCardUnderneath, onAddToStack, onAddToFolder, showDropPicker]);
 
-  // Wheel for zoom
   const handleWheel = useCallback((e) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     const newScale = Math.min(3, Math.max(0.1, transform.scale * delta));
-
     const rect = viewportRef.current.getBoundingClientRect();
     const cx = e.clientX - rect.left;
     const cy = e.clientY - rect.top;
-
     const newTransform = {
       x: cx - (cx - transform.x) * (newScale / transform.scale),
       y: cy - (cy - transform.y) * (newScale / transform.scale),
       scale: newScale,
     };
-
     setTransform(newTransform);
     onViewportChange(newTransform);
   }, [transform, onViewportChange]);
 
-  // Card drag start
   const handleCardDragStart = useCallback((e, itemId, itemX, itemY) => {
-    // Only start drag if not clicking on interactive elements
-    if (e.target.closest('.card-note-editor') || e.target.closest('a') || e.target.closest('button') || e.target.closest('input')) return;
-
+    if (e.target.closest('.card-note-editor') || e.target.closest('a') ||
+        e.target.closest('button') || e.target.closest('input') ||
+        e.target.closest('.folder-tab') || e.target.closest('.stack-hint')) return;
     e.stopPropagation();
     const card = document.querySelector(`[data-id="${itemId}"]`);
     if (card) {
       dragItem.current = card;
+      dragItemId.current = itemId;
       dragStart.current = { x: e.clientX, y: e.clientY, itemX, itemY };
     }
   }, []);
@@ -177,6 +230,7 @@ export function Canvas({
             onSave: (updates) => onItemSave(item.id, updates),
             onDelete: () => onItemDelete(item.id),
             onLightbox: () => onLightbox(item),
+            allItems: items,
           };
           switch (item.type) {
             case ITEM_TYPES.BOOKMARK: return <BookmarkCard key={item.id} {...cardProps} />;
@@ -184,10 +238,26 @@ export function Canvas({
             case ITEM_TYPES.IMAGE: return <ImageCard key={item.id} {...cardProps} />;
             case ITEM_TYPES.WEB_CLIP: return <WebClipCard key={item.id} {...cardProps} />;
             case ITEM_TYPES.GROUP: return <GroupCard key={item.id} {...cardProps} childCount={0} />;
+            case ITEM_TYPES.STACK: return <StackCard key={item.id} {...cardProps} />;
+            case ITEM_TYPES.FOLDER: return (
+              <FolderCard key={item.id} {...cardProps}
+                onToggleOpen={onToggleFolderOpen}
+                onRename={onRenameFolder}
+              />
+            );
             default: return <BookmarkCard key={item.id} {...cardProps} />;
           }
         })}
       </div>
+
+      {dropPicker && (
+        <DropModePicker
+          position={{ x: dropPicker.x, y: dropPicker.y }}
+          onChooseStack={handlePickerStack}
+          onChooseFolder={handlePickerFolder}
+          onCancel={closeDropPicker}
+        />
+      )}
     </div>
   );
 }
