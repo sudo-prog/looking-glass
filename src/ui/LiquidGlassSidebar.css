@@ -4,6 +4,57 @@
    All values reference tokens from tokens.css
    ════════════════════════════════════════════════ */
 
+/* ── FAB (State 0: Collapsed) ───────────────── */
+.lg-sidebar-fab {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--glass-frost);
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(110%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(110%);
+  box-shadow:
+    inset 0 1px 0 var(--glass-specular),
+    0 4px 24px var(--glass-cast-shadow);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: var(--z-toolbar);
+  transition: transform 200ms var(--ease-out),
+              box-shadow 200ms var(--ease-out),
+              background 200ms var(--ease-out);
+  flex-shrink: 0;
+}
+
+.lg-sidebar-fab:hover {
+  transform: scale(1.08);
+  box-shadow:
+    inset 0 1px 0 var(--glass-specular),
+    0 8px 32px var(--glass-cast-shadow);
+  background: var(--state-hover);
+}
+
+.lg-sidebar-fab:active {
+  transform: scale(0.96);
+  background: var(--state-active);
+}
+
+.lg-sidebar-fab:focus-visible {
+  outline: var(--state-focus-ring);
+  outline-offset: var(--state-focus-offset);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .lg-sidebar-fab {
+    background: var(--color-bg-overlay);
+  }
+}
+
 /* ── Layout ─────────────────────────────────── */
 .lg-sidebar {
   position: relative;
@@ -17,8 +68,6 @@
   flex-shrink: 0;
 }
 
-/* State 0: Collapsed — icon buttons only */
-.lg-sidebar--collapsed { width: 64px; }
 /* State 1: Expanded — standard sidebar */
 .lg-sidebar--expanded  { width: 240px; }
 /* State 2: Full menu — drawer within sidebar */
@@ -190,32 +239,6 @@
   text-overflow: ellipsis;
 }
 
-/* Collapsed tooltip */
-.lg-sidebar__tooltip {
-  position: absolute;
-  left: calc(100% + 12px);
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--color-bg-overlay);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-  font-family: var(--font-ui);
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-widest);
-  color: var(--text-primary);
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
-  z-index: var(--z-tooltip);
-  box-shadow: 0 4px 12px var(--glass-cast-shadow);
-}
-
-.lg-sidebar--collapsed .lg-sidebar__nav-item:hover .lg-sidebar__tooltip {
-  opacity: 1;
-}
-
 /* ── Full Menu (State 2) ────────────────────── */
 .lg-sidebar__fullmenu {
   display: flex;
@@ -265,6 +288,16 @@
 .lg-sidebar__fullmenu-item:hover {
   background: var(--state-hover);
   color: var(--text-primary);
+}
+
+/* AI quick action items */
+.lg-sidebar__fullmenu-item--ai {
+  color: var(--text-secondary);
+}
+
+.lg-sidebar__fullmenu-item--ai:hover {
+  color: var(--text-primary);
+  background: var(--state-hover);
 }
 
 /* ── Spacer ─────────────────────────────────── */
@@ -399,45 +432,16 @@
   outline-offset: var(--state-focus-offset);
 }
 
-/* ── Collapsed state adjustments ─────────────── */
-.lg-sidebar--collapsed .lg-sidebar__header {
-  justify-content: center;
-  padding: var(--space-4) var(--space-2);
-}
-
-.lg-sidebar--collapsed .lg-sidebar__brand {
-  justify-content: center;
-}
-
-.lg-sidebar--collapsed .lg-sidebar__nav {
-  padding: var(--space-3) var(--space-2);
-  align-items: center;
-}
-
-.lg-sidebar--collapsed .lg-sidebar__nav-item {
-  justify-content: center;
-  padding: 10px;
-  width: 40px;
-}
-
-.lg-sidebar--collapsed .lg-sidebar__ai-btn {
-  width: 40px;
-  justify-content: center;
-  padding: 10px;
-  margin: 0 auto var(--space-3);
-}
-
-.lg-sidebar--collapsed .lg-sidebar__footer {
-  justify-content: center;
-  padding: var(--space-3) var(--space-2);
-}
-
-.lg-sidebar--collapsed .lg-sidebar__settings-btn {
-  margin: 0;
-}
-
 /* ── Mobile — sidebar becomes bottom bar ──────── */
 @media (max-width: 767px) {
+  .lg-sidebar-fab {
+    top: auto;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    left: 16px;
+    width: 44px;
+    height: 44px;
+  }
+
   .lg-sidebar {
     position: fixed;
     bottom: 0;
@@ -468,7 +472,6 @@
     padding: var(--space-2);
   }
   .lg-sidebar__nav-label { font-size: 9px; letter-spacing: 0.08em; }
-  .lg-sidebar__tooltip { display: none; }
   .lg-sidebar__ai-btn {
     width: auto;
     margin: var(--space-2);
