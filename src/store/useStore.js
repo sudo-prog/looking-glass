@@ -13,7 +13,7 @@ export const useStore = create((set, get) => ({
   viewport: { x: 0, y: 0, scale: 1 },
   items: [],
   selectedIds: new Set(),
-  activeFilters: new Set(['bookmark', 'web_clip', 'note', 'image', 'group']),
+  activeFilters: new Set(['bookmark', 'web_clip', 'note', 'image', 'group', 'stack', 'folder']),
   searchQuery: '',
   searchResults: null,
 
@@ -222,6 +222,181 @@ export const useStore = create((set, get) => ({
       const items = await idbStore.exportCanvas(canvasId);
       set({ items: items || [] });
     }
+  },
+
+
+  // ── Stack ──────────────────────────────────────────────────────────────
+
+  /** Collapse two (or more) items into a new STACK item */
+  createStack: async (itemIds) => {
+    const state = get();
+    const sourceItems = itemIds.map((id) => state.items.find((i) => i.id === id)).filter(Boolean);
+    if (sourceItems.length < 2) return;
+
+    // Sort: widest (largest) at index 0 (bottom layer), narrowest at end (top)
+    const sorted = [...sourceItems].sort((a, b) => (b.width || 320) - (a.width || 320));
+    const topItem = sorted[sorted.length - 1];
+    const anchor = sorted[0]; // position from biggest card
+
+    const stackItem = createItem({
+      canvas_id: state.canvasId,
+      type: ITEM_TYPES.STACK,
+      x: anchor.x,
+      y: anchor.y,
+      width: (topItem.width || 280) + 24,
+      content: {
+        title: topItem.content?.title || 'Stack',
+        image_url: topItem.content?.image_url || null,
+      },
+      meta: {
+        stack_items: sorted,
+        fanned: false,
+      },
+      z_index: Math.max(...sourceItems.map((i) => i.z_index || 0)) + 1,
+    });
+
+    // Remove originals, add stack
+    for (const item of sourceItems) {
+      await idbStore.deleteItem(item.id);
+    }
+    await idbStore.upsertItem(stackItem);
+
+    set((s) => ({
+      items: [
+        ...s.items.filter((i) => !itemIds.includes(i.id)),
+        stackItem,
+      ],
+      selectedIds: new Set([stackItem.id]),
+    }));
+    return stackItem;
+  },
+
+  /** Add an existing item into a STACK */
+  addToStack: async (newItemId, stackItemId) => {
+    const state = get();
+    const newItem = state.items.find((i) => i.id === newItemId);
+    const stackItem = state.items.find((i) => i.id === stackItemId);
+    if (!newItem || !stackItem) return;
+
+    const existing = stackItem.meta?.stack_items || [];
+    const merged = [...existing, newItem].sort((a, b) => (b.width || 320) - (a.width || 320));
+
+    const updated = {
+      ...stackItem,
+      meta: { ...stackItem.meta, stack_items: merged },
+      updated_at: Date.now(),
+    };
+
+    await idbStore.deleteItem(newItemId);
+    await idbStore.upsertItem(updated);
+
+    set((s) => ({
+      items: [
+        ...s.items.filter((i) => i.id !== newItemId && i.id !== stackItemId),
+        updated,
+      ],
+      selectedIds: new Set([stackItemId]),
+    }));
+  },
+
+  // ── Folder ─────────────────────────────────────────────────────────────
+
+  /** Collapse two (or more) items into a new FOLDER item */
+  createFolder: async (itemIds, name = 'Folder') => {
+    const state = get();
+    const sourceItems = itemIds.map((id) => state.items.find((i) => i.id === id)).filter(Boolean);
+    if (sourceItems.length < 2) return;
+
+    const anchor = sourceItems[0];
+
+    const folderItem = createItem({
+      canvas_id: state.canvasId,
+      type: ITEM_TYPES.FOLDER,
+      x: anchor.x,
+      y: anchor.y,
+      width: 220,
+      content: { title: name },
+      meta: {
+        child_items: sourceItems,
+        folder_open: false,
+      },
+      z_index: Math.max(...sourceItems.map((i) => i.z_index || 0)) + 1,
+    });
+
+    for (const item of sourceItems) {
+      await idbStore.deleteItem(item.id);
+    }
+    await idbStore.upsertItem(folderItem);
+
+    set((s) => ({
+      items: [
+        ...s.items.filter((i) => !itemIds.includes(i.id)),
+        folderItem,
+      ],
+      selectedIds: new Set([folderItem.id]),
+    }));
+    return folderItem;
+  },
+
+  /** Add an existing item into a FOLDER */
+  addToFolder: async (newItemId, folderItemId) => {
+    const state = get();
+    const newItem = state.items.find((i) => i.id === newItemId);
+    const folderItem = state.items.find((i) => i.id === folderItemId);
+    if (!newItem || !folderItem) return;
+
+    const existing = folderItem.meta?.child_items || [];
+    const updated = {
+      ...folderItem,
+      meta: {
+        ...folderItem.meta,
+        child_items: [...existing, newItem],
+      },
+      updated_at: Date.now(),
+    };
+
+    await idbStore.deleteItem(newItemId);
+    await idbStore.upsertItem(updated);
+
+    set((s) => ({
+      items: [
+        ...s.items.filter((i) => i.id !== newItemId && i.id !== folderItemId),
+        updated,
+      ],
+      selectedIds: new Set([folderItemId]),
+    }));
+  },
+
+  /** Rename a folder */
+  renameFolder: async (folderId, name) => {
+    const state = get();
+    const item = state.items.find((i) => i.id === folderId);
+    if (!item) return;
+    const updated = {
+      ...item,
+      content: { ...item.content, title: name },
+      updated_at: Date.now(),
+    };
+    await idbStore.upsertItem(updated);
+    set((s) => ({
+      items: s.items.map((i) => (i.id === folderId ? updated : i)),
+    }));
+  },
+
+  /** Toggle folder open/closed */
+  toggleFolderOpen: async (folderId) => {
+    const state = get();
+    const item = state.items.find((i) => i.id === folderId);
+    if (!item) return;
+    const updated = {
+      ...item,
+      meta: { ...item.meta, folder_open: !item.meta?.folder_open },
+      updated_at: Date.now(),
+    };
+    await idbStore.upsertItem(updated);
+    set((s) => ({
+      items: s.items.map((i) => (i.id === folderId ? updated : i)),
+    }));
   },
 
   // Stats

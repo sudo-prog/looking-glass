@@ -1,203 +1,534 @@
-/* ════════════════════════════════════════════════
-   Stack & Folder Cards — CSS
-   Nothing Design System × Fan Animation
-   ════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   LOOKING GLASS — Stack & Folder Styles
+   V0.3: Reference Stacking + Folder Grouping
+   ═══════════════════════════════════════════════════════════ */
 
-/* ── Card Stack ─────────────────────────────────── */
-.card-stack {
-  position: relative;
-  cursor: pointer;
-  transition: filter 0.15s ease;
-}
-.card-stack:hover { filter: brightness(1.05); }
+/* ────────────────────────────────────────────────────────
+   BASE CARD POSITIONING
+   All canvas-card elements must be absolute inside canvas-world
+──────────────────────────────────────────────────────── */
 
-.stack-layers {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 180px;
-}
-
-.stack-layer {
+.canvas-card {
   position: absolute;
-  left: 0; top: 0;
-  width: 100%;
-  border-radius: 12px;
-  background: var(--color-bg-raised, #1a1a1e);
-  border: 1px solid var(--color-border, rgba(255,255,255,0.08));
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  overflow: hidden;
-  transition:
-    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-    left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.4s ease;
-  will-change: transform, left;
-}
-[data-theme="light"] .stack-layer {
-  background: var(--color-bg-raised, #fff);
-  border-color: rgba(0,0,0,0.08);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-sizing: border-box;
 }
 
-.stack-layer-stacked:nth-child(1) { transform: rotate(-1.5deg) translate(-4px, -2px); z-index: 1; }
-.stack-layer-stacked:nth-child(2) { transform: rotate(1deg) translate(2px, 1px); z-index: 2; }
-.stack-layer-stacked:nth-child(3) { transform: rotate(-0.5deg) translate(-1px, 2px); z-index: 3; }
-.stack-layer-stacked:nth-child(4) { transform: rotate(2deg) translate(3px, -1px); z-index: 4; }
-.stack-layer-stacked:nth-child(n+5) { transform: rotate(0.5deg) translate(1px, 1px); z-index: 5; }
-
-.stack-ghost { opacity: 0.35; filter: blur(0.5px); }
-
-.stack-layer-top {
-  border-color: var(--color-border-active, rgba(215,25,33,0.3));
-  box-shadow: 0 4px 16px rgba(215,25,33,0.12), 0 0 0 1px var(--color-border-active, rgba(215,25,33,0.2));
+/* Drop target highlight applies to any card */
+.drop-target-folder {
+  outline: 2px dashed rgba(99, 179, 237, 0.9) !important;
+  outline-offset: 4px !important;
+  box-shadow: 0 0 0 6px rgba(99, 179, 237, 0.18) !important;
+  transition: outline 0.12s ease, box-shadow 0.12s ease;
 }
 
-.card-stack--fanned .stack-layer { box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-.card-stack--fanned .stack-layer:nth-child(1) { left: 0px; z-index: 10; }
-.card-stack--fanned .stack-layer:nth-child(2) { left: calc(100% + 8px); z-index: 9; }
-.card-stack--fanned .stack-layer:nth-child(3) { left: calc(200% + 16px); z-index: 8; }
-.card-stack--fanned .stack-layer:nth-child(4) { left: calc(300% + 24px); z-index: 7; }
-.card-stack--fanned .stack-layer:nth-child(n+5) { left: calc(400% + 32px); z-index: 6; }
-
-.stack-count-badge {
-  position: absolute;
-  top: -8px; right: -8px;
-  min-width: 22px; height: 22px;
-  border-radius: 11px;
-  background: var(--color-accent, #D71921);
-  color: #fff;
-  font-family: 'Space Mono', monospace;
-  font-size: 10px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 6px;
-  z-index: 20;
-  box-shadow: 0 2px 6px rgba(215,25,33,0.3);
+.drop-target-stack {
+  outline: 2px dashed rgba(167, 139, 250, 0.9) !important;
+  outline-offset: 4px !important;
+  box-shadow: 0 0 0 6px rgba(167, 139, 250, 0.18) !important;
+  transition: outline 0.12s ease, box-shadow 0.12s ease;
 }
 
-.stack-hint {
-  position: absolute;
-  bottom: -24px; left: 50%;
-  transform: translateX(-50%);
-  font-family: 'Space Mono', monospace;
-  font-size: 9px; letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-disabled, #555);
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  pointer-events: none;
-  z-index: 20;
-}
-.card-stack:hover .stack-hint { opacity: 1; }
-[data-theme="light"] .stack-hint { color: #888; }
+/* ────────────────────────────────────────────────────────
+   DROP MODE PICKER  (Stack / Folder popup on drop)
+──────────────────────────────────────────────────────── */
 
-/* ── Folder Card ────────────────────────────────── */
-.card-folder { position: relative; cursor: pointer; min-width: 200px; }
-
-.folder-tab {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 12px;
-  background: rgba(215,25,33,0.08);
-  border-bottom: 1px solid var(--color-border, rgba(255,255,255,0.06));
-  user-select: none;
-}
-[data-theme="light"] .folder-tab {
-  background: rgba(215,25,33,0.05);
-  border-bottom-color: rgba(0,0,0,0.06);
-}
-
-.folder-body { transition: max-height 0.3s ease; }
-
-.folder-thumbnails {
-  display: flex; align-items: center;
-  padding: 10px 12px; min-height: 48px;
-}
-
-.folder-thumb {
-  width: 56px; height: 48px;
-  border-radius: 6px;
-  background: var(--color-bg-overlay, #222);
-  border: 1px solid var(--color-border, rgba(255,255,255,0.06));
-  overflow: hidden; flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-}
-[data-theme="light"] .folder-thumb {
-  background: #f0f0f0;
-  border-color: rgba(0,0,0,0.06);
-}
-.folder-thumb img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
-
-.folder-contents {
-  border-top: 1px solid var(--color-border, rgba(255,255,255,0.04));
-  max-height: 240px; overflow-y: auto;
-}
-[data-theme="light"] .folder-contents { border-top-color: rgba(0,0,0,0.04); }
-
-.folder-content-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 12px; cursor: pointer;
-  transition: background 0.1s;
-}
-.folder-content-item:hover { background: var(--state-hover, rgba(255,255,255,0.04)); }
-[data-theme="light"] .folder-content-item:hover { background: rgba(0,0,0,0.03); }
-
-/* ── Drop Mode Picker ───────────────────────────── */
 .drop-mode-picker {
   position: fixed;
-  z-index: 10000;
   display: flex;
-  gap: 6px;
-  padding: 6px;
-  background: rgba(16, 16, 18, 0.92);
-  backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  border: 1px solid var(--color-border-active, rgba(215,25,33,0.25));
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  animation: dmp-appear 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-[data-theme="light"] .drop-mode-picker {
-  background: rgba(255,255,255,0.95);
-  border-color: rgba(0,0,0,0.1);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  gap: 8px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(18, 18, 18, 0.95);
+  backdrop-filter: blur(20px) saturate(110%);
+  -webkit-backdrop-filter: blur(20px) saturate(110%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 40px rgba(0, 0, 0, 0.70),
+    0 4px 12px rgba(0, 0, 0, 0.40);
+  animation: dmp-appear 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  z-index: 99999;
 }
 
 @keyframes dmp-appear {
-  from { opacity: 0; transform: translateY(6px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: scale(0.88) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
 }
 
 .dmp-btn {
-  display: flex; align-items: center; gap: 6px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-secondary, #888);
-  font-family: 'Space Mono', monospace;
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.06em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  color: #F5F5F5;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background 0.12s ease, transform 0.12s ease;
+  min-width: 72px;
 }
+
 .dmp-btn:hover {
-  background: var(--state-hover, rgba(255,255,255,0.08));
-  color: var(--text-primary);
-  border-color: var(--color-border-active, rgba(215,25,33,0.3));
+  background: rgba(255,255,255,0.12);
+  transform: translateY(-2px);
 }
-.dmp-btn:active { transform: scale(0.97); }
-[data-theme="light"] .dmp-btn:hover { background: rgba(0,0,0,0.04); }
 
-.dmp-btn-icon { flex-shrink: 0; }
-
-/* ── Drop target highlight ──────────────────────── */
-.drop-target-stack {
-  outline: 2px solid var(--color-accent, #D71921);
-  outline-offset: 2px;
-  border-radius: 12px;
+.dmp-icon {
+  font-size: 20px;
+  line-height: 1;
 }
-.drop-target-folder {
-  outline: 2px solid #4a9eff;
-  outline-offset: 2px;
+
+.dmp-label {
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #999;
+}
+
+.dmp-stack:hover .dmp-icon,
+.dmp-stack:hover .dmp-label { color: #a78bfa; }
+
+.dmp-folder:hover .dmp-icon,
+.dmp-folder:hover .dmp-label { color: #63b3ed; }
+
+/* ────────────────────────────────────────────────────────
+   STACK CARD  (card-stack)
+──────────────────────────────────────────────────────── */
+
+.card-stack {
+  cursor: grab;
+  /* Extra room for offset layers bleeding outward */
+  padding: 12px;
+  overflow: visible !important;
+  user-select: none;
+}
+
+.card-stack:active {
+  cursor: grabbing;
+}
+
+/* Individual layer pane */
+.stack-layer {
+  position: absolute;
   border-radius: 12px;
+  overflow: hidden;
+  background: rgba(14, 14, 14, 0.65);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.13),
+    0 4px 16px rgba(0,0,0,0.55);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s ease;
+  will-change: transform;
+}
+
+/* Ghost layers (not top) */
+.stack-ghost {
+  background: rgba(20, 20, 20, 0.72);
+}
+
+.stack-ghost-thumb {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Top (active) layer */
+.stack-layer-top {
+  background: rgba(18,18,18,0.82);
+  backdrop-filter: blur(8px) saturate(110%);
+  -webkit-backdrop-filter: blur(8px) saturate(110%);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    0 8px 28px rgba(0,0,0,0.60);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 12px;
+  background-size: cover;
+  background-position: center;
+}
+
+.stack-top-title {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #F5F5F5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  margin-top: auto;
+}
+
+.stack-count-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: rgba(0,0,0,0.65);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #F5F5F5;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+}
+
+.stack-hint {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Fanned state — expand click target area */
+.card-stack.stack-fanned {
+  overflow: visible !important;
+  z-index: 9000 !important;
+}
+
+.card-stack.stack-fanned .stack-layer {
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    0 8px 32px rgba(0,0,0,0.65);
+}
+
+.card-stack.stack-fanned .stack-layer:hover {
+  transform: translateY(-6px) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.20),
+    0 16px 40px rgba(0,0,0,0.70);
+}
+
+/* Light mode overrides */
+[data-theme="light"] .stack-layer {
+  background: rgba(240, 236, 229, 0.75);
+  border: 1px solid rgba(0,0,0,0.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.60),
+    0 2px 8px rgba(0,0,0,0.13);
+}
+
+[data-theme="light"] .stack-layer-top {
+  background: rgba(248, 246, 242, 0.88);
+  border: 1px solid rgba(0,0,0,0.09);
+}
+
+[data-theme="light"] .stack-top-title {
+  color: #1A1815;
+  text-shadow: none;
+}
+
+[data-theme="light"] .stack-count-badge {
+  background: rgba(255,255,255,0.80);
+  border-color: rgba(0,0,0,0.12);
+  color: #1A1815;
+}
+
+[data-theme="light"] .stack-hint {
+  color: rgba(0,0,0,0.35);
+}
+
+[data-theme="light"] .drop-mode-picker {
+  background: rgba(240, 236, 229, 0.96);
+  border-color: rgba(0,0,0,0.10);
+}
+
+[data-theme="light"] .dmp-btn {
+  border-color: rgba(0,0,0,0.08);
+  background: rgba(0,0,0,0.04);
+  color: #1A1815;
+}
+
+[data-theme="light"] .dmp-btn:hover {
+  background: rgba(0,0,0,0.08);
+}
+
+/* ────────────────────────────────────────────────────────
+   FOLDER CARD  (card-folder)
+──────────────────────────────────────────────────────── */
+
+.card-folder {
+  user-select: none;
+}
+
+.folder-shell {
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(14, 14, 14, 0.68);
+  backdrop-filter: blur(12px) saturate(108%);
+  -webkit-backdrop-filter: blur(12px) saturate(108%);
+  border: 1px solid rgba(255,255,255,0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    0 6px 24px rgba(0,0,0,0.55);
+  transition: box-shadow 0.18s ease;
+}
+
+.folder-shell:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    0 10px 32px rgba(0,0,0,0.65);
+}
+
+/* Tab (always visible header row) */
+.folder-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 13px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.12s ease;
+}
+
+.folder-tab:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.folder-icon {
+  color: rgba(255,255,255,0.45);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.folder-name {
+  flex: 1;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #F0F0F0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.folder-count {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
+
+.folder-chevron {
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.card-folder.folder-open .folder-chevron {
+  transform: rotate(0deg);
+}
+
+/* ── Thumbnail preview (collapsed) ── */
+.folder-preview {
+  position: relative;
+  height: 116px;
+  padding: 16px 14px 8px;
+  overflow: visible;
+  transition: height 0.25s ease, opacity 0.2s ease;
+}
+
+.folder-preview-hidden {
+  height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.folder-thumb {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255,255,255,0.10);
+  background: rgba(30, 30, 30, 0.90);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.10),
+    0 3px 10px rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+  top: 16px;
+  left: 14px;
+}
+
+.folder-thumb-label {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 9px;
+  color: rgba(255,255,255,0.40);
+  padding: 4px;
+  text-align: center;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.folder-empty {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 11px;
+  color: rgba(255,255,255,0.25);
+  padding: 20px 0;
+  text-align: center;
+  font-style: italic;
+}
+
+/* ── Open contents list ── */
+.folder-contents {
+  padding: 6px 0 8px;
+  transition: opacity 0.2s ease;
+}
+
+.folder-contents-hidden {
+  display: none;
+}
+
+.folder-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.folder-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  margin: 0 4px;
+  transition: background 0.1s ease;
+}
+
+.folder-item-row:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.folder-item-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.folder-item-title {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 12px;
+  color: #D0D0D0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.folder-empty-msg {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 11px;
+  color: rgba(255,255,255,0.25);
+  padding: 10px 14px;
+  font-style: italic;
+}
+
+/* Drop target on folder */
+.folder-drop-target .folder-shell {
+  border-color: rgba(99, 179, 237, 0.7) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(99,179,237,0.2),
+    0 0 0 3px rgba(99,179,237,0.18),
+    0 8px 28px rgba(0,0,0,0.60) !important;
+}
+
+/* Light mode overrides */
+[data-theme="light"] .folder-shell {
+  background: rgba(240, 236, 229, 0.80);
+  border-color: rgba(0,0,0,0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.65),
+    0 3px 12px rgba(0,0,0,0.13);
+}
+
+[data-theme="light"] .folder-tab {
+  border-bottom-color: rgba(0,0,0,0.07);
+}
+
+[data-theme="light"] .folder-tab:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+[data-theme="light"] .folder-icon {
+  color: rgba(0,0,0,0.40);
+}
+
+[data-theme="light"] .folder-name {
+  color: #1A1815;
+}
+
+[data-theme="light"] .folder-count {
+  color: rgba(0,0,0,0.40);
+  background: rgba(0,0,0,0.06);
+}
+
+[data-theme="light"] .folder-chevron {
+  color: rgba(0,0,0,0.35);
+}
+
+[data-theme="light"] .folder-thumb {
+  background: rgba(230, 226, 218, 0.90);
+  border-color: rgba(0,0,0,0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.55),
+    0 2px 6px rgba(0,0,0,0.12);
+}
+
+[data-theme="light"] .folder-thumb-label {
+  color: rgba(0,0,0,0.40);
+}
+
+[data-theme="light"] .folder-item-row:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+[data-theme="light"] .folder-item-title {
+  color: #2E2B27;
+}
+
+[data-theme="light"] .folder-drop-target .folder-shell {
+  border-color: rgba(37, 99, 235, 0.55) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(37,99,235,0.12),
+    0 0 0 3px rgba(37,99,235,0.14),
+    0 4px 16px rgba(0,0,0,0.15) !important;
 }

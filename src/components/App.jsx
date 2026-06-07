@@ -1,15 +1,15 @@
 /**
  * LOOKING GLASS — Main App Component
- * V0.5: 3-state sidebar, audit #4 fixes
+ * V0.4: React 18 + SQLite + Rich Text
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useStore } from '../store/useStore.js';
 import { HistoryManager, AddItemCommand, DeleteItemCommand, MoveItemCommand, UpdateItemCommand } from '../history/HistoryManager.js';
-import LiquidGlassSidebar from '../ui/LiquidGlassSidebar.jsx';
+import { Toolbar } from '../ui/Toolbar.jsx';
+import { Sidebar } from '../ui/Sidebar.jsx';
 import { Canvas } from '../canvas/Canvas.jsx';
 import { ExportDialog } from '../utils/export/ExportDialog.jsx';
 import { Lightbox } from '../ui/Lightbox.jsx';
-import { CommandPalette } from '../ui/CommandPalette.jsx';
 
 export function App() {
   const initialized = useRef(false);
@@ -23,6 +23,8 @@ export function App() {
     selectedIds,
     selectItem,
     clearSelection,
+    activeFilters,
+    toggleFilter,
     getFilteredItems,
     addNote,
     addUrl,
@@ -34,12 +36,16 @@ export function App() {
     clearSearch,
     searchQuery,
     exportDialogOpen,
+    canvasName,
     undoCounts,
+    createStack,
+    addToStack,
+    createFolder,
+    addToFolder,
   } = useStore();
 
   const [zoom, setZoom] = useState(1);
   const [lightboxItem, setLightboxItem] = useState(null);
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // Initialize
   useEffect(() => {
@@ -169,6 +175,46 @@ export function App() {
     useStore.setState({ undoCounts: history.current.getCounts() });
   }, [deleteItem]);
 
+  const handleZoomIn = useCallback(() => {
+    const newScale = Math.min(3, zoom * 1.2);
+    setZoom(newScale);
+    setViewport({ ...viewport, scale: newScale });
+  }, [zoom, viewport, setViewport]);
+
+  const handleZoomOut = useCallback(() => {
+    const newScale = Math.max(0.1, zoom / 1.2);
+    setZoom(newScale);
+    setViewport({ ...viewport, scale: newScale });
+  }, [zoom, viewport, setViewport]);
+
+  const handleFit = useCallback(() => {
+    // Fit to content logic handled by Canvas
+    setZoom(1);
+  }, []);
+
+  const handleExport = useCallback(() => {
+    useStore.setState({ exportDialogOpen: true });
+  }, []);
+
+  const handleImport = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      try {
+        const data = JSON.parse(text);
+        const state = useStore.getState();
+        await state.importData(data);
+      } catch (err) {
+        alert('Import failed: ' + err.message);
+      }
+    };
+    input.click();
+  }, []);
+
   const handleItemMove = useCallback((id, x, y) => {
     const item = useStore.getState().items.find((i) => i.id === id);
     if (item) {
@@ -190,48 +236,70 @@ export function App() {
   const filteredItems = getFilteredItems();
 
   return (
-    <div style={{
-      display: 'flex',
-      height: '100vh',
-      width: '100vw',
-      overflow: 'hidden',
-      background: 'var(--canvas-bg)',
-    }}>
-      {/* Left rail — 3-state sidebar (collapsed / expanded / full menu) */}
-      <LiquidGlassSidebar />
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      <Sidebar
+        activeFilters={activeFilters}
+        onToggleFilter={toggleFilter}
+        stats={useStore.getState().getStats()}
+      />
 
-      {/* Main canvas area fills remaining space */}
-      <main style={{ flex: 1, position: 'relative', overflow: 'hidden' }} aria-label="Infinite canvas">
-        <div id="canvas-viewport" style={{ width: '100%', height: '100%' }}>
-          <Canvas
-            items={filteredItems}
-            viewport={viewport}
-            selectedIds={selectedIds}
-            onViewportChange={setViewport}
-            onSelectItem={selectItem}
-            onClearSelection={clearSelection}
-            onItemMove={handleItemMove}
-            onItemSave={handleItemSave}
-            onItemDelete={deleteItem}
-            onLightbox={setLightboxItem}
-          />
-        </div>
-
-        {/* Persistent overlays */}
-        <CommandPalette
-          isOpen={commandPaletteOpen}
-          onClose={() => setCommandPaletteOpen(false)}
-          onAction={(action) => { if (action === 'new-note') addNote(); setCommandPaletteOpen(false); }}
-          onSearch={() => {}}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Toolbar
+          zoom={zoom}
+          searchQuery={searchQuery}
+          onAddNote={addNote}
+          onAddUrl={() => {
+            const url = prompt('Enter URL:');
+            if (url) addUrl(url);
+          }}
+          onAddImage={() => {
+            const url = prompt('Enter image URL:');
+            if (url) addImage(url);
+          }}
+          onDelete={handleDeleteSelected}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onFit={handleFit}
+          onSearch={search}
+          onSearchClear={clearSearch}
+          onExport={handleExport}
+          onImport={handleImport}
+          canUndo={undoCounts.undo > 0}
+          canRedo={undoCounts.redo > 0}
+          selectedCount={selectedIds.size}
         />
-      </main>
+
+        <Canvas
+          items={filteredItems}
+          viewport={viewport}
+          selectedIds={selectedIds}
+          onViewportChange={setViewport}
+          onSelectItem={selectItem}
+          onClearSelection={clearSelection}
+          onItemMove={handleItemMove}
+          onItemSave={handleItemSave}
+          onItemDelete={deleteItem}
+          onLightbox={setLightboxItem}
+          onCreateStack={createStack}
+          onAddToStack={addToStack}
+          onCreateFolder={createFolder}
+          onAddToFolder={addToFolder}
+        />
+      </div>
 
       {exportDialogOpen && (
-        <ExportDialog onClose={() => useStore.setState({ exportDialogOpen: false })} />
+        <ExportDialog
+          onClose={() => useStore.setState({ exportDialogOpen: false })}
+        />
       )}
 
       {lightboxItem && (
-        <Lightbox item={lightboxItem} onClose={() => setLightboxItem(null)} />
+        <Lightbox
+          item={lightboxItem}
+          onClose={() => setLightboxItem(null)}
+        />
       )}
     </div>
   );

@@ -12,6 +12,8 @@ export const ITEM_TYPES = {
   VIDEO: 'video',
   PDF: 'pdf',
   GROUP: 'group',
+  STACK: 'stack',
+  FOLDER: 'folder',
 };
 
 export const createItem = (overrides = {}) => ({
