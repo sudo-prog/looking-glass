@@ -25,7 +25,11 @@ export function ExportDialog({ onClose }) {
           for (const item of data.items) {
             lines.push(`## ${item.content?.title || 'Untitled'} (${item.type})`);
             if (item.content?.url) lines.push(`URL: ${item.content.url}`);
-            if (item.content?.text) lines.push(item.content.text);
+            if (item.content?.text) {
+              const tmp = document.createElement('div');
+              tmp.innerHTML = item.content.text;
+              lines.push(tmp.textContent || tmp.innerText || '');
+            }
             if (item.content?.description) lines.push(item.content.description);
             lines.push('');
           }

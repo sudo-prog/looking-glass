@@ -109,7 +109,7 @@ export function Toolbar({
       <ToolbarButton
         icon={Plus}
         label="Add"
-        onClick={onAddUrl}
+        onClick={onAddNote}
       />
       <ToolbarButton
         icon={Command}

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   SquaresFour,
   MagnifyingGlass,
@@ -20,6 +20,8 @@ import {
   NotePencil,
 } from '@phosphor-icons/react';
 import AIModal from './AIModal';
+import { ModeToggle } from './ModeToggle';
+import { toggleTheme, isDark } from '../utils/theme';
 import './LiquidGlassSidebar.css';
 
 const NAV_ITEMS = [
@@ -62,11 +64,24 @@ export default function LiquidGlassSidebar() {
   const [sidebarState, setSidebarState] = useState(0);
   const [activeItem, setActiveItem] = useState('canvas');
   const [showAIModal, setShowAIModal] = useState(false);
+  const [dark, setDark] = useState(isDark());
   const sidebarRef = useRef(null);
 
   const isCollapsed = sidebarState === 0;
   const isExpanded  = sidebarState === 1;
   const isFullMenu  = sidebarState === 2;
+
+  // Listen for theme changes from other sources (e.g. ModeToggle elsewhere)
+  useEffect(() => {
+    const handler = () => setDark(isDark());
+    window.addEventListener('theme-change', handler);
+    return () => window.removeEventListener('theme-change', handler);
+  }, []);
+
+  const handleThemeToggle = useCallback((newIsDark) => {
+    toggleTheme(newIsDark ? 'dark' : 'light');
+    setDark(newIsDark);
+  }, []);
 
   // Cycle: collapsed(0) → expanded(1) → fullmenu(2) → collapsed(0) → ...
   const handleToggle = () => {
@@ -214,6 +229,7 @@ export default function LiquidGlassSidebar() {
 
         {/* ── Footer ──────────────────────── */}
         <div className="lg-sidebar__footer">
+          <ModeToggle isDark={dark} onToggle={handleThemeToggle} />
           <span className="lg-sidebar__version">V0.1 · LIQUID GLASS</span>
           <button
             className="lg-sidebar__settings-btn"

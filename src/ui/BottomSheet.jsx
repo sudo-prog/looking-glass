@@ -27,7 +27,7 @@ export function BottomSheet({
   const sheetRef = useRef(null);
   const [sheetHeight, setSheetHeight] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [currentY, setCurrentY] = useState(100); // % from top (100 = off-screen)
+  const [currentY, setCurrentY] = useState(0); // 0 = translateY(-100%) = off-screen
   const dragStartY = useRef(0);
   const dragStartTranslateY = useRef(0);
 
@@ -50,9 +50,9 @@ export function BottomSheet({
     }
   }, [isOpen, targetY]);
 
-  // Close handler
+  // Close handler — slide down off screen (translateY(100%) = fully below viewport)
   const handleClose = useCallback(() => {
-    setCurrentY(100);
+    setCurrentY(0); // translateY = -(100 - 0) = -100% → fully off-screen below
     setTimeout(onClose, 220); // match close duration
   }, [onClose]);
 
@@ -73,9 +73,10 @@ export function BottomSheet({
     (e) => {
       if (!isDragging || !sheetHeight) return;
       const deltaY = ((e.clientY - dragStartY.current) / window.innerHeight) * 100;
+      // Clamp: full (15, most visible) to just past peek (90 + slack)
       const newY = Math.max(
-        SNAP_POINTS.peek - 5,
-        Math.min(SNAP_POINTS.full + 5, dragStartTranslateY.current + deltaY)
+        SNAP_POINTS.full - 5,
+        Math.min(SNAP_POINTS.peek + 5, dragStartTranslateY.current + deltaY)
       );
       setCurrentY(newY);
     },
