@@ -49,7 +49,7 @@ export default function LiquidGlassSidebar() {
   // State 0 = collapsed (icon buttons only)
   // State 1 = expanded (standard sidebar with labels)
   // State 2 = full menu (wide drawer with sections)
-  const [sidebarState, setSidebarState] = useState(1);
+  const [sidebarState, setSidebarState] = useState(0);
   const [activeItem, setActiveItem] = useState('canvas');
   const [showAIModal, setShowAIModal] = useState(false);
   const sidebarRef = useRef(null);
@@ -58,13 +58,9 @@ export default function LiquidGlassSidebar() {
   const isExpanded  = sidebarState === 1;
   const isFullMenu  = sidebarState === 2;
 
-  // Cycle: collapsed(0) → expanded(1) → fullmenu(2) → expanded(1) → collapsed(0)...
+  // Cycle: collapsed(0) → expanded(1) → fullmenu(2) → collapsed(0) → ...
   const handleToggle = () => {
-    setSidebarState(prev => {
-      if (prev === 0) return 1; // collapsed → expanded
-      if (prev === 1) return 2; // expanded → full menu
-      return 1;                 // full menu → expanded
-    });
+    setSidebarState(prev => (prev + 1) % 3);
   };
 
   const handleExpandFromCollapsed = () => {
