@@ -13,9 +13,9 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 const SNAP_POINTS = {
-  peek: 15,
-  default: 50,
-  full: 90,
+  peek: 85,    // 85% from top = 15% visible (peek)
+  default: 50, // 50% from top = 50% visible
+  full: 10,    // 10% from top = 90% visible (full screen)
 };
 
 export function BottomSheet({
@@ -27,7 +27,7 @@ export function BottomSheet({
   const sheetRef = useRef(null);
   const [sheetHeight, setSheetHeight] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [currentY, setCurrentY] = useState(100); // % from top (100 = off-screen)
+  const [currentY, setCurrentY] = useState(0); // 0 = translateY(-100%) = off-screen
   const dragStartY = useRef(0);
   const dragStartTranslateY = useRef(0);
 
@@ -50,9 +50,9 @@ export function BottomSheet({
     }
   }, [isOpen, targetY]);
 
-  // Close handler
+  // Close handler — slide down off screen (translateY(100%) = fully below viewport)
   const handleClose = useCallback(() => {
-    setCurrentY(100);
+    setCurrentY(0); // translateY = -(100 - 0) = -100% → fully off-screen below
     setTimeout(onClose, 220); // match close duration
   }, [onClose]);
 
@@ -73,9 +73,10 @@ export function BottomSheet({
     (e) => {
       if (!isDragging || !sheetHeight) return;
       const deltaY = ((e.clientY - dragStartY.current) / window.innerHeight) * 100;
+      // Clamp: full (15, most visible) to just past peek (90 + slack)
       const newY = Math.max(
-        SNAP_POINTS.peek - 5,
-        Math.min(SNAP_POINTS.full + 5, dragStartTranslateY.current + deltaY)
+        SNAP_POINTS.full - 5,
+        Math.min(SNAP_POINTS.peek + 5, dragStartTranslateY.current + deltaY)
       );
       setCurrentY(newY);
     },
@@ -98,8 +99,8 @@ export function BottomSheet({
       }
     }
 
-    // If dragged below peek, close
-    if (currentY > SNAP_POINTS.peek + 10) {
+    // If dragged past the default snap point toward the bottom (peek direction), close
+    if (currentY > SNAP_POINTS.default + 20) {
       handleClose();
     } else {
       setCurrentY(closest);
@@ -118,11 +119,16 @@ export function BottomSheet({
 
   if (!isOpen) return null;
 
+  // Using transform instead of top to avoid conflicts with bottom:0
+  // translateY(%) is relative to the element's own height
+  // At full (15% from top): translate = -(100 - 15) = -85% → 85% visible
+  // At peek (90% from top): translate = -(100 - 90) = -10% → 10% visible
+  const translateY = -(100 - currentY);
   const sheetStyle = {
-    top: `${currentY}%`,
+    transform: `translateY(${translateY}%)`,
     transition: isDragging
       ? 'none'
-      : 'top 280ms cubic-bezier(0.32, 0.72, 0, 1)',
+      : 'transform 280ms cubic-bezier(0.32, 0.72, 0, 1)',
   };
 
   return createPortal(

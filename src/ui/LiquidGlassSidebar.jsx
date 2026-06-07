@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   SquaresFour,
   MagnifyingGlass,
@@ -20,12 +20,15 @@ import {
   NotePencil,
 } from '@phosphor-icons/react';
 import AIModal from './AIModal';
+import { ModeToggle } from './ModeToggle';
+import { toggleTheme, isDark } from '../utils/theme';
 import './LiquidGlassSidebar.css';
 
 const NAV_ITEMS = [
   { id: 'canvas',    label: 'CANVAS',    Icon: SquaresFour },
   { id: 'search',    label: 'SEARCH',    Icon: MagnifyingGlass },
   { id: 'library',   label: 'LIBRARY',   Icon: FolderOpen },
+  { id: 'spaces',    label: 'SPACES',    Icon: SquaresFour },
   { id: 'tags',      label: 'TAGS',      Icon: Tag },
   { id: 'saved',     label: 'BOOKMARKS', Icon: BookmarkSimple },
 ];
@@ -55,18 +58,38 @@ const AI_QUICK_ACTIONS = [
   { id: 'ai-summarize',  label: 'SUMMARIZE',  Icon: NotePencil },
 ];
 
-export default function LiquidGlassSidebar() {
+export default function LiquidGlassSidebar({ onSpacesOpen, onAIOrganise, onAISummarise }) {
   // State 0 = collapsed (FAB button only)
   // State 1 = expanded (standard sidebar with labels)
   // State 2 = full menu (wide drawer with sections)
   const [sidebarState, setSidebarState] = useState(0);
   const [activeItem, setActiveItem] = useState('canvas');
   const [showAIModal, setShowAIModal] = useState(false);
+  const [showTags, setShowTags] = useState(false);
+  const [dark, setDark] = useState(isDark());
   const sidebarRef = useRef(null);
 
   const isCollapsed = sidebarState === 0;
   const isExpanded  = sidebarState === 1;
   const isFullMenu  = sidebarState === 2;
+
+  // Listen for theme changes from other sources (e.g. ModeToggle elsewhere)
+  useEffect(() => {
+    const handler = () => setDark(isDark());
+    window.addEventListener('theme-change', handler);
+    return () => window.removeEventListener('theme-change', handler);
+  }, []);
+
+  const handleThemeToggle = useCallback((newIsDark) => {
+    toggleTheme(newIsDark ? 'dark' : 'light');
+    setDark(newIsDark);
+  }, []);
+
+  const handleNavClick = useCallback((id) => {
+    setActiveItem(id);
+    if (id === 'spaces') onSpacesOpen?.();
+    if (id === 'tags')   setShowTags(true);
+  }, [onSpacesOpen]);
 
   // Cycle: collapsed(0) → expanded(1) → fullmenu(2) → collapsed(0) → ...
   const handleToggle = () => {
@@ -149,7 +172,7 @@ export default function LiquidGlassSidebar() {
             <button
               key={id}
               className={`lg-sidebar__nav-item${activeItem === id ? ' lg-sidebar__nav-item--active' : ''}`}
-              onClick={() => setActiveItem(id)}
+              onClick={() => handleNavClick(id)}
               aria-current={activeItem === id ? 'page' : undefined}
             >
               <Icon size={20} weight="regular" className="lg-sidebar__nav-icon" />
@@ -184,7 +207,11 @@ export default function LiquidGlassSidebar() {
                 <button
                   key={id}
                   className="lg-sidebar__fullmenu-item lg-sidebar__fullmenu-item--ai"
-                  onClick={() => setShowAIModal(true)}
+                  onClick={() => {
+                    if (id === 'ai-organise')  onAIOrganise?.();
+                    else if (id === 'ai-summarize') onAISummarise?.();
+                    else setShowAIModal(true);
+                  }}
                 >
                   <Icon size={16} weight="regular" />
                   <span>{label}</span>
@@ -214,6 +241,7 @@ export default function LiquidGlassSidebar() {
 
         {/* ── Footer ──────────────────────── */}
         <div className="lg-sidebar__footer">
+          <ModeToggle isDark={dark} onToggle={handleThemeToggle} />
           <span className="lg-sidebar__version">V0.1 · LIQUID GLASS</span>
           <button
             className="lg-sidebar__settings-btn"

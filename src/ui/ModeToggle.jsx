@@ -15,8 +15,22 @@ export function ModeToggle({ isDark, onToggle }) {
     onToggle(!isDark);
   }, [isDark, onToggle]);
 
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onToggle(!isDark);
+    }
+  }, [isDark, onToggle]);
+
   return (
-    <div className="mode-toggle" role="switch" aria-checked={isDark} tabIndex={0}>
+    <div
+      className="mode-toggle"
+      role="switch"
+      aria-checked={isDark}
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
       <span className="mode-toggle__label mode-toggle__label--dark">
         {isDark && <span className="mode-toggle__indicator" aria-hidden="true">●</span>}
         DARK

@@ -5,15 +5,19 @@
 import { create } from 'zustand';
 import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES } from '../data/schema.js';
+import { spacesSlice } from '../ui/SpacesManager.jsx';
 
 export const useStore = create((set, get) => ({
+  // Spread spacesSlice — provides spaces, activeSpaceId, initSpaces, switchSpace, createSpace, renameSpace, deleteSpace, refreshSpaceCount
+  ...spacesSlice(set, get),
+
   // Canvas state
   canvasId: null,
   canvasName: 'My Canvas',
   viewport: { x: 0, y: 0, scale: 1 },
   items: [],
   selectedIds: new Set(),
-  activeFilters: new Set(['bookmark', 'web_clip', 'note', 'image', 'group', 'stack', 'folder']),
+  activeFilters: new Set(['bookmark', 'web_clip', 'note', 'image', 'video', 'audio', 'pdf', 'web_clip_screenshot', 'group', 'stack', 'folder']),
   searchQuery: '',
   searchResults: null,
 
@@ -25,26 +29,29 @@ export const useStore = create((set, get) => ({
   // History (managed by HistoryManager, not Zustand)
   undoCounts: { undo: 0, redo: 0 },
 
-  // Initialize
+  // Initialize — sets up DB, then loads spaces
   init: async () => {
     await idbStore.init();
-    let canvases = await idbStore.listCanvases();
-    let canvas;
-    if (canvases.length === 0) {
-      const id = crypto.randomUUID();
-      const now = Date.now();
-      canvas = { id, name: 'My Canvas', viewport: { x: 0, y: 0, scale: 1 }, created_at: now, updated_at: now };
-      await idbStore.saveCanvas(canvas);
-    } else {
-      canvas = canvases[0];
-    }
-    // Load items for this canvas
+    await get().initSpaces();
+  },
+
+  // Load items for a specific canvas (called after init or on space switch)
+  loadCanvas: async (canvasId) => {
+    const items = await idbStore.exportCanvas(canvasId);
+    set({ items: items || [] });
+  },
+
+  // Switch to a different canvas (Space)
+  switchCanvas: async (canvasId) => {
+    const canvas = await idbStore.getCanvas(canvasId);
+    if (!canvas) return;
     const items = await idbStore.exportCanvas(canvas.id);
     set({
       canvasId: canvas.id,
       canvasName: canvas.name,
       viewport: canvas.viewport || { x: 0, y: 0, scale: 1 },
       items: items || [],
+      selectedIds: new Set(),
     });
   },
 
@@ -104,6 +111,59 @@ export const useStore = create((set, get) => ({
     });
   },
 
+  addAudio: async () => {
+    const state = get();
+    const vp = state.viewport;
+    return get().addItem({
+      type: ITEM_TYPES.AUDIO,
+      x: (-vp.x + 400) / vp.scale,
+      y: (-vp.y + 300) / vp.scale,
+      width: 300,
+      content: { title: `Memo ${new Date().toLocaleTimeString()}`, audio_blob_id: null, duration_ms: 0 },
+    });
+  },
+
+  addVideo: async (file, objectUrl) => {
+    const state = get();
+    const vp = state.viewport;
+    const blobId = `video-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    await idbStore.saveBlob(blobId, file);
+    return get().addItem({
+      type: ITEM_TYPES.VIDEO,
+      x: (-vp.x + 400) / vp.scale,
+      y: (-vp.y + 300) / vp.scale,
+      width: 320,
+      content: { title: file.name.replace(/\.[^.]+$/, ''), video_blob_id: blobId, object_url: objectUrl },
+    });
+  },
+
+  addPDF: async (file) => {
+    const state = get();
+    const vp = state.viewport;
+    const blobId = `pdf-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    await idbStore.saveBlob(blobId, file);
+    return get().addItem({
+      type: ITEM_TYPES.PDF,
+      x: (-vp.x + 300) / vp.scale,
+      y: (-vp.y + 200) / vp.scale,
+      width: 220,
+      content: { title: file.name.replace(/\.pdf$/i, ''), pdf_blob_id: blobId, page_count: 0 },
+    });
+  },
+
+  addWebClipScreenshot: async (url, meta = {}) => {
+    const state = get();
+    const vp = state.viewport;
+    return get().addItem({
+      type: ITEM_TYPES.WEB_CLIP_SCREENSHOT,
+      x: (-vp.x + 400) / vp.scale,
+      y: (-vp.y + 300) / vp.scale,
+      width: 320,
+      content: { title: meta.title || url, description: meta.description || '', url, image_url: meta.image_url || null, screenshot_blob_id: null },
+      meta: { domain: (() => { try { return new URL(url).hostname; } catch { return null; } })() },
+    });
+  },
+
   updateItem: async (id, updates) => {
     const state = get();
     const item = state.items.find((i) => i.id === id);
@@ -111,8 +171,12 @@ export const useStore = create((set, get) => ({
     const updated = {
       ...item,
       ...updates,
-      content: { ...item.content, ...(updates.content || {}) },
-      meta: { ...item.meta, ...(updates.meta || {}) },
+      content: updates.hasOwnProperty('content')
+        ? { ...item.content, ...(updates.content !== null ? updates.content : {}) }
+        : item.content,
+      meta: updates.hasOwnProperty('meta')
+        ? { ...item.meta, ...(updates.meta !== null ? updates.meta : {}) }
+        : item.meta,
       style: { ...item.style, ...(updates.style || {}) },
       updated_at: Date.now(),
     };
@@ -165,6 +229,17 @@ export const useStore = create((set, get) => ({
     }
   },
 
+  // Tag filter state
+  activeTagFilters: new Set(),
+  toggleTagFilter: (tag) => {
+    set((s) => {
+      const next = new Set(s.activeTagFilters);
+      next.has(tag) ? next.delete(tag) : next.add(tag);
+      return { activeTagFilters: next };
+    });
+  },
+  clearTagFilters: () => set({ activeTagFilters: new Set() }),
+
   // Filtering
   toggleFilter: (filter) => {
     set((s) => {
@@ -181,10 +256,23 @@ export const useStore = create((set, get) => ({
   getFilteredItems: () => {
     const state = get();
     let items = state.items;
-    if (state.searchResults !== null) {
-      items = state.searchResults;
+    if (state.searchResults !== null) items = state.searchResults;
+
+    items = items.filter((item) => state.activeFilters.has(item.type));
+
+    // Tag filtering
+    if (state.activeTagFilters.size > 0) {
+      items = items.filter((item) => {
+        const itemTags = [
+          ...(item.meta?.tags || []),
+          // auto-extract from note text
+          ...((item.content?.text || '').match(/#([a-zA-Z0-9_\-]+)/g) || []).map(t => t.slice(1).toLowerCase()),
+        ];
+        return [...state.activeTagFilters].every((tf) => itemTags.includes(tf));
+      });
     }
-    return items.filter((item) => state.activeFilters.has(item.type));
+
+    return items;
   },
 
   // Search

@@ -29,6 +29,7 @@ export function Canvas({
   onAddToStack,
   onCreateFolder,
   onAddToFolder,
+  onContextMenu,
 }) {
   const viewportRef = useRef(null);
   const worldRef    = useRef(null);
@@ -47,10 +48,18 @@ export function Canvas({
   // Keep transformRef in sync
   useEffect(() => { transformRef.current = transform; }, [transform]);
 
-  // Sync viewport from store
+  // Sync viewport from store (only when changed externally, not from local wheel/pan)
+  const lastExternalViewport = useRef(null);
+  const isInternalChange = useRef(false);
   useEffect(() => {
+    // Skip if this viewport was just set by us (wheel/pan)
+    if (lastExternalViewport.current === viewport) return;
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
     setTransform(viewport);
-  }, [viewport.x, viewport.y, viewport.scale]);
+  }, [viewport]);
 
   const applyTransform = useCallback((t) => {
     if (worldRef.current) {
@@ -87,7 +96,9 @@ export function Canvas({
         scale: newScale,
       };
       setTransform(newTransform);
+      isInternalChange.current = true;
       onViewportChange(newTransform);
+      lastExternalViewport.current = newTransform;
     };
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
@@ -164,6 +175,8 @@ export function Canvas({
     if (isPanning.current) {
       isPanning.current = false;
       if (viewportRef.current) viewportRef.current.style.cursor = 'grab';
+      isInternalChange.current = true;
+      lastExternalViewport.current = transformRef.current;
       onViewportChange(transformRef.current);
     }
 
@@ -222,13 +235,14 @@ export function Canvas({
 
   // ── Card drag start ────────────────────────────────────────────────────
 
-  const handleCardDragStart = useCallback((e, itemId, itemX, itemY) => {
+  const handleCardDragStart = useCallback((e, itemId) => {
     if (
       e.target.closest('.card-note-editor') ||
       e.target.closest('a') ||
       e.target.closest('button') ||
       e.target.closest('input') ||
-      e.target.closest('.folder-tab')
+      e.target.closest('.folder-tab') ||
+      e.target.closest('.stack-hint')
     ) return;
 
     e.stopPropagation();
@@ -236,7 +250,10 @@ export function Canvas({
     if (card) {
       dragItem.current  = card;
       hasMoved.current  = false;
-      dragStart.current = { x: e.clientX, y: e.clientY, itemX, itemY };
+      // Read current position from DOM (may differ from item prop after drag)
+      const currentX = parseFloat(card.style.left) || 0;
+      const currentY = parseFloat(card.style.top) || 0;
+      dragStart.current = { x: e.clientX, y: e.clientY, itemX: currentX, itemY: currentY };
       card.style.zIndex     = 9999;
       card.style.cursor     = 'grabbing';
       card.style.transition = 'none';
@@ -279,8 +296,9 @@ export function Canvas({
         id="canvas-world"
         style={{
           position: 'absolute',
-          width: '1px',
-          height: '1px',
+          inset: 0,
+          minWidth: '5000px',
+          minHeight: '5000px',
           transformOrigin: '0 0',
           willChange: 'transform',
         }}
@@ -292,10 +310,11 @@ export function Canvas({
             isSelected={selectedIds.has(item.id)}
             scale={transform.scale}
             onSelect={(multi) => onSelectItem(item.id, multi)}
-            onDragStart={(e) => handleCardDragStart(e, item.id, item.x, item.y)}
+            onDragStart={(e) => handleCardDragStart(e, item.id)}
             onSave={(updates) => onItemSave(item.id, updates)}
             onDelete={() => onItemDelete(item.id)}
             onLightbox={() => onLightbox(item)}
+            onContextMenu={onContextMenu}
           />
         ))}
       </div>

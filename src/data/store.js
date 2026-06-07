@@ -12,9 +12,11 @@ const DB_NAME = 'looking-glass-db';
 const DB_VERSION = 1;
 
 let db = null;
+let dbPromise = null;
 
 function openDB() {
-  return new Promise((resolve, reject) => {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (e) => {
       const db = e.target.result;
@@ -33,6 +35,7 @@ function openDB() {
     request.onsuccess = (e) => { db = e.target.result; resolve(db); };
     request.onerror = (e) => reject(e.target.error);
   });
+  return dbPromise;
 }
 
 async function getDB() {
@@ -52,7 +55,11 @@ function reqPromise(req) {
 }
 
 export const store = {
-  async init() { return openDB(); },
+  async init() {
+    const database = await openDB();
+    db = database;
+    return database;
+  },
 
   async getCanvas(id) {
     const s = await tx('canvases');
@@ -62,6 +69,11 @@ export const store = {
   async saveCanvas(state) {
     const s = await tx('canvases', 'readwrite');
     return reqPromise(s.put(state));
+  },
+
+  async deleteCanvas(id) {
+    const s = await tx('canvases', 'readwrite');
+    return reqPromise(s.delete(id));
   },
 
   async listCanvases() {
@@ -86,7 +98,16 @@ export const store = {
 
   async bulkImport(items) {
     const s = await tx('items', 'readwrite');
-    return Promise.all(items.map(item => reqPromise(s.put(item))));
+    // Use a single transaction for all puts; if any fail, roll back
+    return new Promise((resolve, reject) => {
+      const t = s.transaction;
+      t.oncomplete = () => resolve();
+      t.onerror = () => reject(t.error);
+      t.onabort = () => reject(t.error || new Error('bulkImport aborted'));
+      for (const item of items) {
+        s.put(item);
+      }
+    });
   },
 
   async exportCanvas(canvasId) {

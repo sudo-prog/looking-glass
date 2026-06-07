@@ -8,6 +8,10 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import { ITEM_TYPES } from '../data/schema.js';
+import { VideoCard } from './VideoCard.jsx';
+import { AudioMemoCard } from './AudioMemoCard.jsx';
+import { PDFViewerCard } from './PDFViewerCard.jsx';
+import { WebClipScreenshotCard } from './WebClipScreenshotCard.jsx';
 
 // ── Utils ──────────────────────────────────────────────────
 
@@ -148,8 +152,22 @@ function NoteCard({ item, isSelected, onSelect, onDragStart, onSave }) {
     return () => {
       editor.off('blur', handleBlur);
       editor.off('keydown', handleKeyDown);
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current);
+        saveTimeout.current = null;
+      }
     };
   }, [editing, editor, onSave]);
+
+  // Clear save timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current);
+        saveTimeout.current = null;
+      }
+    };
+  }, []);
 
   const firstLine = (() => {
     if (!item.content.text) return 'Note';
@@ -328,7 +346,7 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
               <>
                 <div className="stack-count-badge">{count}</div>
                 <div className="stack-top-title">{topItem.content?.title || 'Stack'}</div>
-                <div className="stack-hint" onClick={toggleFan}>
+                <div className="stack-hint" onClick={toggleFan} onPointerDown={(e) => e.stopPropagation()}>
                   {fanned ? 'Click to stack' : 'Click to fan'}
                 </div>
               </>
@@ -344,6 +362,8 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
 
 function FolderCard({ item, isSelected, onSelect, onDragStart, onSave }) {
   const [open, setOpen] = React.useState(item.meta?.folder_open || false);
+  const [renaming, setRenaming] = React.useState(false);
+  const [renameValue, setRenameValue] = React.useState(item.content?.title || 'Folder');
   const childItems = item.meta?.child_items || [];
   const count = childItems.length;
 
@@ -354,10 +374,25 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave }) {
     onSave?.({ meta: { ...item.meta, folder_open: newOpen } });
   };
 
-  const handleRename = (e) => {
+  const handleRenameStart = (e) => {
     e.stopPropagation();
-    const name = prompt('Folder name:', item.content?.title || 'Folder');
-    if (name !== null) onSave?.({ content: { ...item.content, title: name } });
+    setRenameValue(item.content?.title || 'Folder');
+    setRenaming(true);
+  };
+
+  const handleRenameSubmit = () => {
+    const name = renameValue.trim() || 'Folder';
+    onSave?.({ content: { ...item.content, title: name } });
+    setRenaming(false);
+  };
+
+  const handleRenameKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleRenameSubmit();
+    } else if (e.key === 'Escape') {
+      setRenaming(false);
+    }
   };
 
   const typeIcon = (type) => ({
@@ -385,8 +420,21 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave }) {
               <path d="M1 3.5C1 2.67 1.67 2 2.5 2H5.5L7 3.5H11.5C12.33 3.5 13 4.17 13 5V10.5C13 11.33 12.33 12 11.5 12H2.5C1.67 12 1 11.33 1 10.5V3.5Z" fill="currentColor" opacity="0.7"/>
             </svg>
           </span>
-          <span className="folder-name" onDoubleClick={handleRename}>
-            {item.content?.title || 'Folder'}
+          <span className="folder-name" onDoubleClick={handleRenameStart}>
+            {renaming ? (
+              <input
+                className="folder-rename-input"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={handleRenameSubmit}
+                onKeyDown={handleRenameKeyDown}
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+                style={{ fontSize: 'inherit', background: 'transparent', border: '1px solid rgba(128,128,128,0.5)', borderRadius: 3, padding: '0 2px', color: 'inherit', width: '80%', boxSizing: 'border-box' }}
+              />
+            ) : (
+              item.content?.title || 'Folder'
+            )}
           </span>
           <span className="folder-count">{count}</span>
           <span className="folder-chevron">{open ? '▾' : '▸'}</span>
@@ -449,23 +497,39 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave }) {
 
 // ── Main CanvasCard ────────────────────────────────────────
 
-export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onSave, onDelete, onLightbox }) {
+export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onSave, onDelete, onLightbox, onContextMenu }) {
+  const handleContextMenu = useCallback((e) => {
+    if (!onContextMenu) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onContextMenu(item, e.clientX, e.clientY);
+  }, [item, onContextMenu]);
+
+  const sharedProps = { item, isSelected, onSelect, onDragStart, onSave, onDelete, onLightbox, onContextMenu: handleContextMenu };
   switch (item.type) {
     case ITEM_TYPES.BOOKMARK:
-      return <BookmarkCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />;
+      return <BookmarkCard {...sharedProps} />;
     case ITEM_TYPES.IMAGE:
-      return <ImageCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />;
+      return <ImageCard {...sharedProps} />;
     case ITEM_TYPES.NOTE:
       return <NoteCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} />;
     case ITEM_TYPES.WEB_CLIP:
-      return <WebClipCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} />;
+      return <WebClipCard {...sharedProps} />;
     case ITEM_TYPES.GROUP:
-      return <GroupCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} />;
+      return <GroupCard {...sharedProps} />;
     case ITEM_TYPES.STACK:
-      return <StackCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} />;
+      return <StackCard {...sharedProps} />;
     case ITEM_TYPES.FOLDER:
       return <FolderCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} />;
+    case ITEM_TYPES.WEB_CLIP_SCREENSHOT:
+      return <WebClipScreenshotCard {...sharedProps} />;
+    case ITEM_TYPES.AUDIO:
+      return <AudioMemoCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} />;
+    case ITEM_TYPES.PDF:
+      return <PDFViewerCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} />;
+    case ITEM_TYPES.VIDEO:
+      return <VideoCard {...sharedProps} />;
     default:
-      return <BookmarkCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />;
+      return <BookmarkCard {...sharedProps} />;
   }
 }
