@@ -2,7 +2,7 @@ name: Deploy Looking Glass to GitHub Pages
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, main]
   workflow_dispatch:
 
 permissions:
