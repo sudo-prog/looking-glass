@@ -12,9 +12,13 @@ const DB_NAME = 'looking-glass-db';
 const DB_VERSION = 1;
 
 let db = null;
+let dbPromise = null;
+let db = null;
+let dbPromise = null;
 
 function openDB() {
-  return new Promise((resolve, reject) => {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (e) => {
       const db = e.target.result;
@@ -33,6 +37,8 @@ function openDB() {
     request.onsuccess = (e) => { db = e.target.result; resolve(db); };
     request.onerror = (e) => reject(e.target.error);
   });
+  return dbPromise;
+}
 }
 
 async function getDB() {

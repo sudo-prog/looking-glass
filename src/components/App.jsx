@@ -101,36 +101,36 @@ export function App() {
     const result = history.current.undo();
     if (!result) return;
     const { command, result: data } = result;
-    const items = useStore.getState().items;
+    const state = useStore.getState();
+    const items = [...state.items];
 
     switch (command.type) {
       case 'add': {
         const idx = items.findIndex((i) => i.id === command.item.id);
         if (idx !== -1) {
           items.splice(idx, 1);
-          useStore.setState({ items: [...items] });
+          useStore.setState({ items });
         }
         break;
       }
       case 'delete': {
         items.push(command.item);
-        useStore.setState({ items: [...items] });
+        useStore.setState({ items });
         break;
       }
       case 'move': {
         const item = items.find((i) => i.id === command.itemId);
         if (item) {
-          item.x = data.x;
-          item.y = data.y;
-          useStore.setState({ items: [...items] });
+          const updated = { ...item, x: data.x, y: data.y };
+          useStore.setState({ items: items.map((i) => (i.id === command.itemId ? updated : i)) });
         }
         break;
       }
       case 'update': {
         const item = items.find((i) => i.id === command.itemId);
         if (item) {
-          Object.assign(item, data);
-          useStore.setState({ items: [...items] });
+          const updated = { ...item, ...data };
+          useStore.setState({ items: items.map((i) => (i.id === command.itemId ? updated : i)) });
         }
         break;
       }
@@ -141,20 +141,37 @@ export function App() {
   const handleRedo = useCallback(() => {
     const result = history.current.redo();
     if (!result) return;
-    const { command } = result;
-    const items = useStore.getState().items;
+    const { command, result: data } = result;
+    const state = useStore.getState();
+    const items = [...state.items];
 
     switch (command.type) {
       case 'add': {
         items.push(command.item);
-        useStore.setState({ items: [...items] });
+        useStore.setState({ items });
         break;
       }
       case 'delete': {
         const idx = items.findIndex((i) => i.id === command.item.id);
         if (idx !== -1) {
           items.splice(idx, 1);
-          useStore.setState({ items: [...items] });
+          useStore.setState({ items });
+        }
+        break;
+      }
+      case 'move': {
+        const item = items.find((i) => i.id === command.itemId);
+        if (item) {
+          const updated = { ...item, x: command.newX, y: command.newY };
+          useStore.setState({ items: items.map((i) => (i.id === command.itemId ? updated : i)) });
+        }
+        break;
+      }
+      case 'update': {
+        const item = items.find((i) => i.id === command.itemId);
+        if (item) {
+          const updated = { ...item, ...command.newData };
+          useStore.setState({ items: items.map((i) => (i.id === command.itemId ? updated : i)) });
         }
         break;
       }

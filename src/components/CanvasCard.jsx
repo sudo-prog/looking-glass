@@ -148,8 +148,22 @@ function NoteCard({ item, isSelected, onSelect, onDragStart, onSave }) {
     return () => {
       editor.off('blur', handleBlur);
       editor.off('keydown', handleKeyDown);
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current);
+        saveTimeout.current = null;
+      }
     };
   }, [editing, editor, onSave]);
+
+  // Clear save timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current);
+        saveTimeout.current = null;
+      }
+    };
+  }, []);
 
   const firstLine = (() => {
     if (!item.content.text) return 'Note';
@@ -344,6 +358,8 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
 
 function FolderCard({ item, isSelected, onSelect, onDragStart, onSave }) {
   const [open, setOpen] = React.useState(item.meta?.folder_open || false);
+  const [renaming, setRenaming] = React.useState(false);
+  const [renameValue, setRenameValue] = React.useState(item.content?.title || 'Folder');
   const childItems = item.meta?.child_items || [];
   const count = childItems.length;
 
@@ -354,10 +370,25 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave }) {
     onSave?.({ meta: { ...item.meta, folder_open: newOpen } });
   };
 
-  const handleRename = (e) => {
+  const handleRenameStart = (e) => {
     e.stopPropagation();
-    const name = prompt('Folder name:', item.content?.title || 'Folder');
-    if (name !== null) onSave?.({ content: { ...item.content, title: name } });
+    setRenameValue(item.content?.title || 'Folder');
+    setRenaming(true);
+  };
+
+  const handleRenameSubmit = () => {
+    const name = renameValue.trim() || 'Folder';
+    onSave?.({ content: { ...item.content, title: name } });
+    setRenaming(false);
+  };
+
+  const handleRenameKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleRenameSubmit();
+    } else if (e.key === 'Escape') {
+      setRenaming(false);
+    }
   };
 
   const typeIcon = (type) => ({
@@ -385,8 +416,21 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave }) {
               <path d="M1 3.5C1 2.67 1.67 2 2.5 2H5.5L7 3.5H11.5C12.33 3.5 13 4.17 13 5V10.5C13 11.33 12.33 12 11.5 12H2.5C1.67 12 1 11.33 1 10.5V3.5Z" fill="currentColor" opacity="0.7"/>
             </svg>
           </span>
-          <span className="folder-name" onDoubleClick={handleRename}>
-            {item.content?.title || 'Folder'}
+          <span className="folder-name" onDoubleClick={handleRenameStart}>
+            {renaming ? (
+              <input
+                className="folder-rename-input"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={handleRenameSubmit}
+                onKeyDown={handleRenameKeyDown}
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+                style={{ fontSize: 'inherit', background: 'transparent', border: '1px solid rgba(128,128,128,0.5)', borderRadius: 3, padding: '0 2px', color: 'inherit', width: '80%', boxSizing: 'border-box' }}
+              />
+            ) : (
+              item.content?.title || 'Folder'
+            )}
           </span>
           <span className="folder-count">{count}</span>
           <span className="folder-chevron">{open ? '▾' : '▸'}</span>

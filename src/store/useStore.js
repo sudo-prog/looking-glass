@@ -26,7 +26,7 @@ export const useStore = create((set, get) => ({
   undoCounts: { undo: 0, redo: 0 },
 
   // Initialize
-  init: async () => {
+  init: async (canvasId = null) => {
     await idbStore.init();
     let canvases = await idbStore.listCanvases();
     let canvas;
@@ -35,6 +35,8 @@ export const useStore = create((set, get) => ({
       const now = Date.now();
       canvas = { id, name: 'My Canvas', viewport: { x: 0, y: 0, scale: 1 }, created_at: now, updated_at: now };
       await idbStore.saveCanvas(canvas);
+    } else if (canvasId) {
+      canvas = canvases.find((c) => c.id === canvasId) || canvases[0];
     } else {
       canvas = canvases[0];
     }
@@ -45,6 +47,20 @@ export const useStore = create((set, get) => ({
       canvasName: canvas.name,
       viewport: canvas.viewport || { x: 0, y: 0, scale: 1 },
       items: items || [],
+    });
+  },
+
+  // Switch to a different canvas (Space)
+  switchCanvas: async (canvasId) => {
+    const canvas = await idbStore.getCanvas(canvasId);
+    if (!canvas) return;
+    const items = await idbStore.exportCanvas(canvas.id);
+    set({
+      canvasId: canvas.id,
+      canvasName: canvas.name,
+      viewport: canvas.viewport || { x: 0, y: 0, scale: 1 },
+      items: items || [],
+      selectedIds: new Set(),
     });
   },
 
@@ -111,7 +127,9 @@ export const useStore = create((set, get) => ({
     const updated = {
       ...item,
       ...updates,
-      content: { ...item.content, ...(updates.content || {}) },
+      content: updates.hasOwnProperty('content')
+        ? { ...item.content, ...(updates.content || {}) }
+        : item.content,
       meta: { ...item.meta, ...(updates.meta || {}) },
       style: { ...item.style, ...(updates.style || {}) },
       updated_at: Date.now(),
