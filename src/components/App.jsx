@@ -5,8 +5,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useStore } from '../store/useStore.js';
 import { HistoryManager, AddItemCommand, DeleteItemCommand, MoveItemCommand, UpdateItemCommand } from '../history/HistoryManager.js';
-import { Toolbar } from '../ui/Toolbar.jsx';
-import { Sidebar } from '../ui/Sidebar.jsx';
+import LiquidGlassSidebar from '../ui/LiquidGlassSidebar.jsx';
 import { Canvas } from '../canvas/Canvas.jsx';
 import { ExportDialog } from '../utils/export/ExportDialog.jsx';
 import { Lightbox } from '../ui/Lightbox.jsx';
@@ -237,40 +236,9 @@ export function App() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <Sidebar
-        activeFilters={activeFilters}
-        onToggleFilter={toggleFilter}
-        stats={useStore.getState().getStats()}
-      />
+      <LiquidGlassSidebar />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Toolbar
-          zoom={zoom}
-          searchQuery={searchQuery}
-          onAddNote={addNote}
-          onAddUrl={() => {
-            const url = prompt('Enter URL:');
-            if (url) addUrl(url);
-          }}
-          onAddImage={() => {
-            const url = prompt('Enter image URL:');
-            if (url) addImage(url);
-          }}
-          onDelete={handleDeleteSelected}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          onZoomIn={handleZoomIn}
-          onZoomOut={handleZoomOut}
-          onFit={handleFit}
-          onSearch={search}
-          onSearchClear={clearSearch}
-          onExport={handleExport}
-          onImport={handleImport}
-          canUndo={undoCounts.undo > 0}
-          canRedo={undoCounts.redo > 0}
-          selectedCount={selectedIds.size}
-        />
-
         <Canvas
           items={filteredItems}
           viewport={viewport}

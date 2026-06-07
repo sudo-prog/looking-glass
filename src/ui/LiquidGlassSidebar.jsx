@@ -16,8 +16,8 @@ import {
   Hash,
   Star,
   MagnifyingGlass as SearchIcon,
-  Organize,
   ListChecks,
+  NotePencil,
 } from '@phosphor-icons/react';
 import AIModal from './AIModal';
 import './LiquidGlassSidebar.css';
@@ -52,7 +52,7 @@ const AI_QUICK_ACTIONS = [
   { id: 'ai-tag',        label: 'TAG',        Icon: Tag },
   { id: 'ai-search',     label: 'SEARCH',     Icon: SearchIcon },
   { id: 'ai-organize',   label: 'ORGANIZE',   Icon: ListChecks },
-  { id: 'ai-summarize',  label: 'SUMMARIZE',  Icon: Organize },
+  { id: 'ai-summarize',  label: 'SUMMARIZE',  Icon: NotePencil },
 ];
 
 export default function LiquidGlassSidebar() {
