@@ -25,7 +25,7 @@ function TypeIcon({ type, size = 14 }) {
 }
 
 export function FolderCard({ item, isSelected, onSelect, onDragStart, onToggleOpen, onRename, allItems = [] }) {
-  const [collapsed, setCollapsed] = useState(item.meta?.collapsed !== false);
+  const [collapsed, setCollapsed] = useState(!item.meta?.folder_open);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(item.content?.title || 'Folder');
   const renameInputRef = useRef(null);
@@ -37,10 +37,10 @@ export function FolderCard({ item, isSelected, onSelect, onDragStart, onToggleOp
     } catch { /* ignore */ }
   }, [item.id]);
 
-  const childIds = item.content?.itemIds || [];
+  const childIds = item.meta?.child_items || [];
   const childItems = useMemo(() => {
-    return childIds.map((id) => allItems.find((i) => i.id === id)).filter(Boolean);
-  }, [childIds, allItems]);
+    return childIds;
+  }, [childIds]);
 
   const thumbnails = childItems.slice(0, 4);
 

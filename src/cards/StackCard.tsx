@@ -15,11 +15,9 @@ export function StackCard({ item, isSelected, onSelect, onDragStart, allItems = 
   const [isFanned, setIsFanned] = useState(false);
 
   const stackedCards = useMemo(() => {
-    const ids = item.content?.itemIds || [];
-    const cards = ids.map((id) => allItems.find((i) => i.id === id)).filter(Boolean);
-    cards.sort((a, b) => (b.width || 320) - (a.width || 320));
-    return cards;
-  }, [item.content?.itemIds, allItems]);
+    const items = item.meta?.stack_items || [];
+    return items;
+  }, [item.meta?.stack_items]);
 
   const count = stackedCards.length;
 
