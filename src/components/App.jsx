@@ -235,7 +235,7 @@ export function App() {
   const filteredItems = getFilteredItems();
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
       <LiquidGlassSidebar />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
