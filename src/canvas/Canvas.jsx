@@ -288,8 +288,9 @@ export function Canvas({
         id="canvas-world"
         style={{
           position: 'absolute',
-          width: '1px',
-          height: '1px',
+          inset: 0,
+          minWidth: '5000px',
+          minHeight: '5000px',
           transformOrigin: '0 0',
           willChange: 'transform',
         }}

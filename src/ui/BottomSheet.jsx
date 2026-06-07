@@ -13,9 +13,9 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 const SNAP_POINTS = {
-  peek: 15,
-  default: 50,
-  full: 90,
+  full: 15,    // 15% from top = 85% visible (full screen)
+  default: 50, // 50% from top = 50% visible
+  peek: 90,    // 90% from top = 10% visible (peek)
 };
 
 export function BottomSheet({
@@ -98,8 +98,8 @@ export function BottomSheet({
       }
     }
 
-    // If dragged below peek, close
-    if (currentY > SNAP_POINTS.peek + 10) {
+    // If dragged past full toward bottom (past full + 15), close
+    if (currentY > SNAP_POINTS.full + 15) {
       handleClose();
     } else {
       setCurrentY(closest);
@@ -118,11 +118,16 @@ export function BottomSheet({
 
   if (!isOpen) return null;
 
+  // Using transform instead of top to avoid conflicts with bottom:0
+  // translateY(%) is relative to the element's own height
+  // At full (15% from top): translate = -(100 - 15) = -85% → 85% visible
+  // At peek (90% from top): translate = -(100 - 90) = -10% → 10% visible
+  const translateY = -(100 - currentY);
   const sheetStyle = {
-    top: `${currentY}%`,
+    transform: `translateY(${translateY}%)`,
     transition: isDragging
       ? 'none'
-      : 'top 280ms cubic-bezier(0.32, 0.72, 0, 1)',
+      : 'transform 280ms cubic-bezier(0.32, 0.72, 0, 1)',
   };
 
   return createPortal(

@@ -13,8 +13,6 @@ const DB_VERSION = 1;
 
 let db = null;
 let dbPromise = null;
-let db = null;
-let dbPromise = null;
 
 function openDB() {
   if (dbPromise) return dbPromise;
@@ -38,7 +36,6 @@ function openDB() {
     request.onerror = (e) => reject(e.target.error);
   });
   return dbPromise;
-}
 }
 
 async function getDB() {
@@ -92,7 +89,16 @@ export const store = {
 
   async bulkImport(items) {
     const s = await tx('items', 'readwrite');
-    return Promise.all(items.map(item => reqPromise(s.put(item))));
+    // Use a single transaction for all puts; if any fail, roll back
+    return new Promise((resolve, reject) => {
+      const t = s.transaction;
+      t.oncomplete = () => resolve();
+      t.onerror = () => reject(t.error);
+      t.onabort = () => reject(t.error || new Error('bulkImport aborted'));
+      for (const item of items) {
+        s.put(item);
+      }
+    });
   },
 
   async exportCanvas(canvasId) {
