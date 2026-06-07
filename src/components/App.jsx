@@ -1,6 +1,6 @@
 /**
  * LOOKING GLASS — Main App Component
- * V0.4: React 18 + SQLite + Rich Text
+ * V0.5: React 18 + SQLite + Rich Text + Spaces + Tags + AI + ScratchPad
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useStore } from '../store/useStore.js';
@@ -9,6 +9,12 @@ import LiquidGlassSidebar from '../ui/LiquidGlassSidebar.jsx';
 import { Canvas } from '../canvas/Canvas.jsx';
 import { ExportDialog } from '../utils/export/ExportDialog.jsx';
 import { Lightbox } from '../ui/Lightbox.jsx';
+import { ScratchPad } from '../ui/ScratchPad.jsx';
+import { DropZoneHandler } from '../ui/DropZoneHandler.jsx';
+import { AISummarisePanel } from '../ui/AISummarisePanel.jsx';
+import { ContextMenu } from '../ui/ContextMenu.jsx';
+import { TagFilterBar, TagsPanel } from '../ui/TagsSystem.jsx';
+import { SpacesManager } from '../ui/SpacesManager.jsx';
 
 export function App() {
   const initialized = useRef(false);
@@ -30,6 +36,10 @@ export function App() {
     addNote,
     addUrl,
     addImage,
+    addAudio,
+    addVideo,
+    addPDF,
+    addWebClipScreenshot,
     deleteSelected,
     updateItem,
     deleteItem,
@@ -43,10 +53,19 @@ export function App() {
     addToStack,
     createFolder,
     addToFolder,
+    activeTagFilters,
+    toggleTagFilter,
+    clearTagFilters,
+    spaces,
+    activeSpaceId,
   } = useStore();
 
   const [zoom, setZoom] = useState(1);
   const [lightboxItem, setLightboxItem] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
+  const [aiSummarise, setAiSummarise] = useState(null);
+  const [spacesOpen, setSpacesOpen] = useState(false);
+  const [showTags, setShowTags] = useState(false);
 
   // Initialize
   useEffect(() => {
@@ -114,7 +133,6 @@ export function App() {
 
     switch (command.type) {
       case 'add': {
-        // Create new array without the added item (avoid splice mutation)
         const newItems = state.items.filter((i) => i.id !== command.item.id);
         useStore.setState({ items: newItems });
         break;
@@ -200,7 +218,6 @@ export function App() {
   }, [zoom, viewport, setViewport]);
 
   const handleFit = useCallback(() => {
-    // Fit to content logic handled by Canvas
     setZoom(1);
   }, []);
 
@@ -245,29 +262,126 @@ export function App() {
     }
   }, [updateItem]);
 
+  // Context menu action handler
+  const handleContextAction = useCallback((action, item) => {
+    switch (action) {
+      case 'open':
+        window.open(item.content?.url, '_blank');
+        break;
+      case 'copy-link':
+        navigator.clipboard.writeText(item.content?.url || '');
+        break;
+      case 'stack':
+        createStack([...selectedIds]);
+        break;
+      case 'folder':
+        createFolder([...selectedIds]);
+        break;
+      case 'summarise':
+        setAiSummarise({ mode: 'card', item });
+        break;
+      case 'archive':
+        updateItem(item.id, { meta: { archived: true } });
+        break;
+      case 'delete':
+        deleteItem(item.id);
+        break;
+      case 'edit-tags':
+        // Tag editor is inline on card — no-op at app level
+        break;
+      case 'color-none':
+        updateItem(item.id, { meta: { color: null } });
+        break;
+      default:
+        if (action.startsWith('color-')) {
+          const COLORS = ['#D71921', '#F59E0B', '#22C55E', '#3B82F6', '#8B5CF6'];
+          updateItem(item.id, { meta: { color: COLORS[parseInt(action.split('-')[1])] } });
+        }
+    }
+  }, [selectedIds, createStack, createFolder, updateItem, deleteItem]);
+
+  // Drop handler for DropZoneHandler
+  const handleDrop = useCallback(async (drops) => {
+    for (const drop of drops) {
+      switch (drop.kind) {
+        case 'image':
+          await addImage(drop.objectUrl);
+          break;
+        case 'video':
+          await addVideo(drop.file, drop.objectUrl);
+          break;
+        case 'pdf':
+          await addPDF(drop.file);
+          break;
+        case 'audio':
+          await addAudio();
+          break;
+        case 'url': {
+          // Fetch metadata and add as web clip screenshot
+          try {
+            const meta = { title: drop.url, description: '', image_url: null };
+            await addWebClipScreenshot(drop.url, meta);
+          } catch {
+            await addUrl(drop.url);
+          }
+          break;
+        }
+        case 'text':
+          await addNote();
+          break;
+      }
+    }
+  }, [addImage, addVideo, addPDF, addAudio, addWebClipScreenshot, addUrl, addNote]);
+
+  // AI organise handler
+  const handleAIOrganise = useCallback(() => {
+    setAiSummarise({ mode: 'organise' });
+  }, []);
+
+  // AI cluster handler
+  const handleAICluster = useCallback(() => {
+    const selectedItems = filteredItems.filter(i => selectedIds.has(i.id));
+    if (selectedItems.length > 1) {
+      setAiSummarise({ mode: 'cluster', selectedItems });
+    }
+  }, [filteredItems, selectedIds]);
+
   const filteredItems = getFilteredItems();
 
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
-      <LiquidGlassSidebar />
+      <LiquidGlassSidebar
+        onSpacesOpen={() => setSpacesOpen(true)}
+        onTagsOpen={() => setShowTags(true)}
+        onAIOrganise={handleAIOrganise}
+        onAISummarise={() => setAiSummarise({ mode: 'card' })}
+      />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Canvas
-          items={filteredItems}
-          viewport={viewport}
-          selectedIds={selectedIds}
-          onViewportChange={setViewport}
-          onSelectItem={selectItem}
-          onClearSelection={clearSelection}
-          onItemMove={handleItemMove}
-          onItemSave={handleItemSave}
-          onItemDelete={deleteItem}
-          onLightbox={setLightboxItem}
-          onCreateStack={createStack}
-          onAddToStack={addToStack}
-          onCreateFolder={createFolder}
-          onAddToFolder={addToFolder}
-        />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+        <DropZoneHandler viewport={viewport} onDrop={handleDrop}>
+          <TagFilterBar
+            activeTagFilters={activeTagFilters}
+            onToggleTag={toggleTagFilter}
+            onClearTags={clearTagFilters}
+          />
+          <Canvas
+            items={filteredItems}
+            viewport={viewport}
+            selectedIds={selectedIds}
+            onViewportChange={setViewport}
+            onSelectItem={selectItem}
+            onClearSelection={clearSelection}
+            onItemMove={handleItemMove}
+            onItemSave={handleItemSave}
+            onItemDelete={deleteItem}
+            onLightbox={setLightboxItem}
+            onCreateStack={createStack}
+            onAddToStack={addToStack}
+            onCreateFolder={createFolder}
+            onAddToFolder={addToFolder}
+            onContextMenu={(item, x, y) => setContextMenu({ item, x, y })}
+          />
+        </DropZoneHandler>
       </div>
 
       {exportDialogOpen && (
@@ -282,6 +396,41 @@ export function App() {
           onClose={() => setLightboxItem(null)}
         />
       )}
+
+      {/* ScratchPad overlay */}
+      <ScratchPad />
+
+      {/* Context menu */}
+      {contextMenu && (
+        <ContextMenu
+          isOpen
+          x={contextMenu.x}
+          y={contextMenu.y}
+          item={contextMenu.item}
+          selectedIds={selectedIds}
+          onClose={() => setContextMenu(null)}
+          onAction={handleContextAction}
+        />
+      )}
+
+      {/* AI Summarise Panel */}
+      {aiSummarise && (
+        <AISummarisePanel
+          mode={aiSummarise.mode}
+          item={aiSummarise.item}
+          selectedItems={aiSummarise.selectedItems || filteredItems.filter(i => selectedIds.has(i.id))}
+          allItems={items}
+          onClose={() => setAiSummarise(null)}
+          onApplyOrganisation={(groups, tags) => {
+            // Apply organisation — groups and tags
+            console.log('Apply organisation:', groups, tags);
+          }}
+          onAddNote={(text) => addNote()}
+        />
+      )}
+
+      {/* Spaces Manager */}
+      <SpacesManager isOpen={spacesOpen} onClose={() => setSpacesOpen(false)} />
     </div>
   );
 }

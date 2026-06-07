@@ -29,6 +29,7 @@ export function Canvas({
   onAddToStack,
   onCreateFolder,
   onAddToFolder,
+  onContextMenu,
 }) {
   const viewportRef = useRef(null);
   const worldRef    = useRef(null);
@@ -313,6 +314,7 @@ export function Canvas({
             onSave={(updates) => onItemSave(item.id, updates)}
             onDelete={() => onItemDelete(item.id)}
             onLightbox={() => onLightbox(item)}
+            onContextMenu={onContextMenu}
           />
         ))}
       </div>

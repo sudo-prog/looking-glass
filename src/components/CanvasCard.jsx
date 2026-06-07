@@ -8,6 +8,10 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import { ITEM_TYPES } from '../data/schema.js';
+import { VideoCard } from './VideoCard.jsx';
+import { AudioMemoCard } from './AudioMemoCard.jsx';
+import { PDFViewerCard } from './PDFViewerCard.jsx';
+import { WebClipScreenshotCard } from './WebClipScreenshotCard.jsx';
 
 // ── Utils ──────────────────────────────────────────────────
 
@@ -493,23 +497,39 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave }) {
 
 // ── Main CanvasCard ────────────────────────────────────────
 
-export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onSave, onDelete, onLightbox }) {
+export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onSave, onDelete, onLightbox, onContextMenu }) {
+  const handleContextMenu = useCallback((e) => {
+    if (!onContextMenu) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onContextMenu(item, e.clientX, e.clientY);
+  }, [item, onContextMenu]);
+
+  const sharedProps = { item, isSelected, onSelect, onDragStart, onSave, onDelete, onLightbox, onContextMenu: handleContextMenu };
   switch (item.type) {
     case ITEM_TYPES.BOOKMARK:
-      return <BookmarkCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />;
+      return <BookmarkCard {...sharedProps} />;
     case ITEM_TYPES.IMAGE:
-      return <ImageCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />;
+      return <ImageCard {...sharedProps} />;
     case ITEM_TYPES.NOTE:
       return <NoteCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} />;
     case ITEM_TYPES.WEB_CLIP:
-      return <WebClipCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} />;
+      return <WebClipCard {...sharedProps} />;
     case ITEM_TYPES.GROUP:
-      return <GroupCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} />;
+      return <GroupCard {...sharedProps} />;
     case ITEM_TYPES.STACK:
-      return <StackCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} />;
+      return <StackCard {...sharedProps} />;
     case ITEM_TYPES.FOLDER:
       return <FolderCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} />;
+    case ITEM_TYPES.WEB_CLIP_SCREENSHOT:
+      return <WebClipScreenshotCard {...sharedProps} />;
+    case ITEM_TYPES.AUDIO:
+      return <AudioMemoCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} />;
+    case ITEM_TYPES.PDF:
+      return <PDFViewerCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} />;
+    case ITEM_TYPES.VIDEO:
+      return <VideoCard {...sharedProps} />;
     default:
-      return <BookmarkCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />;
+      return <BookmarkCard {...sharedProps} />;
   }
 }

@@ -71,6 +71,11 @@ export const store = {
     return reqPromise(s.put(state));
   },
 
+  async deleteCanvas(id) {
+    const s = await tx('canvases', 'readwrite');
+    return reqPromise(s.delete(id));
+  },
+
   async listCanvases() {
     const s = await tx('canvases');
     return reqPromise(s.getAll());
