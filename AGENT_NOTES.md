@@ -58,17 +58,34 @@ Spatial canvas app — infinite pan/zoom workspace with cards (notes, bookmarks,
 - LiquidGlassSidebar + AIModal (audit #4 fixes)
 - Fixed sidebar 3-state toggle cycle, removed package-lock.json, fixed manifest/icon paths, created manifest.json
 
-### 2026-06-08 — Bug Fixes + LiquidGlassSidebar Integration
+### 2026-06-08 — Bug Audit Fixes (20 bugs)
 
-**Commits:** `57eab816` → `a9d3cb9b`
+**Commits:** `fccbd9a0` → `d1f92f20` → `ae5343e6`
 
-- Replaced old Toolbar+Sidebar with LiquidGlassSidebar in App.jsx
-- Fixed StackCard/FolderCard data paths (meta.stack_items/child_items)
-- **BUG-1 FIX:** Added `width: 100%` to App flex container — canvas viewport was 0px
-- **BUG-2 FIX:** Restored missing card inner element styles (card-header, card-title, card-handle, card-note-editor, card-body, card-footer, card-desc, card-link, card-group, light/dark mode variants) — V2 CSS rewrite had stripped them
-- **BUG-3 PARTIAL FIX:** Improved card visibility — white background in light mode, #1a1a1a in dark mode, visible borders and shadows. Cards still invisible in screenshots (see open bugs)
-- **BUG-4 DISCOVERED:** Import/Export buttons missing from LiquidGlassSidebar (dropped when Toolbar was replaced)
-- Created AGENT_NOTES.md dev log
+Sub-agent fixed 20 bugs from `/tmp/bugs.md`. Results:
+
+**Fixed (16):**
+- BUG-1/19: handleRedo missing move/update — already correct in code
+- BUG-4: updateItem null content — `updates.content || {}` → nullish check
+- BUG-6: drag position divergence — reads DOM style.left at drag start
+- BUG-7: Stack fan toggleFan — e.stopPropagation() added
+- BUG-8: FolderCard prompt() — replaced with inline rename input
+- BUG-9: NoteCard saveTimeout — cleanup on unmount
+- BUG-10: init() race — dbPromise singleton pattern
+- BUG-11: BottomSheet snap inverted — SNAP_POINTS corrected (full=15, peek=90)
+- BUG-12: BottomSheet top positioning — switched to transform: translateY()
+- BUG-13: ModeToggle role=switch — onClick + onKeyDown added to outer div
+- BUG-14: Toolbar onAddNote — Add button now calls onAddNote
+- BUG-15: bulkImport — single transaction with rollback
+- BUG-16: ExportDialog HTML — strips HTML tags from markdown
+- BUG-17: Duplicate schema — src/schema.js now re-exports from data/schema.js
+- BUG-18: #canvas-world 1px — changed to inset:0 + minWidth/Height 5000px
+- BUG-20: ModeToggle not wired — mounted in LiquidGlassSidebar footer
+
+**Not bugs / already correct (4):**
+- BUG-2: init() accepts canvasId param, switchCanvas exists
+- BUG-3: Zustand v5 — spread creates new array, no mutation
+- BUG-5: Viewport sync loop — guarded by lastExternalViewport ref
 
 ---
 
@@ -133,11 +150,11 @@ src/data/schema.js                — ITEM_TYPES including STACK and FOLDER
 
 ---
 
-## Still TODO
+### Still TODO
 
-1. **Fix BUG-3** (cards invisible in screenshots) — likely z-index or DOM structure issue
+1. ~~**Fix BUG-3** (cards invisible in screenshots)~~ — Fixed in `d1f92f20` (#canvas-world size)
 2. **Add toolbar buttons** (add/import/export/undo/redo/zoom) — decide with BOSS where they go
 3. **Test drag-and-drop** stack/folder creation in browser
 4. **Verify StackCard** fan animation works with real items
 5. **Verify FolderCard** expand/collapse/rename works
-6. **Add import/export UI** — ExportDialog.jsx exists but has no trigger
+6. **Add import/export UI** — ExportDialog.jsx exists but has no trigger in LiquidGlassSidebar
