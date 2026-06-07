@@ -25,9 +25,9 @@ export const useStore = create((set, get) => ({
   // History (managed by HistoryManager, not Zustand)
   undoCounts: { undo: 0, redo: 0 },
 
-  // Initialize
+  // Initialize — only sets up DB and canvas metadata, does NOT auto-load items
   init: async (canvasId = null) => {
-    await idbStore.init();
+    const database = await idbStore.init();
     let canvases = await idbStore.listCanvases();
     let canvas;
     if (canvases.length === 0) {
@@ -35,19 +35,24 @@ export const useStore = create((set, get) => ({
       const now = Date.now();
       canvas = { id, name: 'My Canvas', viewport: { x: 0, y: 0, scale: 1 }, created_at: now, updated_at: now };
       await idbStore.saveCanvas(canvas);
+      canvases = [canvas];
     } else if (canvasId) {
       canvas = canvases.find((c) => c.id === canvasId) || canvases[0];
     } else {
       canvas = canvases[0];
     }
-    // Load items for this canvas
-    const items = await idbStore.exportCanvas(canvas.id);
+    // Only set canvas metadata; items loaded separately via loadCanvas
     set({
       canvasId: canvas.id,
       canvasName: canvas.name,
       viewport: canvas.viewport || { x: 0, y: 0, scale: 1 },
-      items: items || [],
     });
+  },
+
+  // Load items for a specific canvas (called after init or on space switch)
+  loadCanvas: async (canvasId) => {
+    const items = await idbStore.exportCanvas(canvasId);
+    set({ items: items || [] });
   },
 
   // Switch to a different canvas (Space)
@@ -128,9 +133,11 @@ export const useStore = create((set, get) => ({
       ...item,
       ...updates,
       content: updates.hasOwnProperty('content')
-        ? { ...item.content, ...(updates.content || {}) }
+        ? { ...item.content, ...(updates.content !== null ? updates.content : {}) }
         : item.content,
-      meta: { ...item.meta, ...(updates.meta || {}) },
+      meta: updates.hasOwnProperty('meta')
+        ? { ...item.meta, ...(updates.meta !== null ? updates.meta : {}) }
+        : item.meta,
       style: { ...item.style, ...(updates.style || {}) },
       updated_at: Date.now(),
     };
