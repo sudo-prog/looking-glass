@@ -68,6 +68,10 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
   const [showTags, setShowTags] = useState(false);
   const [dark, setDark] = useState(isDark());
   const sidebarRef = useRef(null);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const touchStartY = useRef(0);
+  const touchEndY = useRef(0);
 
   const isCollapsed = sidebarState === 0;
   const isExpanded  = sidebarState === 1;
@@ -79,6 +83,36 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     window.addEventListener('theme-change', handler);
     return () => window.removeEventListener('theme-change', handler);
   }, []);
+
+  // Mobile detection
+  useEffect(() => {
+    const mq = matchMedia('(max-width: 767px)');
+    const handler = (e) => {
+      setIsMobile(e.matches);
+      if (!e.matches) setMobileExpanded(false);
+    };
+    setIsMobile(mq.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // Dispatch glass-surface-mount when mobile expanded
+  useEffect(() => {
+    if (!isMobile || !mobileExpanded || !sidebarRef.current) return;
+    window.dispatchEvent(new CustomEvent('glass-surface-mount', {
+      detail: {
+        id: 'sidebar-mobile',
+        element: sidebarRef.current,
+        uniforms: {
+          dark:  { refractionStrength: 0.22, blurRadius: 20, specularIntensity: 0.30, shadowIntensity: 0.15 },
+          light: { refractionStrength: 0.18, blurRadius: 20, specularIntensity: 0.50, shadowIntensity: 0.10 },
+        },
+      },
+    }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('glass-surface-unmount', { detail: { id: 'sidebar-mobile' } }));
+    };
+  }, [isMobile, mobileExpanded]);
 
   const handleThemeToggle = useCallback((newIsDark) => {
     toggleTheme(newIsDark ? 'dark' : 'light');
@@ -140,9 +174,31 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
 
   const classNames = [
     'lg-sidebar',
+    isMobile ? 'lg-sidebar--mobile' : 'lg-sidebar--desktop',
     isExpanded  ? 'lg-sidebar--expanded'  : '',
     isFullMenu  ? 'lg-sidebar--fullmenu'  : '',
+    (isMobile && mobileExpanded) ? 'lg-sidebar--expanded' : '',
   ].filter(Boolean).join(' ');
+
+  const handleTouchStart = (e) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = () => {
+    if (!isMobile) return;
+    const diff = touchStartY.current - touchEndY.current;
+    if (mobileExpanded && diff < -80) {
+      setMobileExpanded(false);
+    }
+  };
+
+  const handleHandleClick = () => {
+    if (isMobile) setMobileExpanded((v) => !v);
+  };
 
   return (
     <>
@@ -150,7 +206,22 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
         ref={sidebarRef}
         className={classNames}
         aria-label="Looking Glass navigation"
+        data-glass-surface="toolbar"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
+        {/* ── Mobile drag handle ── */}
+        {isMobile && (
+          <div
+            className="lg-sidebar__handle"
+            onClick={handleHandleClick}
+            role="button"
+            aria-label={mobileExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleHandleClick(); }}
+          />
+        )}
         {/* ── Header ──────────────────────── */}
         <div className="lg-sidebar__header">
           <div className="lg-sidebar__brand" aria-hidden="true">

@@ -3,6 +3,22 @@
  * V0.4: React 18 + SQLite + Rich Text
  */
 
+async function detectGlassTier() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return 3;
+  try {
+    const adapter = await navigator.gpu?.requestAdapter();
+    if (adapter) return 1;
+  } catch (_) {}
+  if (CSS.supports('backdrop-filter', 'blur(1px)') ||
+      CSS.supports('-webkit-backdrop-filter', 'blur(1px)')) return 2;
+  return 3;
+}
+
+detectGlassTier().then((tier) => {
+  document.documentElement.dataset.glassTier = String(tier);
+  console.info(`[Looking Glass] Glass tier: ${tier}`);
+});
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './components/App.jsx';
