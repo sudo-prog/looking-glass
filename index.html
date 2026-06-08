@@ -18,6 +18,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Doto:wght@100..900&display=swap" rel="stylesheet">
+<!-- Glass tier detection — must run before theme init -->
+<script>
+  (function () {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.dataset.glassTier = '3';
+      return;
+    }
+    if (typeof CSS !== 'undefined' && CSS.supports('backdrop-filter', 'blur(1px)')) {
+      document.documentElement.dataset.glassTier = '2';
+    } else {
+      document.documentElement.dataset.glassTier = '3';
+    }
+  })();
+</script>
 <!-- Theme init — must run before paint to prevent flash -->
 <script>
 (function() {
@@ -37,8 +51,8 @@ html, body { height: 100%; overflow: hidden; }
 body { font-family: 'Space Grotesk', system-ui, sans-serif; }
 #app { height: 100%; display: flex; }
 </style>
-  <script type="module" crossorigin src="/looking-glass/assets/index-BS3Trhdj.js"></script>
-  <link rel="stylesheet" crossorigin href="/looking-glass/assets/index-0M--Grug.css">
+  <script type="module" crossorigin src="/looking-glass/assets/index-B8iDkVLh.js"></script>
+  <link rel="stylesheet" crossorigin href="/looking-glass/assets/index-CKJU6GC1.css">
 </head>
 <body>
 <div id="app">
@@ -60,4 +74,3 @@ LOOKING GLASS
 </div>
 </body>
 </html>
-<!-- cache-bust: 1780843425 -->
