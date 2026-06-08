@@ -19,7 +19,7 @@ Spatial canvas app — infinite pan/zoom workspace with cards (notes, bookmarks,
 - `develop` branch → merge to `main` → GitHub Actions auto-deploys to GitHub Pages
 - Workflow: `.github/workflows/deploy.yml` — uses `actions/upload-pages-artifact@v3` + `actions/deploy-pages@v4` (modern API, NOT legacy gh-pages branch)
 - CDN cache can lag 30-60s after push
-- JS bundle: ~582KB, CSS: ~35KB
+- JS bundle: ~723KB, CSS: ~43KB
 
 ---
 
@@ -87,6 +87,29 @@ Sub-agent fixed 20 bugs from `/tmp/bugs.md`. Results:
 - BUG-3: Zustand v5 — spread creates new array, no mutation
 - BUG-5: Viewport sync loop — guarded by lastExternalViewport ref
 
+### 2026-06-08 — Full Project Review & Cleanup
+
+**Build Status:** ✓ SUCCESS
+
+**Issues Identified and Fixed:**
+
+1. **Missing CSS import** — Added `import './styles/glass-fallback.css';` to `src/main.jsx` to include glass card styles
+
+2. **Missing CSS classes** — Added to `src/styles/glass-fallback.css`:
+   - `.card-glass-layer` — glass overlay layer (absolute positioned, pointer-events: none)
+   - `.card-content-wrapper` — content wrapper with flex column layout
+   - `.card-separator` — 1px separator between image and content
+   - `.card-metadata` — metadata row with Space Mono styling
+
+3. **Theme toggle function** — Fixed `src/utils/theme.js` `toggleTheme()` to accept optional theme parameter for compatibility with LiquidGlassSidebar.jsx call pattern: `toggleTheme(newIsDark ? 'dark' : 'light')`
+
+4. **Manifest.json icon paths** — Corrected from `/icons/icon-*.png` to `/looking-glass/icons/icon-*.png` to match base path (`/looking-glass/`)
+
+**Files Removed (Orphaned/Unused):**
+- `src/cards/` directory — all JS/TS files removed (cards defined inline in `src/components/CanvasCard.jsx`)
+- `src/canvas/*.ts` — TypeScript CanvasEngine, DragManager, HistoryManager, SelectionManager
+- `src/webgpu/` — GlassRenderer.ts and uniforms.ts (not connected to app)
+
 ---
 
 ## What's Live (as of last deploy)
@@ -125,15 +148,15 @@ Sub-agent fixed 20 bugs from `/tmp/bugs.md`. Results:
 ```
 src/components/App.jsx            — Main app, LiquidGlassSidebar + Canvas + ExportDialog
 src/canvas/Canvas.jsx             — DnD, card rendering, DropModePicker portal
-src/components/CanvasCard.jsx     — Switch by item.type, renders StackCard/FolderCard/note/bookmark/image/group
-src/components/StackCard.tsx      — Fan animation, reads item.meta.stack_items
-src/components/FolderCard.tsx     — Tab/thumbnail/expand/rename, reads item.meta.child_items
+src/components/CanvasCard.jsx       — Switch by item.type, renders note/bookmark/image/group/stack/folder
 src/components/DropModePicker.jsx — Stack/Folder choice popup
-src/ui/LiquidGlassSidebar.jsx     — Navigation sidebar, 3-state cycle
-src/styles/canvas.css             — Card styles (restored this session)
-src/styles/stack-folder.css       — Stack/Folder specific styles
-src/store/useStore.js             — createStack, addToStack, createFolder, addToFolder
-src/data/schema.js                — ITEM_TYPES including STACK and FOLDER
+src/ui/LiquidGlassSidebar.jsx       — Navigation sidebar, 3-state cycle
+src/styles/canvas.css               — Card styles (restored this session)
+src/styles/stack-folder.css         — Stack/Folder specific styles
+src/styles/glass-fallback.css       — Glass surface CSS classes (added card-child styles this session)
+src/store/useStore.js               — Zustand store with createStack, createFolder actions
+src/data/schema.js                  — ITEM_TYPES including STACK and FOLDER
+src/history/HistoryManager.js       — Undo/redo command pattern
 ```
 
 ---

@@ -28,6 +28,7 @@ import './styles/reset.css';
 import './styles/canvas.css';
 import './styles/tiptap.css';
 import './styles/stack-folder.css';
+import './styles/glass-fallback.css';
 import './components/mobile/BottomSheet.css';
 
 const container = document.getElementById('app');
