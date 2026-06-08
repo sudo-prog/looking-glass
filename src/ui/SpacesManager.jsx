@@ -24,7 +24,7 @@ import {
   Check,
   X,
 } from '@phosphor-icons/react';
-import { create } from 'zustand';
+import { useStore } from '../store/useStore.js';
 import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES } from '../data/schema.js';
 
@@ -217,10 +217,9 @@ export function spacesSlice(set, get) {
  * renameSpace, deleteSpace from the Zustand store.
  */
 export function SpacesManager({ isOpen, onClose }) {
-  // These selectors assume spacesSlice is merged into useStore.
-  // Replace with import { useStore } from '../store/useStore.js'
+  // Uses main useStore (spacesSlice merged in useStore.js)
   const { spaces, activeSpaceId, switchSpace, createSpace, renameSpace, deleteSpace } =
-    useSpacesStore();
+    useStore();
 
   const [editingId,   setEditingId]   = useState(null);
   const [editingName, setEditingName] = useState('');
