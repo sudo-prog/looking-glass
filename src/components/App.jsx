@@ -12,7 +12,7 @@ import { Lightbox } from '../ui/Lightbox.jsx';
 import { ScratchPad } from '../ui/ScratchPad.jsx';
 import { DropZoneHandler } from '../ui/DropZoneHandler.jsx';
 import { AISummarisePanel } from '../ui/AISummarisePanel.jsx';
-import { ContextMenu } from '../ui/ContextMenu.jsx';
+import { ContextMenu } from '../components/ContextMenu.jsx';
 import { TagFilterBar, TagsPanel } from '../ui/TagsSystem.jsx';
 import { SpacesManager } from '../ui/SpacesManager.jsx';
 
