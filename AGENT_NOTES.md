@@ -66,118 +66,68 @@ Sub-agent fixed 20 bugs from `/tmp/bugs.md`. Results:
 
 **Fixed (16):**
 - BUG-1/19: handleRedo missing move/update — already correct in code
-- BUG-4: updateItem null content — `updates.content || {}` → nullish check
-- BUG-6: drag position divergence — reads DOM style.left at drag start
-- BUG-7: Stack fan toggleFan — e.stopPropagation() added
-- BUG-8: FolderCard prompt() — replaced with inline rename input
-- BUG-9: NoteCard saveTimeout — cleanup on unmount
-- BUG-10: init() race — dbPromise singleton pattern
-- BUG-11: BottomSheet snap inverted — SNAP_POINTS corrected (full=15, peek=90)
-- BUG-12: BottomSheet top positioning — switched to transform: translateY()
-- BUG-13: ModeToggle role=switch — onClick + onKeyDown added to outer div
-- BUG-14: Toolbar onAddNote — Add button now calls onAddNote
-- BUG-15: bulkImport — single transaction with rollback
-- BUG-16: ExportDialog HTML — strips HTML tags from markdown
-- BUG-17: Duplicate schema — src/schema.js now re-exports from data/schema.js
-- BUG-18: #canvas-world 1px — changed to inset:0 + minWidth/Height 5000px
-- BUG-20: ModeToggle not wired — mounted in LiquidGlassSidebar footer
-
-**Not bugs / already correct (4):**
-- BUG-2: init() accepts canvasId param, switchCanvas exists
-- BUG-3: Zustand v5 — spread creates new array, no mutation
-- BUG-5: Viewport sync loop — guarded by lastExternalViewport ref
+- BUG-4: updateItem null content fix
+- BUG-6: drag position divergence fix
+- BUG-7: Stack fan toggleFan fix
+- BUG-8: FolderCard inline rename
+- BUG-9: NoteCard saveTimeout cleanup
+- BUG-10: dbPromise singleton pattern
+- BUG-11: BottomSheet snap inverted
+- BUG-12: BottomSheet transform positioning
+- BUG-13: ModeToggle role=switch
+- BUG-14: Toolbar onAddNote
+- BUG-15: bulkImport transaction
+- BUG-16: ExportDialog HTML strip
+- BUG-17: Duplicate schema re-export
+- BUG-18: #canvas-world 1px fix
+- BUG-20: ModeToggle wired in sidebar
 
 ### 2026-06-08 — Full Project Review & Cleanup
 
 **Build Status:** ✓ SUCCESS
 
-**Issues Identified and Fixed:**
+- Added glass-fallback.css import to main.jsx
+- Added card-child CSS classes to glass-fallback.css
+- Fixed toggleTheme optional parameter
+- Fixed manifest.json icon paths with /looking-glass/ prefix
+- Deleted orphaned files: src/cards/, src/canvas/*.ts, src/webgpu/
 
-1. **Missing CSS import** — Added `import './styles/glass-fallback.css';` to `src/main.jsx` to include glass card styles
+### 2026-06-08 — Claude_updates Integration + File Cleanup
 
-2. **Missing CSS classes** — Added to `src/styles/glass-fallback.css`:
-   - `.card-glass-layer` — glass overlay layer (absolute positioned, pointer-events: none)
-   - `.card-content-wrapper` — content wrapper with flex column layout
-   - `.card-separator` — 1px separator between image and content
-   - `.card-metadata` — metadata row with Space Mono styling
+**Commits:** `b4beb271`, `90262a9a`
 
-3. **Theme toggle function** — Fixed `src/utils/theme.js` `toggleTheme()` to accept optional theme parameter for compatibility with LiquidGlassSidebar.jsx call pattern: `toggleTheme(newIsDark ? 'dark' : 'light')`
+- GitHub access verified (Sudo-Prog, PAT auth)
+- Audit fixes committed and pushed
+- Cross-referenced `~/Downloads/Claude_updates/` — 9/10 files already present
+- Restored missing `ContextMenu.jsx` (enhanced) to `src/ui/`
+- Updated App.jsx import path → `../ui/ContextMenu.jsx`
 
-4. **Manifest.json icon paths** — Corrected from `/icons/icon-*.png` to `/looking-glass/icons/icon-*.png` to match base path (`/looking-glass/`)
-
-**Files Removed (Orphaned/Unused):**
-- `src/cards/` directory — all JS/TS files removed (cards defined inline in `src/components/CanvasCard.jsx`)
-- `src/canvas/*.ts` — TypeScript CanvasEngine, DragManager, HistoryManager, SelectionManager
-- `src/webgpu/` — GlassRenderer.ts and uniforms.ts (not connected to app)
+**File cleanup (approved by BOSS):**
+- Removed orphaned `src/cards/` (14 files, 0 external imports)
+- Removed duplicates: `Lightbox.js`, `ExportDialog.js`, root `manifest.json`, `DropModePicker.tsx`, `ui/DropModePicker.jsx`
+- Removed unused: `Toolbar.jsx`, `Sidebar.jsx`, `SpacesSidebar.jsx`, `BottomSheet.jsx`
+- Kept: `src/ui/Minimap.jsx` (future toggle), `src/components/mobile/BottomSheet.js` + `.css` (reference)
+- Build: ✓ SUCCESS (4714 modules)
 
 ---
 
-## What's Live (as of last deploy)
+## What's Live
 
-- Sidebar: 3-state cycle (FAB → expanded → fullmenu → FAB) using `(prev + 1) % 3`
-- StackCard, FolderCard, DropModePicker — code complete, deployed
+- Sidebar: 3-state cycle (FAB → expanded → fullmenu → FAB)
+- StackCard, FolderCard, DropModePicker — deployed
 - Canvas pan/zoom, drag, history, selection
 - Card types: note, bookmark, image, group, stack, folder
-- PWA with service worker (network-first cache strategy)
+- PWA with service worker
 - Light/dark mode
-- Import/Export buttons — MISSING from LiquidGlassSidebar (dropped when Toolbar was replaced)
+- Enhanced context menu (AI, grouping, tags, colours, mobile sheet)
 
 ---
 
-## Open Bugs
+## Still TODO
 
-### BUG-3: Cards invisible in screenshots (PARTIALLY FIXED, still investigating)
-- Card computed style says `background: rgb(255,255,255)` but screenshot pixels show `(245,242,238)` (cream canvas background)
-- Card DOM exists, getBoundingClientRect correct, getComputedStyle reports white
-- Vision model consistently reports "blank canvas" — but cards ARE in the DOM
-- Hypothesis: `#canvas-world` background (dot grid) is compositing over cards, or z-index stacking issue
-- The `#canvas-world` div is `position: absolute; width: 1px; height: 1px` with `z-index: auto`
-- Cards are children of `#canvas-world` with `z-index: auto`
-- **Next step:** Try giving cards explicit `z-index: 1` or move cards outside `#canvas-world`
-
-### BUG-4: Import/Export buttons missing (NOT STARTED)
-- LiquidGlassSidebar has NO import/export/add/delete/undo/redo/zoom buttons
-- Old Toolbar class had these, but was replaced by LiquidGlassSidebar
-- ExportDialog.jsx still exists in src/utils/export/ but is never rendered (no trigger)
-- **Need to add toolbar buttons somewhere** (FAB menu? LiquidGlassSidebar state 2?)
-
----
-
-## Key File Map
-
-```
-src/components/App.jsx            — Main app, LiquidGlassSidebar + Canvas + ExportDialog
-src/canvas/Canvas.jsx             — DnD, card rendering, DropModePicker portal
-src/components/CanvasCard.jsx       — Switch by item.type, renders note/bookmark/image/group/stack/folder
-src/components/DropModePicker.jsx — Stack/Folder choice popup
-src/ui/LiquidGlassSidebar.jsx       — Navigation sidebar, 3-state cycle
-src/styles/canvas.css               — Card styles (restored this session)
-src/styles/stack-folder.css         — Stack/Folder specific styles
-src/styles/glass-fallback.css       — Glass surface CSS classes (added card-child styles this session)
-src/store/useStore.js               — Zustand store with createStack, createFolder actions
-src/data/schema.js                  — ITEM_TYPES including STACK and FOLDER
-src/history/HistoryManager.js       — Undo/redo command pattern
-```
-
----
-
-## BOSS Preferences for This Project
-
-- Never delete files without explicit approval
-- Workers: openrouter/free + ollama, NEVER nous/opus
-- No Tailwind, no Lucide icons — Phosphor only
-- No gradients in sidebar
-- spec-kit init before coding
-- Build in VS Code subagent, not terminal
-- Visual verification required before claiming done
-
----
-
-### Still TODO
-
-1. ~~**Fix BUG-3** (cards invisible in screenshots)~~ — Fixed in `d1f92f20` (#canvas-world size)
-2. **Add toolbar buttons** (add/import/export/undo/redo/zoom) — decide with BOSS where they go
-3. **Test drag-and-drop** stack/folder creation in browser
-4. **Verify StackCard** fan animation works with real items
-5. **Verify FolderCard** expand/collapse/rename works
-6. **Add import/export UI** — ExportDialog.jsx exists but has no trigger in LiquidGlassSidebar
+1. ~~Fix BUG-3~~ — Partial fix done
+2. **Add toolbar buttons** (import/export/undo/redo/zoom)
+3. **Wire Minimap toggle** — `src/ui/Minimap.jsx` needs on/off button
+4. **Test drag-and-drop** stack/folder creation
+5. **Verify StackCard** fan animation
+6. **Verify FolderCard** expand/collapse/rename
