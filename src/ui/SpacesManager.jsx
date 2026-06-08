@@ -27,6 +27,8 @@ import {
 import { create } from 'zustand';
 import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES } from '../data/schema.js';
+import { useStore } from '../store/useStore.js';
+
 
 // ─────────────────────────────────────────────────────────────
 // SPACES STORE SLICE
@@ -220,6 +222,8 @@ export function SpacesManager({ isOpen, onClose }) {
   // Uses main useStore (spacesSlice merged in useStore.js)
   const { spaces, activeSpaceId, switchSpace, createSpace, renameSpace, deleteSpace } =
     useStore();
+
+
 
   const [editingId,   setEditingId]   = useState(null);
   const [editingName, setEditingName] = useState('');
