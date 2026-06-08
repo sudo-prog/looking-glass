@@ -24,7 +24,7 @@ import {
   Check,
   X,
 } from '@phosphor-icons/react';
-import { useStore } from '../store/useStore.js';
+import { create } from 'zustand';
 import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES } from '../data/schema.js';
 
@@ -569,4 +569,11 @@ const iconBtnStyle = {
   flexShrink: 0,
 };
 
-// SpacesManager and spacesSlice are exported as named exports above
+// Standalone store for SpacesManager (avoids circular dependency with useStore.js)
+const useSpacesStore = create((set, get) => ({
+  spaces: [],
+  activeSpaceId: null,
+  ...spacesSlice(set, get),
+}));
+
+export { useSpacesStore };
