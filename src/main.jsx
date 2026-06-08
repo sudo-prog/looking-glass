@@ -1,6 +1,7 @@
 /**
  * LOOKING GLASS — React Main Entry Point
- * V0.4: React 18 + SQLite + Rich Text
+ * V0.5: React 18 + SQLite + Rich Text + Glass + Mobile
+ * Cache bust: 2026-06-08-audit-fixes-v3
  */
 
 async function detectGlassTier() {

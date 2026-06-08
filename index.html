@@ -50,6 +50,9 @@ html, body { height: 100%; overflow: hidden; }
 [data-theme="light"] { background: #F5F2EE; color: #1A1815; }
 body { font-family: 'Space Grotesk', system-ui, sans-serif; }
 #app { height: 100%; display: flex; }
+/* Prevent FOUC on glass elements */
+.lg-glass { visibility: hidden; }
+.lg-glass[data-glass-ready] { visibility: visible; }
 </style>
 </head>
 <body>
