@@ -338,6 +338,8 @@ export function App() {
     setAiSummarise({ mode: 'organise' });
   }, []);
 
+  const filteredItems = getFilteredItems();
+
   // AI cluster handler
   const handleAICluster = useCallback(() => {
     const selectedItems = filteredItems.filter(i => selectedIds.has(i.id));
@@ -345,8 +347,6 @@ export function App() {
       setAiSummarise({ mode: 'cluster', selectedItems });
     }
   }, [filteredItems, selectedIds]);
-
-  const filteredItems = getFilteredItems();
 
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
