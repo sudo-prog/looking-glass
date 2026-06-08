@@ -505,31 +505,37 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
     onContextMenu(item, e.clientX, e.clientY);
   }, [item, onContextMenu]);
 
-  const sharedProps = { item, isSelected, onSelect, onDragStart, onSave, onDelete, onLightbox, onContextMenu: handleContextMenu };
+  let card;
   switch (item.type) {
     case ITEM_TYPES.BOOKMARK:
-      return <BookmarkCard {...sharedProps} />;
+      card = <BookmarkCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />; break;
     case ITEM_TYPES.IMAGE:
-      return <ImageCard {...sharedProps} />;
+      card = <ImageCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />; break;
     case ITEM_TYPES.NOTE:
-      return <NoteCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} />;
+      card = <NoteCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} />; break;
     case ITEM_TYPES.WEB_CLIP:
-      return <WebClipCard {...sharedProps} />;
+      card = <WebClipCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} />; break;
     case ITEM_TYPES.GROUP:
-      return <GroupCard {...sharedProps} />;
+      card = <GroupCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} />; break;
     case ITEM_TYPES.STACK:
-      return <StackCard {...sharedProps} />;
+      card = <StackCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} />; break;
     case ITEM_TYPES.FOLDER:
-      return <FolderCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} />;
+      card = <FolderCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} />; break;
     case ITEM_TYPES.WEB_CLIP_SCREENSHOT:
-      return <WebClipScreenshotCard {...sharedProps} />;
+      card = <WebClipScreenshotCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} onLightbox={onLightbox} />; break;
     case ITEM_TYPES.AUDIO:
-      return <AudioMemoCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} />;
+      card = <AudioMemoCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} />; break;
     case ITEM_TYPES.PDF:
-      return <PDFViewerCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} />;
+      card = <PDFViewerCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} />; break;
     case ITEM_TYPES.VIDEO:
-      return <VideoCard {...sharedProps} />;
+      card = <VideoCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} onLightbox={onLightbox} />; break;
     default:
-      return <BookmarkCard {...sharedProps} />;
+      card = <BookmarkCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />; break;
   }
+
+  return (
+    <div onContextMenu={handleContextMenu} style={{ display: 'contents' }}>
+      {card}
+    </div>
+  );
 }

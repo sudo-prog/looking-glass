@@ -24,7 +24,7 @@ import {
   Check,
   X,
 } from '@phosphor-icons/react';
-import { create } from 'zustand';
+import { useStore } from '../store/useStore.js';
 import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES } from '../data/schema.js';
 
@@ -217,10 +217,9 @@ export function spacesSlice(set, get) {
  * renameSpace, deleteSpace from the Zustand store.
  */
 export function SpacesManager({ isOpen, onClose }) {
-  // These selectors assume spacesSlice is merged into useStore.
-  // Replace with import { useStore } from '../store/useStore.js'
+  // Uses main useStore (spacesSlice merged in useStore.js)
   const { spaces, activeSpaceId, switchSpace, createSpace, renameSpace, deleteSpace } =
-    useSpacesStore();
+    useStore();
 
   const [editingId,   setEditingId]   = useState(null);
   const [editingName, setEditingName] = useState('');
@@ -570,21 +569,4 @@ const iconBtnStyle = {
   flexShrink: 0,
 };
 
-// ─────────────────────────────────────────────────────────────
-// STANDALONE HOOK (for use in LiquidGlassSidebar or elsewhere)
-// Wraps useStore — replace useSpacesStore calls with useStore
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Minimal standalone store for this file when used in isolation.
- * Replace with `import { useStore } from '../store/useStore.js'`
- * once spacesSlice is merged.
- */
-const useSpacesStore = create((set, get) => ({
-  spaces: [],
-  activeSpaceId: null,
-  ...spacesSlice(set, get),
-}));
-
-export { useSpacesStore };
-export default SpacesManager;
+// SpacesManager and spacesSlice are exported as named exports above

@@ -58,7 +58,7 @@ const AI_QUICK_ACTIONS = [
   { id: 'ai-summarize',  label: 'SUMMARIZE',  Icon: NotePencil },
 ];
 
-export default function LiquidGlassSidebar({ onSpacesOpen, onAIOrganise, onAISummarise }) {
+export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrganise, onAISummarise }) {
   // State 0 = collapsed (FAB button only)
   // State 1 = expanded (standard sidebar with labels)
   // State 2 = full menu (wide drawer with sections)
@@ -88,8 +88,10 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onAIOrganise, onAISum
   const handleNavClick = useCallback((id) => {
     setActiveItem(id);
     if (id === 'spaces') onSpacesOpen?.();
-    if (id === 'tags')   setShowTags(true);
-  }, [onSpacesOpen]);
+    if (id === 'tags')   onTagsOpen?.();
+    if (id === 'ai-organise') onAIOrganise?.();
+    if (id === 'ai-summarise') onAISummarise?.();
+  }, [onSpacesOpen, onTagsOpen, onAIOrganise, onAISummarise]);
 
   // Cycle: collapsed(0) → expanded(1) → fullmenu(2) → collapsed(0) → ...
   const handleToggle = () => {

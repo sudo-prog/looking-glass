@@ -132,4 +132,9 @@ export const store = {
     const s = await tx('blobs', 'readwrite');
     return reqPromise(s.delete(id));
   },
+
+  async deleteCanvas(id) {
+    const s = await tx('canvases', 'readwrite');
+    return reqPromise(s.delete(id));
+  },
 };

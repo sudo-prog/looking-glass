@@ -6,6 +6,5 @@ data/bookmarks.json
 data/*.json
 .env
 .DS_Store
-package-lock.json
 yarn.lock
 pnpm-lock.yaml.bak
