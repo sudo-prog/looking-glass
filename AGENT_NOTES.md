@@ -140,6 +140,33 @@ Applied comprehensive bug fix patch set from `~/Downloads/Claude_updates/lg-bug-
 - Kept: `src/ui/Minimap.jsx` (future toggle), `src/components/mobile/BottomSheet.js` + `.css` (reference)
 - Build: ✓ SUCCESS (4714 modules)
 
+### 2026-06-09 — Claude_updates Audit (all files verified)
+
+**Branch:** `develop`
+
+Reviewed all 10 .jsx files + INTEGRATION.md in `~/Downloads/Claude_updates/` against current project files:
+
+| File | Status |
+|------|--------|
+| AISummarisePanel.jsx | ✓ Identical |
+| AudioMemoCard.jsx | ✓ Identical |
+| ContextMenu.jsx | ✓ Identical |
+| DropZoneHandler.jsx | ✓ Identical |
+| PDFViewerCard.jsx | ✓ Identical |
+| ScratchPad.jsx | ✓ Identical |
+| SpacesManager.jsx | ⚠️ Bug in download (uses `useSpacesStore()` not `useStore()`) — **already fixed in project** |
+| TagsSystem.jsx | ✓ Identical |
+| VideoCard.jsx | ✓ Identical |
+| WebClipScreenshotCard.jsx | ✓ Identical |
+| INTEGRATION.md | Integration guide only — no code to apply |
+
+**Bug found in download version (SpacesManager.jsx):**
+- Component used a standalone `useSpacesStore()` Zustand store (created at bottom of file) instead of the main `useStore()` from `../store/useStore.js`
+- This meant space switching/renaming/deleting would have **zero effect** on the canvas
+- **Already fixed in project** — commit `2e41ba18` resolved the circular import issue by inlining `spacesSlice` into `useStore.js` and adding `import { useStore }` to SpacesManager.jsx
+
+**Result:** No bugs to fix. All updates already applied. Working tree clean.
+
 ### 2026-06-08 — Cross-Browser CSS + JS Fixes (Firefox/mobile)
 
 **Commits:** `f06ec520`, `36cd98f1`, `8ac53a75`, `2e41ba18`
