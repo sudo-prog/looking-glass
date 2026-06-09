@@ -15,6 +15,7 @@ import { AISummarisePanel } from '../ui/AISummarisePanel.jsx';
 import { ContextMenu } from '../ui/ContextMenu.jsx';
 import { TagFilterBar, TagsPanel } from '../ui/TagsSystem.jsx';
 import { SpacesManager } from '../ui/SpacesManager.jsx';
+import LiquidOrb from '../ui/LiquidOrb.jsx';
 
 export function App() {
   const initialized = useRef(false);
@@ -439,6 +440,9 @@ export function App() {
 
       {/* Spaces Manager */}
       <SpacesManager isOpen={spacesOpen} onClose={() => setSpacesOpen(false)} />
+
+      {/* Liquid AI Orb — floating glass orb with AI chat */}
+      <LiquidOrb />
     </div>
   );
 }

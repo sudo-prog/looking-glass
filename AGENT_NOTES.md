@@ -207,3 +207,26 @@ Reviewed all 10 .jsx files + INTEGRATION.md in `~/Downloads/Claude_updates/` aga
 4. **Test drag-and-drop** stack/folder creation
 5. **Verify StackCard** fan animation
 6. **Verify FolderCard** expand/collapse/rename
+
+### 2026-06-09 — Liquid AI Orb Integration
+
+**Branch:** `develop`
+
+Integrated the Liquid AI Orb (`LiquidAIOrb-v3.html`) as a React component with full multi-provider AI support. Previously the standalone HTML file was hardcoded to Claude only — now it uses the same shared API config as the sidebar AIModal.
+
+**New files (4):**
+- `src/utils/aiConfig.js` — Shared AI config utility. Single source of truth for provider/model/key stored in `lg-ai-config` localStorage. Supports 7 providers: OpenRouter, Anthropic, OpenAI, Gemini, Groq, Ollama, LiteLLM + custom model IDs.
+- `src/ui/LiquidOrb.jsx` — Full React component: SVG glass displacement (Aave four-fold technique), spring physics, phase machine (orb → pill → chat), multi-provider AI caller, self-editing mutation system, settings panel with provider tabs + custom model input.
+- `src/ui/LiquidOrb.css` — All styles for orb, pill, chat, settings, mutation log, animations.
+
+**Modified files (2):**
+- `src/ui/AIModal.jsx` — Refactored to import from `aiConfig.js` instead of its own hardcoded PROVIDERS/MODELS. Added "Custom model ID…" dropdown option. Now shares config with Orb.
+- `src/components/App.jsx` — Added `<LiquidOrb />` import and render.
+
+**Key architecture:**
+- Both AIModal (sidebar) and LiquidOrb read/write the same `lg-ai-config` localStorage key via `loadAIConfig()`/`saveAIConfig()` from `aiConfig.js`
+- AI caller routes to correct API format per provider: Anthropic Messages API, Google Gemini, or OpenAI-compatible (OpenAI/Groq/OpenRouter/Ollama/LiteLLM)
+- Orb has its own ⚙ settings panel (provider tabs, model select, custom model input, API key)
+- Orb's mutation system can self-edit: PATCH_ELEMENT, SET_CSS, SET_CSS_VAR, MUTATE_LENS, REWRITE_ORB, ADD_FEATURE, REMOVE_FEATURE, SHOW_NOTIFICATION
+
+**Build:** ✓ SUCCESS (4718 modules)
