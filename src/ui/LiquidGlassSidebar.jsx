@@ -19,8 +19,8 @@ import {
   ListChecks,
   NotePencil,
 } from '@phosphor-icons/react';
-import AIModal from './AIModal';
-import { ModeToggle } from './ModeToggle';
+import AIModal     from './AIModal.jsx';
+import { ModeToggle } from './ModeToggle.jsx';
 import { toggleTheme, isDark } from '../utils/theme';
 import './LiquidGlassSidebar.css';
 
@@ -231,11 +231,12 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
           <button
             className="lg-sidebar__toggle"
             onClick={handleToggle}
-            aria-label={isFullMenu ? 'Collapse menu' : 'Collapse sidebar'}
+            aria-label={isFullMenu ? 'Show less' : isExpanded ? 'Show more' : 'Collapse'}
             aria-expanded={true}
           >
-            {isFullMenu ? <CaretLeft size={16} weight="regular" /> :
-                          <CaretLeft size={16} weight="regular" />}
+            {isFullMenu
+              ? <CaretLeft  size={16} weight="regular" />
+              : <CaretRight size={16} weight="regular" />}
           </button>
         </div>
 
@@ -318,6 +319,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
           <span className="lg-sidebar__version">V0.1 · LIQUID GLASS</span>
           <button
             className="lg-sidebar__settings-btn"
+            onClick={() => setShowTags((v) => !v)}
             aria-label="Open settings"
             title="SETTINGS"
           >

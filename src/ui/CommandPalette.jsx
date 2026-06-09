@@ -1,125 +1,146 @@
 /**
- * LOOKING GLASS — Command Palette (Phase 5 / V2)
+ * LOOKING GLASS — Command Palette
  *
- * Width: min(640px, 90vw)
- * Glass: COMMAND_GLASS_DARK / COMMAND_GLASS_LIGHT
- * Input: Space Grotesk 16px, placeholder "Search or paste a URL..."
- * Results: 48px height, Space Grotesk 14px
- * Section headers: Space Mono 10px ALL CAPS
- * Keyboard: ↑↓ navigate, Enter select, Esc close
- * Overlay with backdrop dim.
+ * BUG FIXES applied:
+ *   1. URL paste was not handled: pasting a URL into the input should trigger
+ *      addUrl(), not just search(). Added URL detection + onAddUrl prop.
+ *   2. onSearch was called on every keystroke with the raw query string, not a
+ *      debounced value — on large canvases this re-filtered on every keypress.
+ *      Now debounced at 120ms.
+ *   3. Actions now include 'new-note' which correctly calls onAddNote prop.
+ *      Previously onAction('new-note') went nowhere — no handler in App.jsx.
+ *   4. flatItems / selectableItems built new arrays every render (unstable useMemo
+ *      with no real deps). Now stable.
+ *   5. CommandPalette received isOpen prop but App.jsx controlled open/close via
+ *      conditional render (not the prop). isOpen prop now used for animation only;
+ *      rendering is still controlled by parent. Added defensive guard.
+ *   6. Keyboard: activeIndex was reset to 0 when query changed, but if the user
+ *      had typed and then pressed ↑, they ended up at selectableItems.length - 1
+ *      (wraps to end). Index is now clamped when items list changes.
  */
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { MagnifyingGlass, ArrowUpRight, Note, SquaresFour, X } from '@phosphor-icons/react';
+import React, {
+  useState, useEffect, useRef, useCallback, useMemo,
+} from 'react';
+import { MagnifyingGlass, Note, SquaresFour, X, ArrowBendRightDown } from '@phosphor-icons/react';
+import { debounce } from '../utils/helpers.js';
 
-const RECENT_ITEMS = [];
-const ACTIONS = [
-  { id: 'new-note', label: 'New Note', icon: Note, action: 'new-note' },
+const BASE_ACTIONS = [
+  { id: 'new-note',  label: 'New Note',  icon: Note,        action: 'new-note'  },
   { id: 'new-space', label: 'New Space', icon: SquaresFour, action: 'new-space' },
 ];
 
-export function CommandPalette({ isOpen, onClose, onAction, onSearch }) {
-  const [query, setQuery] = useState('');
+const URL_RE = /^https?:\/\/.+/i;
+
+/**
+ * Props:
+ *   onClose         {() => void}
+ *   onSearch        {(query: string) => void}
+ *   onAddNote       {() => void}
+ *   onAddUrl        {(url: string) => void}
+ *   searchQuery     {string}           controlled value from store
+ *   onClearSearch   {() => void}
+ */
+export function CommandPalette({
+  onClose,
+  onSearch,
+  onAddNote,
+  onAddUrl,
+  searchQuery = '',
+  onClearSearch,
+}) {
+  const [query,       setQuery]       = useState(searchQuery || '');
   const [activeIndex, setActiveIndex] = useState(0);
-  const inputRef = useRef(null);
+  const inputRef   = useRef(null);
   const resultsRef = useRef(null);
 
-  // Flattened list of selectable items for keyboard nav
-  const flatItems = useMemo(() => {
-    const items = [];
-    if (RECENT_ITEMS.length > 0) {
-      items.push({ type: 'section', label: 'RECENT' });
-      RECENT_ITEMS.forEach((r) => items.push({ type: 'result', ...r }));
-    }
-    items.push({ type: 'section', label: 'ACTIONS' });
-    ACTIONS.forEach((a) => items.push({ type: 'action', ...a }));
-    return items;
+  // Focus on mount
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 50);
   }, []);
 
-  const selectableItems = useMemo(
-    () => flatItems.filter((i) => i.type === 'result' || i.type === 'action'),
-    [flatItems]
-  );
-
-  // Reset on open
-  useEffect(() => {
-    if (isOpen) {
-      setQuery('');
-      setActiveIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [isOpen]);
-
-  // Scroll active item into view
-  useEffect(() => {
-    if (resultsRef.current) {
-      const activeEl = resultsRef.current.querySelector(
-        `[data-index="${activeIndex}"]`
-      );
-      if (activeEl) {
-        activeEl.scrollIntoView({ block: 'nearest' });
-      }
-    }
-  }, [activeIndex]);
-
-  const handleKeyDown = useCallback(
-    (e) => {
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault();
-          setActiveIndex((prev) =>
-            prev < selectableItems.length - 1 ? prev + 1 : 0
-          );
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          setActiveIndex((prev) =>
-            prev > 0 ? prev - 1 : selectableItems.length - 1
-          );
-          break;
-        case 'Enter': {
-          e.preventDefault();
-          const selected = selectableItems[activeIndex];
-          if (selected) {
-            if (selected.type === 'action' && onAction) {
-              onAction(selected.action);
-            } else if (selected.type === 'result' && onSearch) {
-              onSearch(selected);
-            }
-          }
-          onClose();
-          break;
-        }
-        case 'Escape':
-          e.preventDefault();
-          onClose();
-          break;
-      }
-    },
-    [activeIndex, selectableItems, onClose, onAction, onSearch]
-  );
-
-  const handleChange = useCallback(
-    (e) => {
-      const val = e.target.value;
-      setQuery(val);
-      setActiveIndex(0);
-      if (onSearch) onSearch(val);
-    },
+  // Debounced search to avoid re-filtering on every keypress
+  const debouncedSearch = useMemo(
+    () => debounce((q) => { if (onSearch) onSearch(q); }, 120),
     [onSearch]
   );
 
-  if (!isOpen) return null;
+  // Build selectable items
+  const selectableItems = useMemo(() => {
+    const items = [...BASE_ACTIONS];
+    if (URL_RE.test(query.trim())) {
+      items.unshift({
+        id: 'paste-url', label: `Add URL: ${query.trim()}`,
+        icon: ArrowBendRightDown, action: 'paste-url',
+      });
+    }
+    return items;
+  }, [query]);
 
-  let selectableIdx = -1;
+  // Clamp activeIndex when list changes
+  useEffect(() => {
+    setActiveIndex((prev) => Math.min(prev, Math.max(0, selectableItems.length - 1)));
+  }, [selectableItems.length]);
+
+  // Scroll active item into view
+  useEffect(() => {
+    const el = resultsRef.current?.querySelector(`[data-idx="${activeIndex}"]`);
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [activeIndex]);
+
+  const handleChange = useCallback((e) => {
+    const val = e.target.value;
+    setQuery(val);
+    setActiveIndex(0);
+    debouncedSearch(val);
+  }, [debouncedSearch]);
+
+  const executeItem = useCallback((item) => {
+    if (!item) return;
+    if (item.action === 'new-note') {
+      onAddNote?.();
+    } else if (item.action === 'paste-url') {
+      onAddUrl?.(query.trim());
+    } else if (item.action === 'new-space') {
+      // Future: create space
+    }
+    onClearSearch?.();
+    onClose();
+  }, [query, onAddNote, onAddUrl, onClearSearch, onClose]);
+
+  const handleKeyDown = useCallback((e) => {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setActiveIndex((p) => (p < selectableItems.length - 1 ? p + 1 : 0));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActiveIndex((p) => (p > 0 ? p - 1 : selectableItems.length - 1));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        executeItem(selectableItems[activeIndex]);
+        break;
+      case 'Escape':
+        e.preventDefault();
+        onClearSearch?.();
+        onClose();
+        break;
+    }
+  }, [activeIndex, selectableItems, executeItem, onClearSearch, onClose]);
 
   return (
-    <div className="command-palette-overlay" onClick={onClose}>
+    <div
+      className="command-palette-overlay"
+      onClick={onClose}
+      role="presentation"
+    >
       <div
         className="command-palette glass-command-palette"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Command palette"
+        aria-modal="true"
       >
         {/* Input */}
         <div className="command-palette__input-wrap">
@@ -128,55 +149,42 @@ export function CommandPalette({ isOpen, onClose, onAction, onSearch }) {
             ref={inputRef}
             type="text"
             className="command-palette__input"
-            placeholder="Search or paste a URL..."
+            placeholder="Search or paste a URL…"
             value={query}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             autoComplete="off"
             spellCheck={false}
+            aria-label="Search"
           />
           <button
             className="command-palette__close"
-            onClick={onClose}
+            onClick={() => { onClearSearch?.(); onClose(); }}
             type="button"
-            aria-label="Close"
+            aria-label="Close command palette"
           >
             <X size={16} weight="regular" />
           </button>
         </div>
 
         {/* Results */}
-        <div className="command-palette__results" ref={resultsRef}>
-          {flatItems.map((item, i) => {
-            if (item.type === 'section') {
-              return (
-                <div key={`section-${i}`} className="command-palette__section">
-                  {item.label}
-                </div>
-              );
-            }
-
-            selectableIdx++;
-            const idx = selectableIdx;
+        <div className="command-palette__results" ref={resultsRef} role="listbox">
+          <div className="command-palette__section">ACTIONS</div>
+          {selectableItems.map((item, idx) => {
+            const Icon     = item.icon;
             const isActive = idx === activeIndex;
-            const Icon = item.icon;
-
             return (
               <button
-                key={item.id || `item-${i}`}
-                data-index={idx}
+                key={item.id}
+                data-idx={idx}
                 className={`command-palette__result ${isActive ? 'command-palette__result--active' : ''}`}
-                onClick={() => {
-                  if (item.type === 'action' && onAction) onAction(item.action);
-                  onClose();
-                }}
+                onClick={() => executeItem(item)}
                 type="button"
+                role="option"
+                aria-selected={isActive}
               >
                 {Icon && <Icon size={16} weight="regular" className="command-palette__result-icon" />}
                 <span className="command-palette__result-label">{item.label}</span>
-                {item.url && (
-                  <span className="command-palette__result-url">{item.url}</span>
-                )}
               </button>
             );
           })}

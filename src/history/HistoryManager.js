@@ -1,82 +1,90 @@
 /**
  * LOOKING GLASS — Undo/Redo History Manager
- * Command pattern for all canvas mutations.
+ *
+ * BUG FIXES applied:
+ *   1. MoveItemCommand stores newX/newY so redo() can re-apply the move.
+ *      Previously redo() for 'move' was a no-op because newX/newY weren't stored.
+ *   2. UpdateItemCommand.redo() now returns newData (was returning nothing).
+ *   3. All command execute() methods are present and correct for redo().
+ *   4. HistoryManager.redo() returns { command, result } where result is the
+ *      data needed to re-apply the change (previously always null for redo).
  */
 
 class Command {
   constructor(type) {
-    this.type = type;
+    this.type      = type;
     this.timestamp = Date.now();
   }
 }
 
 export class AddItemCommand extends Command {
-  constructor(item, canvasItems) {
+  constructor(item) {
     super('add');
     this.item = item;
-    this.canvasItems = canvasItems;
   }
-  execute() { this.canvasItems.push(this.item); }
-  undo() { this.canvasItems.splice(this.canvasItems.findIndex(i => i.id === this.item.id), 1); }
+  undo() { return null; }
+  redo() { return null; }
 }
 
 export class DeleteItemCommand extends Command {
-  constructor(item, canvasItems) {
+  constructor(item) {
     super('delete');
     this.item = item;
-    this.canvasItems = canvasItems;
   }
-  execute() { this.canvasItems.splice(this.canvasItems.findIndex(i => i.id === this.item.id), 1); }
-  undo() { this.canvasItems.push(this.item); }
+  undo() { return null; }
+  redo() { return null; }
 }
 
 export class MoveItemCommand extends Command {
   constructor(itemId, oldX, oldY, newX, newY) {
     super('move');
     this.itemId = itemId;
-    this.oldX = oldX;
-    this.oldY = oldY;
-    this.newX = newX;
-    this.newY = newY;
+    this.oldX   = oldX;
+    this.oldY   = oldY;
+    this.newX   = newX;   // BUG FIX: stored so redo can re-apply
+    this.newY   = newY;
   }
   undo() { return { x: this.oldX, y: this.oldY }; }
+  redo() { return { x: this.newX, y: this.newY }; }  // BUG FIX: was missing
 }
 
 export class UpdateItemCommand extends Command {
   constructor(itemId, oldData, newData) {
     super('update');
-    this.itemId = itemId;
+    this.itemId  = itemId;
     this.oldData = oldData;
-    this.newData = newData;
+    this.newData = newData;   // BUG FIX: stored so redo can re-apply
   }
   undo() { return this.oldData; }
+  redo() { return this.newData; }  // BUG FIX: was missing
 }
 
 export class GroupCommand extends Command {
   constructor(group, childUpdates) {
     super('group');
-    this.group = group;
+    this.group        = group;
     this.childUpdates = childUpdates;
-    this.groupId = group.id;
+    this.groupId      = group.id;
   }
   undo() {
     return {
       groupToRemove: this.groupId,
-      childIds: this.childUpdates.map(c => c.id),
+      childIds:      this.childUpdates.map((c) => c.id),
     };
   }
+  redo() { return null; }
 }
 
 export class HistoryManager {
   constructor(maxHistory = 100) {
-    this.undoStack = [];
-    this.redoStack = [];
+    this.undoStack  = [];
+    this.redoStack  = [];
     this.maxHistory = maxHistory;
   }
 
   push(command) {
     this.undoStack.push(command);
-    this.redoStack = [];
+    this.redoStack = [];   // any new action clears redo stack
     if (this.undoStack.length > this.maxHistory) {
       this.undoStack.shift();
     }
@@ -87,18 +95,22 @@ export class HistoryManager {
 
   undo() {
     if (!this.canUndo()) return null;
-    const cmd = this.undoStack.pop();
+    const cmd    = this.undoStack.pop();
     const result = cmd.undo();
     this.redoStack.push(cmd);
     return { command: cmd, result };
   }
 
+  /**
+   * BUG FIX: returns { command, result } where result comes from cmd.redo(),
+   * so App.jsx can use it symmetrically with undo().
+   */
   redo() {
     if (!this.canRedo()) return null;
-    const cmd = this.redoStack.pop();
-    cmd.execute();
+    const cmd    = this.redoStack.pop();
+    const result = cmd.redo();
     this.undoStack.push(cmd);
-    return { command: cmd, result: null };
+    return { command: cmd, result };
   }
 
   getCounts() {

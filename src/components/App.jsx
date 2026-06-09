@@ -60,7 +60,6 @@ export function App() {
     activeSpaceId,
   } = useStore();
 
-  const [zoom, setZoom] = useState(1);
   const [lightboxItem, setLightboxItem] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [aiSummarise, setAiSummarise] = useState(null);
@@ -205,20 +204,22 @@ export function App() {
     useStore.setState({ undoCounts: history.current.getCounts() });
   }, [deleteItem]);
 
+  const canvasRef = useRef(null);
+
   const handleZoomIn = useCallback(() => {
-    const newScale = Math.min(3, zoom * 1.2);
-    setZoom(newScale);
-    setViewport({ ...viewport, scale: newScale });
-  }, [zoom, viewport, setViewport]);
+    const vp       = useStore.getState().viewport;
+    const newScale = Math.min(3, vp.scale * 1.2);
+    setViewport({ ...vp, scale: newScale });
+  }, [setViewport]);
 
   const handleZoomOut = useCallback(() => {
-    const newScale = Math.max(0.1, zoom / 1.2);
-    setZoom(newScale);
-    setViewport({ ...viewport, scale: newScale });
-  }, [zoom, viewport, setViewport]);
+    const vp       = useStore.getState().viewport;
+    const newScale = Math.max(0.1, vp.scale / 1.2);
+    setViewport({ ...vp, scale: newScale });
+  }, [setViewport]);
 
   const handleFit = useCallback(() => {
-    setZoom(1);
+    canvasRef.current?.fitToContent?.();
   }, []);
 
   const handleExport = useCallback(() => {
@@ -255,11 +256,17 @@ export function App() {
 
   const handleItemSave = useCallback((id, updates) => {
     const item = useStore.getState().items.find((i) => i.id === id);
-    if (item) {
-      history.current.push(new UpdateItemCommand(id, { ...item }, { ...item, ...updates }));
-      updateItem(id, updates);
-      useStore.setState({ undoCounts: history.current.getCounts() });
-    }
+    if (!item) return;
+    const oldSnap = { ...item };
+    const newSnap = {
+      ...item, ...updates,
+      content: { ...item.content, ...(updates.content || {}) },
+      meta:    { ...item.meta,    ...(updates.meta    || {}) },
+      style:   { ...item.style,   ...(updates.style   || {}) },
+    };
+    history.current.push(new UpdateItemCommand(id, oldSnap, newSnap));
+    updateItem(id, updates);
+    useStore.setState({ undoCounts: history.current.getCounts() });
   }, [updateItem]);
 
   // Context menu action handler
@@ -365,6 +372,7 @@ export function App() {
             onClearTags={clearTagFilters}
           />
           <Canvas
+            ref={canvasRef}
             items={filteredItems}
             viewport={viewport}
             selectedIds={selectedIds}

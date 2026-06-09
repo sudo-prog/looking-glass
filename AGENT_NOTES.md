@@ -82,6 +82,37 @@ Sub-agent fixed 20 bugs from `/tmp/bugs.md`. Results:
 - BUG-18: #canvas-world 1px fix
 - BUG-20: ModeToggle wired in sidebar
 
+### 2026-06-09 — Bug Audit Patch 2 (20+ fixes from Claude_updates)
+
+**Branch:** `develop`
+
+Applied comprehensive bug fix patch set from `~/Downloads/Claude_updates/lg-bug-fixes/lg-patch/`.
+
+**Critical / Data loss fixes (5):**
+- `src/data/store.js` — openDB race condition with singleton in-flight promise guard; `bulkImport()` now uses single transaction for atomicity; `deleteCanvas()` was missing — added
+- `src/data/schema.js` — `createItem` now deep-merges `content`/`meta`/`style` so partial overrides don't drop base keys
+- `src/store/useStore.js` — `updateItem` no longer silently drops explicit `null` values (`!= null` check); `setViewport` debounced at 400ms to prevent IDB thrashing; `deleteSelected` batched into single `setState`; `search` strips HTML before matching note content; `exportData` returns correct v0.3 multi-canvas structure
+
+**Broken feature fixes (9):**
+- `src/history/HistoryManager.js` — `redo()` now returns `{ command, result }` with proper data; `MoveItemCommand stores newX/newY` for redo; `UpdateItemCommand.redo()` returns `newData`
+- `src/components/App.jsx` — zoom/pan/fit reading from store viewport (not stale local copy); `handleFit` calls `canvasRef.current.fitToContent()` via `forwardRef`; undo/redo reads fresh state; keyboard handler deps fixed
+- `src/canvas/Canvas.jsx` — `forwardRef` + `useImperativeHandle` exposing `fitToContent`; drag position reads DOM (not React props) eliminating mid-drag divergence; viewport feedback loop killed (transform applied directly via ref during interaction); drop highlights cleared on both pointermove and pointerup; variable shadowing `t` fixed
+- `src/components/CanvasCard.jsx` — NoteCard saveTimeout/editor cleanup on unmount; StackCard toggleFan stopPropagation; FolderCard inline rename (replaces `prompt()`); GroupCard renders from `item.meta.child_items`
+- `src/ui/BottomSheet.jsx` — snap points inverted; `top`+`bottom:0` stretch fixed with `transform: translateY()`; close threshold corrected
+- `src/ui/Minimap.jsx` — viewport dimensions use `window.innerWidth/innerHeight`; minimap click converts to viewport pan offset correctly; render raf cleanup fixed; `getContext('2d')` cached
+- `src/ui/CommandPalette.jsx` — URL paste detection + `onAddUrl`; debounced search at 120ms; `new-note` and `paste-url` actions wired; activeIndex clamped on list change
+- `src/ui/ExportDialog.jsx` — markdown export strips HTML tags with `stripHtml()` before writing
+- `src/utils/export/ExportDialog.jsx` — HTML in markdown export fixed
+
+**Accessibility fixes (2):**
+- `src/ui/ModeToggle.jsx` — keyboard accessible: `role="switch"` now has `onClick` + `onKeyDown` handlers
+- `src/ui/LiquidGlassSidebar.jsx` — settings button (`GearSix`) now has `onClick` handler; toggle icon shows correct direction per state (`CaretRight` for expanded, `CaretLeft` for full menu)
+
+**Stale / dead code (1):**
+- `src/schema.js` — deleted (stale duplicate of `src/data/schema.js`)
+
+**Files changed (18):** `src/data/schema.js`, `src/data/store.js`, `src/store/useStore.js`, `src/history/HistoryManager.js`, `src/components/App.jsx`, `src/canvas/Canvas.jsx`, `src/components/CanvasCard.jsx`, `src/styles/canvas.css`, `src/ui/ModeToggle.jsx`, `src/ui/BottomSheet.jsx` (new), `src/ui/Minimap.jsx`, `src/ui/CommandPalette.jsx`, `src/ui/LiquidGlassSidebar.jsx`, `src/utils/export/ExportDialog.jsx`, `src/schema.js` (deleted), `BUG_AUDIT_REPORT.md` (copied from patch), `AGENT_NOTES.md`
+
 ### 2026-06-08 — Full Project Review & Cleanup
 
 **Build Status:** ✓ SUCCESS

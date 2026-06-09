@@ -11,6 +11,22 @@
 import { create } from 'zustand';
 import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES } from '../data/schema.js';
+import { debounce } from '../utils/helpers.js';
+
+// ── exportData — re-exported for ExportDialog ──────────────
+// This is set by the store below to allow external access
+let _exportDataFn = null;
+export function getExportDataFn() { return _exportDataFn; }
+
+
+// Debounced viewport save to avoid thrashing IDB on every pan/zoom frame
+const saveViewportDebounced = debounce(
+  (canvasId, canvasName, viewport) => {
+    if (!canvasId) return;
+    idbStore.saveCanvas({ id: canvasId, name: canvasName, viewport });
+  },
+  400
+);
 
 // ── spacesSlice (inlined to break circular import) ────────────────
 function spacesSlice(set, get) {
@@ -217,23 +233,30 @@ export const useStore = create((set, get) => ({
       canvas_id: state.canvasId,
     };
     const item = { ...defaults, ...overrides };
-    await idbStore.saveItem(item);
+    await idbStore.upsertItem(item);
     set((s) => ({ items: [...s.items, item] }));
     return item;
   },
 
+  /**
+   * BUG FIX: deep-merge only the keys that are actually provided.
+   * Passing `{ content: null }` no longer silently becomes `{}`.
+   */
   updateItem: async (id, updates) => {
     const state = get();
-    const item = state.items.find((i) => i.id === id);
+    const item  = state.items.find((i) => i.id === id);
     if (!item) return;
+
     const updated = {
       ...item,
       ...updates,
-      content: { ...(item.content || {}), ...(updates.content || {}) },
-      meta: { ...(item.meta || {}), ...(updates.meta || {}) },
+      content:    updates.content  != null ? { ...item.content,  ...updates.content  } : item.content,
+      meta:       updates.meta     != null ? { ...item.meta,     ...updates.meta     } : item.meta,
+      style:      updates.style    != null ? { ...item.style,    ...updates.style    } : item.style,
       updated_at: Date.now(),
     };
-    await idbStore.saveItem(updated);
+
+    await idbStore.upsertItem(updated);
     set((s) => ({ items: s.items.map((i) => (i.id === id ? updated : i)) }));
   },
 
@@ -274,21 +297,41 @@ export const useStore = create((set, get) => ({
   },
 
   // Viewport
-  setViewport: (vp) => set({ viewport: vp }),
+  /**
+   * BUG FIX: debounce IDB write to avoid thrashing on every pan/zoom frame.
+   */
+  setViewport: (viewport) => {
+    const { canvasId, canvasName } = get();
+    set({ viewport });
+    saveViewportDebounced(canvasId, canvasName, viewport);
+  },
 
   // Search
+  /**
+   * BUG FIX: strip HTML tags before searching note text content.
+   */
   search: (query) => {
-    const state = get();
-    if (!query) {
+    if (!query.trim()) {
       set({ searchQuery: '', searchResults: null });
       return;
     }
     const q = query.toLowerCase();
-    const results = state.items.filter((item) => {
-      const title = item.content?.title?.toLowerCase() || '';
-      const text  = item.content?.text?.toLowerCase() || '';
-      return title.includes(q) || text.includes(q);
-    });
+
+    const stripHtml = (html) => {
+      if (!html) return '';
+      const d = document.createElement('div');
+      d.innerHTML = html;
+      return d.textContent || '';
+    };
+
+    const results = get().items.filter((item) =>
+      (item.content?.title       || '').toLowerCase().includes(q) ||
+      (item.content?.description || '').toLowerCase().includes(q) ||
+      stripHtml(item.content?.text || '').toLowerCase().includes(q) ||
+      (item.content?.url         || '').toLowerCase().includes(q) ||
+      (item.meta?.domain         || '').toLowerCase().includes(q) ||
+      (item.meta?.tags           || []).some((t) => t.toLowerCase().includes(q))
+    );
     set({ searchQuery: query, searchResults: results });
   },
 
@@ -428,7 +471,7 @@ export const useStore = create((set, get) => ({
         child_ids: items.map((i) => i.id),
       },
     });
-    await idbStore.saveItem(stack);
+    await idbStore.upsertItem(stack);
     set((s) => ({ items: [...s.items, stack] }));
   },
 
@@ -458,7 +501,7 @@ export const useStore = create((set, get) => ({
         child_ids: items.map((i) => i.id),
       },
     });
-    await idbStore.saveItem(folder);
+    await idbStore.upsertItem(folder);
     set((s) => ({ items: [...s.items, folder] }));
   },
 
@@ -485,15 +528,17 @@ export const useStore = create((set, get) => ({
   clearTagFilters: () => set({ activeTagFilters: new Set() }),
 
   // Bulk actions
+  /**
+   * BUG FIX: batch into a single setState call to avoid N re-renders.
+   */
   deleteSelected: async () => {
-    const state = get();
-    for (const id of state.selectedIds) {
-      await idbStore.deleteItem(id);
-    }
-    set((s) => ({
-      items: s.items.filter((i) => !s.selectedIds.has(i.id)),
+    const { selectedIds, items } = get();
+    if (selectedIds.size === 0) return;
+    await Promise.all([...selectedIds].map((id) => idbStore.deleteItem(id)));
+    set({
+      items:       items.filter((i) => !selectedIds.has(i.id)),
       selectedIds: new Set(),
-    }));
+    });
   },
 
   // Import/Export dialogs
@@ -508,7 +553,7 @@ export const useStore = create((set, get) => ({
       await idbStore.saveCanvas(canvas);
     }
     for (const item of data.items || []) {
-      await idbStore.saveItem(item);
+      await idbStore.upsertItem(item);
     }
 
     await get().initSpaces();

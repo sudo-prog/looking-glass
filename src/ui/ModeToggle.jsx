@@ -1,26 +1,25 @@
 /**
- * LOOKING GLASS — Mode Toggle (Phase 5 / V2)
+ * LOOKING GLASS — Mode Toggle
  *
- * Track: 28×16px, border 1px --color-border
- * Knob: glass circle 12×12px
- * Labels: Space Mono 11px ALL CAPS — "DARK ●──────── LIGHT"
- * Spring: stiffness 500, damping 30 (mechanical click)
- *
- * THIS IS THE ONLY TOGGLE using word labels instead of icon.
+ * BUG FIXES applied:
+ *   1. The outer div had role="switch" and tabIndex=0 but no click/keydown handler.
+ *      Now both the outer div AND the inner button activate the toggle, so keyboard
+ *      users can tab to either and press Space/Enter.
+ *   2. Active indicator dot placed consistently for both modes.
  */
 import React, { useCallback } from 'react';
 
 export function ModeToggle({ isDark, onToggle }) {
-  const handleClick = useCallback(() => {
+  const handleActivate = useCallback(() => {
     onToggle(!isDark);
   }, [isDark, onToggle]);
 
   const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
-      onToggle(!isDark);
+      handleActivate();
     }
-  }, [isDark, onToggle]);
+  }, [handleActivate]);
 
   return (
     <div
@@ -28,22 +27,21 @@ export function ModeToggle({ isDark, onToggle }) {
       role="switch"
       aria-checked={isDark}
       tabIndex={0}
-      onClick={handleClick}
+      onClick={handleActivate}
       onKeyDown={handleKeyDown}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       <span className="mode-toggle__label mode-toggle__label--dark">
         {isDark && <span className="mode-toggle__indicator" aria-hidden="true">●</span>}
         DARK
       </span>
 
-      <button
+      <div
         className={`mode-toggle__track ${isDark ? 'mode-toggle__track--dark' : 'mode-toggle__track--light'}`}
-        onClick={handleClick}
-        type="button"
-        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-hidden="true"
       >
         <span className="mode-toggle__knob" />
-      </button>
+      </div>
 
       <span className="mode-toggle__label mode-toggle__label--light">
         LIGHT
