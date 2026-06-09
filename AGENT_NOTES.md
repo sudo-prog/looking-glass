@@ -109,6 +109,23 @@ Sub-agent fixed 20 bugs from `/tmp/bugs.md`. Results:
 - Kept: `src/ui/Minimap.jsx` (future toggle), `src/components/mobile/BottomSheet.js` + `.css` (reference)
 - Build: ✓ SUCCESS (4714 modules)
 
+### 2026-06-08 — Cross-Browser CSS + JS Fixes (Firefox/mobile)
+
+**Commits:** `f06ec520`, `36cd98f1`, `8ac53a75`, `2e41ba18`
+
+**Problem:** App loaded blank on Firefox/mobile with `Cannot access 'fo' before initialization` — a JS Temporal Dead Zone (TDZ) error in the minified bundle.
+
+**Fixes:**
+1. **CSS `@supports not` Tier 3 fallback** (`glass-fallback.css`) — added auto-detection for browsers without `backdrop-filter` support. Applies solid backgrounds (`#1A1A1A` dark / `#EDE9E3` light) when blur is unsupported. Includes `-webkit-backdrop-filter` prefix for Safari.
+
+2. **Circular import broken** (`useStore.js`) — `SpacesManager.jsx` imported `useStore` from `useStore.js`, and `useStore.js` imported `spacesSlice` from `SpacesManager.jsx`. Inlined `spacesSlice` directly into `useStore.js` and removed the re-export.
+
+3. **TDZ in App.jsx** — `filteredItems` was declared *after* `handleAICluster` callback which referenced it. The minifier hoisted it and renamed to `fo`, causing `Cannot access 'fo' before initialization`. Moved `filteredItems` declaration above the callback.
+
+4. **Missing import** (`SpacesManager.jsx`) — The component called `useStore()` but didn't import it. Added `import { useStore }` at the top of the file.
+
+**Result:** Site loads cleanly on Firefox, Chrome, Safari. No console errors.
+
 ---
 
 ## What's Live
@@ -120,6 +137,7 @@ Sub-agent fixed 20 bugs from `/tmp/bugs.md`. Results:
 - PWA with service worker
 - Light/dark mode
 - Enhanced context menu (AI, grouping, tags, colours, mobile sheet)
+- Cross-browser glass fallbacks (Firefox, older Safari, mobile)
 
 ---
 
