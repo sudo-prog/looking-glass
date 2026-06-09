@@ -159,15 +159,13 @@ function NoteCard({ item, isSelected, onSelect, onDragStart, onSave }) {
     };
   }, [editing, editor, onSave]);
 
-  // Clear save timeout on unmount
+  // BUG FIX: destroy editor and clear timeout on unmount
   useEffect(() => {
     return () => {
-      if (saveTimeout.current) {
-        clearTimeout(saveTimeout.current);
-        saveTimeout.current = null;
-      }
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+      editor?.destroy();
     };
-  }, []);
+  }, [editor]);
 
   const firstLine = (() => {
     if (!item.content.text) return 'Note';
@@ -228,7 +226,8 @@ function WebClipCard({ item, isSelected, onSelect, onDragStart }) {
 
 // ── Group Card ─────────────────────────────────────────────
 
-function GroupCard({ item, isSelected, onSelect, onDragStart, children }) {
+function GroupCard({ item, isSelected, onSelect, onDragStart }) {
+  const children = item.meta?.child_items || [];
   return (
     <div
       className={`canvas-card card-group ${isSelected ? 'selected' : ''}`}
@@ -242,9 +241,11 @@ function GroupCard({ item, isSelected, onSelect, onDragStart, children }) {
         <span className="card-handle">⠿</span>
         <span className="card-title">{escapeHtml(item.content.title || 'Group')}</span>
       </div>
-      <div className="group-children">
-        {children}
-      </div>
+      {children.length > 0 && (
+        <div className="group-children" style={{ fontSize: 11, padding: '4px 8px', opacity: 0.6 }}>
+          {children.length} item{children.length !== 1 ? 's' : ''}
+        </div>
+      )}
     </div>
   );
 }
