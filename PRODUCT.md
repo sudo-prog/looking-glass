@@ -32,10 +32,7 @@ This should feel like a prestigious iOS app — the kind that wins Apple Design 
 
 ## Anti-references (what this must NEVER look like)
 
-- **Glassmorphism** — no cheap translucent blur overlays, no frosted glass cards, no generic "glass" UI trend. Real glass refraction through WebGPU, or nothing.
-- **Collaboration whiteboards** — no Miro/Figma sticky notes, avatars, cursors, real-time collaboration UI
 - **Generic SaaS dashboards** — no sidebar nav + cards + search bar template
-- **Spatial memory / memory palace metaphors** — no VR rooms, no object-based memory palace, no 3D room navigation
 - **Broken, unfinished, janky** — no half-rendered UI, missing buttons, inconsistent spacing, buttons that don't work
 - **Cheap knockoffs** — nothing that feels like a template, a clone, or an imitation. Every pixel must feel intentional.
 - **Look-alikes** — nothing that feels like Notion, Evernote, Miro, or any existing tool
