@@ -235,24 +235,26 @@ export function BookmarksPanel({ isOpen, onClose }) {
         }}
       />
 
+      <style>{`@keyframes lg-bookmarks-slide { from { transform: translateX(-100%); } to { transform: translateX(0); } }`}</style>
+
       {/* Panel */}
       <div
         role="dialog"
         aria-label="Bookmarks"
         style={{
           position: 'fixed',
-          top: 0, right: 0, bottom: 0,
+          top: 0, left: 0, bottom: 0,
           width: 'min(420px, 90vw)',
           zIndex: 'var(--z-dropdown)',
-          background: 'rgba(16,16,16,0.97)',
+          background: 'var(--glass-frost)',
           backdropFilter: 'blur(32px) saturate(120%)',
           WebkitBackdropFilter: 'blur(32px) saturate(120%)',
-          borderLeft: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '-8px 0 48px rgba(0,0,0,0.60)',
+          borderRight: '1px solid var(--color-border)',
+          boxShadow: '8px 0 48px var(--glass-cast-shadow)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          animation: 'settings-slide 0.25s cubic-bezier(0.32,0.72,0,1) both',
+          animation: 'lg-bookmarks-slide 0.25s cubic-bezier(0.32,0.72,0,1) both',
         }}
       >
         {/* Header */}
