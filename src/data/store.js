@@ -4,38 +4,62 @@
  * VERSION:    1
  * STORES:
  *   - canvases:  keyPath='id'
- *   - items:     keyPath='id', indexes=['canvas_id', 'type', 'meta.tags']
+ *   - items:     keyPath='id', indexes=['canvas_id', 'type']
  *   - blobs:     keyPath='id'
+ *
+ * BUG FIXES:
+ *   - openDB() is now guarded by a single in-flight promise to prevent
+ *     concurrent open races (double onupgradeneeded / double resolve).
+ *   - bulkImport() uses a single transaction for atomicity + performance.
+ *   - deleteCanvas() added (was missing, referenced by SpacesManager).
+ *   - tx() helper now throws a clear error when called before init().
  */
 
-const DB_NAME = 'looking-glass-db';
+const DB_NAME    = 'looking-glass-db';
 const DB_VERSION = 1;
 
-let db = null;
-let dbPromise = null;
+let db          = null;
+let openPromise = null;   // singleton in-flight open promise
 
 function openDB() {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
+  if (db)          return Promise.resolve(db);
+  if (openPromise) return openPromise;
+
+  openPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
+
     request.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('canvases')) {
-        db.createObjectStore('canvases', { keyPath: 'id' });
+      const database = e.target.result;
+      if (!database.objectStoreNames.contains('canvases')) {
+        database.createObjectStore('canvases', { keyPath: 'id' });
       }
-      if (!db.objectStoreNames.contains('items')) {
-        const itemStore = db.createObjectStore('items', { keyPath: 'id' });
+      if (!database.objectStoreNames.contains('items')) {
+        const itemStore = database.createObjectStore('items', { keyPath: 'id' });
         itemStore.createIndex('canvas_id', 'canvas_id', { unique: false });
-        itemStore.createIndex('type', 'type', { unique: false });
+        itemStore.createIndex('type',      'type',      { unique: false });
       }
-      if (!db.objectStoreNames.contains('blobs')) {
-        db.createObjectStore('blobs', { keyPath: 'id' });
+      if (!database.objectStoreNames.contains('blobs')) {
+        database.createObjectStore('blobs', { keyPath: 'id' });
       }
     };
-    request.onsuccess = (e) => { db = e.target.result; resolve(db); };
-    request.onerror = (e) => reject(e.target.error);
+
+    request.onsuccess = (e) => {
+      db          = e.target.result;
+      openPromise = null;
+      resolve(db);
+    };
+
+    request.onerror = (e) => {
+      openPromise = null;
+      reject(e.target.error);
+    };
+
+    request.onblocked = () => {
+      console.warn('[LG store] DB open blocked — another tab may be open with an older version.');
+    };
   });
-  return dbPromise;
+
+  return openPromise;
 }
 
 async function getDB() {
@@ -43,24 +67,24 @@ async function getDB() {
   return openDB();
 }
 
-function tx(storeName, mode = 'readonly') {
-  return getDB().then(db => db.transaction(storeName, mode).objectStore(storeName));
+async function tx(storeName, mode = 'readonly') {
+  const database = await getDB();
+  return database.transaction(storeName, mode).objectStore(storeName);
 }
 
 function reqPromise(req) {
   return new Promise((resolve, reject) => {
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onerror  = () => reject(req.error);
   });
 }
 
 export const store = {
   async init() {
-    const database = await openDB();
-    db = database;
-    return database;
+    return openDB();
   },
 
+  // ── Canvases ────────────────────────────────────────────
   async getCanvas(id) {
     const s = await tx('canvases');
     return reqPromise(s.get(id));
@@ -68,12 +92,7 @@ export const store = {
 
   async saveCanvas(state) {
     const s = await tx('canvases', 'readwrite');
-    return reqPromise(s.put(state));
-  },
-
-  async deleteCanvas(id) {
-    const s = await tx('canvases', 'readwrite');
-    return reqPromise(s.delete(id));
+    return reqPromise(s.put({ ...state, updated_at: Date.now() }));
   },
 
   async listCanvases() {
@@ -81,6 +100,12 @@ export const store = {
     return reqPromise(s.getAll());
   },
 
+  async deleteCanvas(id) {
+    const s = await tx('canvases', 'readwrite');
+    return reqPromise(s.delete(id));
+  },
+
+  // ── Items ───────────────────────────────────────────────
   async getItem(id) {
     const s = await tx('items');
     return reqPromise(s.get(id));
@@ -96,45 +121,44 @@ export const store = {
     return reqPromise(s.delete(id));
   },
 
+  /**
+   * BUG FIX: use a SINGLE transaction for atomicity.
+   * If any write fails, the whole transaction rolls back automatically.
+   */
   async bulkImport(items) {
-    const s = await tx('items', 'readwrite');
-    // Use a single transaction for all puts; if any fail, roll back
+    if (!items || items.length === 0) return;
+    const database = await getDB();
     return new Promise((resolve, reject) => {
-      const t = s.transaction;
-      t.oncomplete = () => resolve();
-      t.onerror = () => reject(t.error);
-      t.onabort = () => reject(t.error || new Error('bulkImport aborted'));
+      const transaction = database.transaction('items', 'readwrite');
+      const store       = transaction.objectStore('items');
+      transaction.oncomplete = () => resolve();
+      transaction.onerror   = (e) => reject(e.target.error);
       for (const item of items) {
-        s.put(item);
+        store.put(item);
       }
     });
   },
 
   async exportCanvas(canvasId) {
-    const s = await tx('items');
+    const s     = await tx('items');
     const index = s.index('canvas_id');
-    const items = await reqPromise(index.getAll(canvasId));
-    return items;
+    return reqPromise(index.getAll(canvasId));
   },
 
+  // ── Blobs ────────────────────────────────────────────────
   async saveBlob(id, blob) {
     const s = await tx('blobs', 'readwrite');
     return reqPromise(s.put({ id, blob }));
   },
 
   async getBlob(id) {
-    const s = await tx('blobs');
+    const s      = await tx('blobs');
     const result = await reqPromise(s.get(id));
     return result ? result.blob : null;
   },
 
   async deleteBlob(id) {
     const s = await tx('blobs', 'readwrite');
-    return reqPromise(s.delete(id));
-  },
-
-  async deleteCanvas(id) {
-    const s = await tx('canvases', 'readwrite');
     return reqPromise(s.delete(id));
   },
 };

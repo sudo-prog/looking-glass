@@ -20,8 +20,8 @@ export const applyTheme = (theme) => {
   window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme } }));
 };
 
-export const toggleTheme = () => {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+export const toggleTheme = (theme) => {
+  const current = theme || document.documentElement.getAttribute('data-theme') || 'dark';
   applyTheme(current === 'dark' ? 'light' : 'dark');
 };
 

@@ -12,9 +12,11 @@ import { Lightbox } from '../ui/Lightbox.jsx';
 import { ScratchPad } from '../ui/ScratchPad.jsx';
 import { DropZoneHandler } from '../ui/DropZoneHandler.jsx';
 import { AISummarisePanel } from '../ui/AISummarisePanel.jsx';
-import { ContextMenu } from '../components/ContextMenu.jsx';
+import { ContextMenu } from '../ui/ContextMenu.jsx';
+import { CommandPalette } from '../ui/CommandPalette.jsx';
 import { TagFilterBar, TagsPanel } from '../ui/TagsSystem.jsx';
 import { SpacesManager } from '../ui/SpacesManager.jsx';
+import LiquidOrb from '../ui/LiquidOrb.jsx';
 
 export function App() {
   const initialized = useRef(false);
@@ -60,12 +62,12 @@ export function App() {
     activeSpaceId,
   } = useStore();
 
-  const [zoom, setZoom] = useState(1);
   const [lightboxItem, setLightboxItem] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [aiSummarise, setAiSummarise] = useState(null);
   const [spacesOpen, setSpacesOpen] = useState(false);
   const [showTags, setShowTags] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // Initialize
   useEffect(() => {
@@ -90,8 +92,7 @@ export function App() {
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        const query = prompt('Search...');
-        if (query !== null) search(query);
+        setCommandPaletteOpen(true);
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
@@ -116,14 +117,18 @@ export function App() {
         return;
       }
       if (e.key === 'Escape') {
-        clearSelection();
-        clearSearch();
+        if (commandPaletteOpen) {
+          setCommandPaletteOpen(false);
+        } else {
+          clearSelection();
+          clearSearch();
+        }
         return;
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedIds, search, clearSearch, clearSelection, addNote]);
+  }, [selectedIds, search, clearSearch, clearSelection, addNote, commandPaletteOpen]);
 
   const handleUndo = useCallback(() => {
     const result = history.current.undo();
@@ -205,20 +210,22 @@ export function App() {
     useStore.setState({ undoCounts: history.current.getCounts() });
   }, [deleteItem]);
 
+  const canvasRef = useRef(null);
+
   const handleZoomIn = useCallback(() => {
-    const newScale = Math.min(3, zoom * 1.2);
-    setZoom(newScale);
-    setViewport({ ...viewport, scale: newScale });
-  }, [zoom, viewport, setViewport]);
+    const vp       = useStore.getState().viewport;
+    const newScale = Math.min(3, vp.scale * 1.2);
+    setViewport({ ...vp, scale: newScale });
+  }, [setViewport]);
 
   const handleZoomOut = useCallback(() => {
-    const newScale = Math.max(0.1, zoom / 1.2);
-    setZoom(newScale);
-    setViewport({ ...viewport, scale: newScale });
-  }, [zoom, viewport, setViewport]);
+    const vp       = useStore.getState().viewport;
+    const newScale = Math.max(0.1, vp.scale / 1.2);
+    setViewport({ ...vp, scale: newScale });
+  }, [setViewport]);
 
   const handleFit = useCallback(() => {
-    setZoom(1);
+    canvasRef.current?.fitToContent?.();
   }, []);
 
   const handleExport = useCallback(() => {
@@ -255,11 +262,17 @@ export function App() {
 
   const handleItemSave = useCallback((id, updates) => {
     const item = useStore.getState().items.find((i) => i.id === id);
-    if (item) {
-      history.current.push(new UpdateItemCommand(id, { ...item }, { ...item, ...updates }));
-      updateItem(id, updates);
-      useStore.setState({ undoCounts: history.current.getCounts() });
-    }
+    if (!item) return;
+    const oldSnap = { ...item };
+    const newSnap = {
+      ...item, ...updates,
+      content: { ...item.content, ...(updates.content || {}) },
+      meta:    { ...item.meta,    ...(updates.meta    || {}) },
+      style:   { ...item.style,   ...(updates.style   || {}) },
+    };
+    history.current.push(new UpdateItemCommand(id, oldSnap, newSnap));
+    updateItem(id, updates);
+    useStore.setState({ undoCounts: history.current.getCounts() });
   }, [updateItem]);
 
   // Context menu action handler
@@ -338,6 +351,8 @@ export function App() {
     setAiSummarise({ mode: 'organise' });
   }, []);
 
+  const filteredItems = getFilteredItems();
+
   // AI cluster handler
   const handleAICluster = useCallback(() => {
     const selectedItems = filteredItems.filter(i => selectedIds.has(i.id));
@@ -346,8 +361,6 @@ export function App() {
     }
   }, [filteredItems, selectedIds]);
 
-  const filteredItems = getFilteredItems();
-
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
       <LiquidGlassSidebar
@@ -355,6 +368,10 @@ export function App() {
         onTagsOpen={() => setShowTags(true)}
         onAIOrganise={handleAIOrganise}
         onAISummarise={() => setAiSummarise({ mode: 'card' })}
+        onSearch={() => setCommandPaletteOpen(true)}
+        onAddNote={() => addNote()}
+        onAddUrl={(url) => addUrl(url)}
+        onExport={handleExport}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -365,6 +382,7 @@ export function App() {
             onClearTags={clearTagFilters}
           />
           <Canvas
+            ref={canvasRef}
             items={filteredItems}
             viewport={viewport}
             selectedIds={selectedIds}
@@ -394,6 +412,19 @@ export function App() {
         <Lightbox
           item={lightboxItem}
           onClose={() => setLightboxItem(null)}
+        />
+      )}
+
+      {/* Command Palette */}
+      {commandPaletteOpen && (
+        <CommandPalette
+          isOpen={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+          onSearch={search}
+          onAddNote={() => addNote()}
+          onAddUrl={(url) => addUrl(url)}
+          searchQuery={searchQuery}
+          onClearSearch={clearSearch}
         />
       )}
 
@@ -431,6 +462,9 @@ export function App() {
 
       {/* Spaces Manager */}
       <SpacesManager isOpen={spacesOpen} onClose={() => setSpacesOpen(false)} />
+
+      {/* Liquid AI Orb — floating glass orb with AI chat */}
+      <LiquidOrb />
     </div>
   );
 }

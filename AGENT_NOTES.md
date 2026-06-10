@@ -19,7 +19,7 @@ Spatial canvas app — infinite pan/zoom workspace with cards (notes, bookmarks,
 - `develop` branch → merge to `main` → GitHub Actions auto-deploys to GitHub Pages
 - Workflow: `.github/workflows/deploy.yml` — uses `actions/upload-pages-artifact@v3` + `actions/deploy-pages@v4` (modern API, NOT legacy gh-pages branch)
 - CDN cache can lag 30-60s after push
-- JS bundle: ~582KB, CSS: ~35KB
+- JS bundle: ~723KB, CSS: ~43KB
 
 ---
 
@@ -66,95 +66,212 @@ Sub-agent fixed 20 bugs from `/tmp/bugs.md`. Results:
 
 **Fixed (16):**
 - BUG-1/19: handleRedo missing move/update — already correct in code
-- BUG-4: updateItem null content — `updates.content || {}` → nullish check
-- BUG-6: drag position divergence — reads DOM style.left at drag start
-- BUG-7: Stack fan toggleFan — e.stopPropagation() added
-- BUG-8: FolderCard prompt() — replaced with inline rename input
-- BUG-9: NoteCard saveTimeout — cleanup on unmount
-- BUG-10: init() race — dbPromise singleton pattern
-- BUG-11: BottomSheet snap inverted — SNAP_POINTS corrected (full=15, peek=90)
-- BUG-12: BottomSheet top positioning — switched to transform: translateY()
-- BUG-13: ModeToggle role=switch — onClick + onKeyDown added to outer div
-- BUG-14: Toolbar onAddNote — Add button now calls onAddNote
-- BUG-15: bulkImport — single transaction with rollback
-- BUG-16: ExportDialog HTML — strips HTML tags from markdown
-- BUG-17: Duplicate schema — src/schema.js now re-exports from data/schema.js
-- BUG-18: #canvas-world 1px — changed to inset:0 + minWidth/Height 5000px
-- BUG-20: ModeToggle not wired — mounted in LiquidGlassSidebar footer
+- BUG-4: updateItem null content fix
+- BUG-6: drag position divergence fix
+- BUG-7: Stack fan toggleFan fix
+- BUG-8: FolderCard inline rename
+- BUG-9: NoteCard saveTimeout cleanup
+- BUG-10: dbPromise singleton pattern
+- BUG-11: BottomSheet snap inverted
+- BUG-12: BottomSheet transform positioning
+- BUG-13: ModeToggle role=switch
+- BUG-14: Toolbar onAddNote
+- BUG-15: bulkImport transaction
+- BUG-16: ExportDialog HTML strip
+- BUG-17: Duplicate schema re-export
+- BUG-18: #canvas-world 1px fix
+- BUG-20: ModeToggle wired in sidebar
 
-**Not bugs / already correct (4):**
-- BUG-2: init() accepts canvasId param, switchCanvas exists
-- BUG-3: Zustand v5 — spread creates new array, no mutation
-- BUG-5: Viewport sync loop — guarded by lastExternalViewport ref
+### 2026-06-09 — Bug Audit Patch 2 (20+ fixes from Claude_updates)
+
+**Branch:** `develop`
+
+Applied comprehensive bug fix patch set from `~/Downloads/Claude_updates/lg-bug-fixes/lg-patch/`.
+
+**Critical / Data loss fixes (5):**
+- `src/data/store.js` — openDB race condition with singleton in-flight promise guard; `bulkImport()` now uses single transaction for atomicity; `deleteCanvas()` was missing — added
+- `src/data/schema.js` — `createItem` now deep-merges `content`/`meta`/`style` so partial overrides don't drop base keys
+- `src/store/useStore.js` — `updateItem` no longer silently drops explicit `null` values (`!= null` check); `setViewport` debounced at 400ms to prevent IDB thrashing; `deleteSelected` batched into single `setState`; `search` strips HTML before matching note content; `exportData` returns correct v0.3 multi-canvas structure
+
+**Broken feature fixes (9):**
+- `src/history/HistoryManager.js` — `redo()` now returns `{ command, result }` with proper data; `MoveItemCommand stores newX/newY` for redo; `UpdateItemCommand.redo()` returns `newData`
+- `src/components/App.jsx` — zoom/pan/fit reading from store viewport (not stale local copy); `handleFit` calls `canvasRef.current.fitToContent()` via `forwardRef`; undo/redo reads fresh state; keyboard handler deps fixed
+- `src/canvas/Canvas.jsx` — `forwardRef` + `useImperativeHandle` exposing `fitToContent`; drag position reads DOM (not React props) eliminating mid-drag divergence; viewport feedback loop killed (transform applied directly via ref during interaction); drop highlights cleared on both pointermove and pointerup; variable shadowing `t` fixed
+- `src/components/CanvasCard.jsx` — NoteCard saveTimeout/editor cleanup on unmount; StackCard toggleFan stopPropagation; FolderCard inline rename (replaces `prompt()`); GroupCard renders from `item.meta.child_items`
+- `src/ui/BottomSheet.jsx` — snap points inverted; `top`+`bottom:0` stretch fixed with `transform: translateY()`; close threshold corrected
+- `src/ui/Minimap.jsx` — viewport dimensions use `window.innerWidth/innerHeight`; minimap click converts to viewport pan offset correctly; render raf cleanup fixed; `getContext('2d')` cached
+- `src/ui/CommandPalette.jsx` — URL paste detection + `onAddUrl`; debounced search at 120ms; `new-note` and `paste-url` actions wired; activeIndex clamped on list change
+- `src/ui/ExportDialog.jsx` — markdown export strips HTML tags with `stripHtml()` before writing
+- `src/utils/export/ExportDialog.jsx` — HTML in markdown export fixed
+
+**Accessibility fixes (2):**
+- `src/ui/ModeToggle.jsx` — keyboard accessible: `role="switch"` now has `onClick` + `onKeyDown` handlers
+- `src/ui/LiquidGlassSidebar.jsx` — settings button (`GearSix`) now has `onClick` handler; toggle icon shows correct direction per state (`CaretRight` for expanded, `CaretLeft` for full menu)
+
+**Stale / dead code (1):**
+- `src/schema.js` — deleted (stale duplicate of `src/data/schema.js`)
+
+**Files changed (18):** `src/data/schema.js`, `src/data/store.js`, `src/store/useStore.js`, `src/history/HistoryManager.js`, `src/components/App.jsx`, `src/canvas/Canvas.jsx`, `src/components/CanvasCard.jsx`, `src/styles/canvas.css`, `src/ui/ModeToggle.jsx`, `src/ui/BottomSheet.jsx` (new), `src/ui/Minimap.jsx`, `src/ui/CommandPalette.jsx`, `src/ui/LiquidGlassSidebar.jsx`, `src/utils/export/ExportDialog.jsx`, `src/schema.js` (deleted), `BUG_AUDIT_REPORT.md` (copied from patch), `AGENT_NOTES.md`
+
+### 2026-06-08 — Full Project Review & Cleanup
+
+**Build Status:** ✓ SUCCESS
+
+- Added glass-fallback.css import to main.jsx
+- Added card-child CSS classes to glass-fallback.css
+- Fixed toggleTheme optional parameter
+- Fixed manifest.json icon paths with /looking-glass/ prefix
+- Deleted orphaned files: src/cards/, src/canvas/*.ts, src/webgpu/
+
+### 2026-06-08 — Claude_updates Integration + File Cleanup
+
+**Commits:** `b4beb271`, `90262a9a`
+
+- GitHub access verified (Sudo-Prog, PAT auth)
+- Audit fixes committed and pushed
+- Cross-referenced `~/Downloads/Claude_updates/` — 9/10 files already present
+- Restored missing `ContextMenu.jsx` (enhanced) to `src/ui/`
+- Updated App.jsx import path → `../ui/ContextMenu.jsx`
+
+**File cleanup (approved by BOSS):**
+- Removed orphaned `src/cards/` (14 files, 0 external imports)
+- Removed duplicates: `Lightbox.js`, `ExportDialog.js`, root `manifest.json`, `DropModePicker.tsx`, `ui/DropModePicker.jsx`
+- Removed unused: `Toolbar.jsx`, `Sidebar.jsx`, `SpacesSidebar.jsx`, `BottomSheet.jsx`
+- Kept: `src/ui/Minimap.jsx` (future toggle), `src/components/mobile/BottomSheet.js` + `.css` (reference)
+- Build: ✓ SUCCESS (4714 modules)
+
+### 2026-06-09 — Claude_updates Audit (all files verified)
+
+**Branch:** `develop`
+
+Reviewed all 10 .jsx files + INTEGRATION.md in `~/Downloads/Claude_updates/` against current project files:
+
+| File | Status |
+|------|--------|
+| AISummarisePanel.jsx | ✓ Identical |
+| AudioMemoCard.jsx | ✓ Identical |
+| ContextMenu.jsx | ✓ Identical |
+| DropZoneHandler.jsx | ✓ Identical |
+| PDFViewerCard.jsx | ✓ Identical |
+| ScratchPad.jsx | ✓ Identical |
+| SpacesManager.jsx | ⚠️ Bug in download (uses `useSpacesStore()` not `useStore()`) — **already fixed in project** |
+| TagsSystem.jsx | ✓ Identical |
+| VideoCard.jsx | ✓ Identical |
+| WebClipScreenshotCard.jsx | ✓ Identical |
+| INTEGRATION.md | Integration guide only — no code to apply |
+
+**Bug found in download version (SpacesManager.jsx):**
+- Component used a standalone `useSpacesStore()` Zustand store (created at bottom of file) instead of the main `useStore()` from `../store/useStore.js`
+- This meant space switching/renaming/deleting would have **zero effect** on the canvas
+- **Already fixed in project** — commit `2e41ba18` resolved the circular import issue by inlining `spacesSlice` into `useStore.js` and adding `import { useStore }` to SpacesManager.jsx
+
+**Result:** No bugs to fix. All updates already applied. Working tree clean.
+
+### 2026-06-08 — Cross-Browser CSS + JS Fixes (Firefox/mobile)
+
+**Commits:** `f06ec520`, `36cd98f1`, `8ac53a75`, `2e41ba18`
+
+**Problem:** App loaded blank on Firefox/mobile with `Cannot access 'fo' before initialization` — a JS Temporal Dead Zone (TDZ) error in the minified bundle.
+
+**Fixes:**
+1. **CSS `@supports not` Tier 3 fallback** (`glass-fallback.css`) — added auto-detection for browsers without `backdrop-filter` support. Applies solid backgrounds (`#1A1A1A` dark / `#EDE9E3` light) when blur is unsupported. Includes `-webkit-backdrop-filter` prefix for Safari.
+
+2. **Circular import broken** (`useStore.js`) — `SpacesManager.jsx` imported `useStore` from `useStore.js`, and `useStore.js` imported `spacesSlice` from `SpacesManager.jsx`. Inlined `spacesSlice` directly into `useStore.js` and removed the re-export.
+
+3. **TDZ in App.jsx** — `filteredItems` was declared *after* `handleAICluster` callback which referenced it. The minifier hoisted it and renamed to `fo`, causing `Cannot access 'fo' before initialization`. Moved `filteredItems` declaration above the callback.
+
+4. **Missing import** (`SpacesManager.jsx`) — The component called `useStore()` but didn't import it. Added `import { useStore }` at the top of the file.
+
+**Result:** Site loads cleanly on Firefox, Chrome, Safari. No console errors.
 
 ---
 
-## What's Live (as of last deploy)
+## What's Live
 
-- Sidebar: 3-state cycle (FAB → expanded → fullmenu → FAB) using `(prev + 1) % 3`
-- StackCard, FolderCard, DropModePicker — code complete, deployed
+- Sidebar: 3-state cycle (FAB → expanded → fullmenu → FAB)
+- **Settings panel** (gear icon) — theme, density, AI provider config, data management
+- **Bookmarks panel** — browser bookmark import (HTML), Twitter/X bookmark URL import, search, delete
+- **Command Palette** — Ctrl+K shortcut, URL paste detection, New Note/Space actions
+- StackCard, FolderCard, DropModePicker — deployed
 - Canvas pan/zoom, drag, history, selection
 - Card types: note, bookmark, image, group, stack, folder
-- PWA with service worker (network-first cache strategy)
+- PWA with service worker
 - Light/dark mode
-- Import/Export buttons — MISSING from LiquidGlassSidebar (dropped when Toolbar was replaced)
+- Enhanced context menu (AI, grouping, tags, colours, mobile sheet)
+- Cross-browser glass fallbacks (Firefox, older Safari, mobile)
 
 ---
 
-## Open Bugs
+## Still TODO
 
-### BUG-3: Cards invisible in screenshots (PARTIALLY FIXED, still investigating)
-- Card computed style says `background: rgb(255,255,255)` but screenshot pixels show `(245,242,238)` (cream canvas background)
-- Card DOM exists, getBoundingClientRect correct, getComputedStyle reports white
-- Vision model consistently reports "blank canvas" — but cards ARE in the DOM
-- Hypothesis: `#canvas-world` background (dot grid) is compositing over cards, or z-index stacking issue
-- The `#canvas-world` div is `position: absolute; width: 1px; height: 1px` with `z-index: auto`
-- Cards are children of `#canvas-world` with `z-index: auto`
-- **Next step:** Try giving cards explicit `z-index: 1` or move cards outside `#canvas-world`
+1. ~~Fix BUG-3~~ — Partial fix done
+2. **Add toolbar buttons** (import/export/undo/redo/zoom)
+3. **Wire Minimap toggle** — `src/ui/Minimap.jsx` needs on/off button
+4. **Test drag-and-drop** stack/folder creation
+5. **Verify StackCard** fan animation
+6. **Verify FolderCard** expand/collapse/rename
+7. ~~Menu UI deep audit~~ — **DONE 2026-06-10**
 
-### BUG-4: Import/Export buttons missing (NOT STARTED)
-- LiquidGlassSidebar has NO import/export/add/delete/undo/redo/zoom buttons
-- Old Toolbar class had these, but was replaced by LiquidGlassSidebar
-- ExportDialog.jsx still exists in src/utils/export/ but is never rendered (no trigger)
-- **Need to add toolbar buttons somewhere** (FAB menu? LiquidGlassSidebar state 2?)
+### 2026-06-10 — Menu UI Deep Audit & Fix
 
----
+**Branch:** `develop`
 
-## Key File Map
+Deep audit and fix of all broken menu/sidebar elements. User reported: broken menu UI, missing icons, settings cog non-functional, secondary menu hidden, missing import bookmarks feature.
 
-```
-src/components/App.jsx            — Main app, LiquidGlassSidebar + Canvas + ExportDialog
-src/canvas/Canvas.jsx             — DnD, card rendering, DropModePicker portal
-src/components/CanvasCard.jsx     — Switch by item.type, renders StackCard/FolderCard/note/bookmark/image/group
-src/components/StackCard.tsx      — Fan animation, reads item.meta.stack_items
-src/components/FolderCard.tsx     — Tab/thumbnail/expand/rename, reads item.meta.child_items
-src/components/DropModePicker.jsx — Stack/Folder choice popup
-src/ui/LiquidGlassSidebar.jsx     — Navigation sidebar, 3-state cycle
-src/styles/canvas.css             — Card styles (restored this session)
-src/styles/stack-folder.css       — Stack/Folder specific styles
-src/store/useStore.js             — createStack, addToStack, createFolder, addToFolder
-src/data/schema.js                — ITEM_TYPES including STACK and FOLDER
-```
+**Root Cause — CSS Never Imported:**
+- `src/styles/ui-chrome.css` (779 lines) and `src/styles/responsive.css` (195 lines) were **never imported** in `main.jsx`
+- This killed all styling for: Command Palette, Context Menu, Bottom Sheet, Mode Toggle, Lightbox, Minimap, Spaces sidebar, and all responsive breakpoints
+- **Fix:** Added both CSS imports to `src/main.jsx`
 
----
+**Settings Cog Fixed:**
+- Gear icon was toggling dead `showTags` state — nothing rendered
+- **Created `src/ui/SettingsPanel.jsx`** — slide-in panel with Theme toggle, Density selector, AI Provider config (OpenAI/Anthropic/Gemini/Ollama), API key input, Export/Clear data, Save button
 
-## BOSS Preferences for This Project
+**BOOKMARKS Nav + Import Feature:**
+- BOOKMARKS nav item had no handler — clicking did nothing
+- **Created `src/ui/BookmarksPanel.jsx`** with:
+  - Browser Bookmarks Import — parses Netscape HTML export format (Chrome/Firefox/Safari/Edge). Deduplicates URLs
+  - Twitter/X Bookmark Import — paste URL to save bookmark link with twitter tag
+  - Search/filter saved bookmarks, delete individual items, empty state guidance
 
-- Never delete files without explicit approval
-- Workers: openrouter/free + ollama, NEVER nous/opus
-- No Tailwind, no Lucide icons — Phosphor only
-- No gradients in sidebar
-- spec-kit init before coding
-- Build in VS Code subagent, not terminal
-- Visual verification required before claiming done
+**Full Menu (State 2) Layout Fixed:**
+- Spacer div and AI Assistant button pushed menu sections below the fold
+- Fixed by hiding spacer/AI button in full menu mode
+- Added 2-column grid layout (`lg-sidebar__fullmenu-grid`) for compact display
+- All sections now visible: NAVIGATE (5 items), CREATE (3 items), AI ACTIONS (4 items), QUICK ACTIONS (2 items)
 
----
+**Command Palette Wired:**
+- `CommandPalette.jsx` existed but was never imported/rendered in App.jsx
+- Ctrl+K now opens Command Palette (replaced old `prompt()` hack)
+- Escape key properly closes Command Palette
+- Conditional rendering prevents always-on DOM
 
-### Still TODO
+**Sidebar Callback Props Added:**
+- `onSearch`, `onAddNote`, `onAddUrl`, `onExport` — all wired from App.jsx
 
-1. ~~**Fix BUG-3** (cards invisible in screenshots)~~ — Fixed in `d1f92f20` (#canvas-world size)
-2. **Add toolbar buttons** (add/import/export/undo/redo/zoom) — decide with BOSS where they go
-3. **Test drag-and-drop** stack/folder creation in browser
-4. **Verify StackCard** fan animation works with real items
-5. **Verify FolderCard** expand/collapse/rename works
-6. **Add import/export UI** — ExportDialog.jsx exists but has no trigger in LiquidGlassSidebar
+**Files Modified (4):** `main.jsx`, `App.jsx`, `LiquidGlassSidebar.jsx`, `LiquidGlassSidebar.css`
+**Files Created (2):** `SettingsPanel.jsx`, `BookmarksPanel.jsx`
+**Build:** ✓ SUCCESS (4723 modules, 0 errors)
+
+### 2026-06-10 — Menu UI Redesign
+**Branch:** `develop`
+
+Complete menu UI redesign as per user requirements:
+
+1. **Hamburger icon (3 stacked lines)** — Collapsed FAB shows `List` icon from Phosphor. Click expands to thin icon bar.
+2. **Thin icon bar with hover tooltips** — 56px-wide strip with icons only. Hovering shows glass tooltips with labels (no persistent text).
+3. **Flyout panels on click** — Each nav icon opens a section-specific flyout panel to the right with categorized actions (Canvas → VIEW/CREATE/ACTIONS, Spaces → Explore/All Tags, etc.)
+4. **Sun/moon theme toggle** — Single icon button (sun when dark, moon when light). No track, no text.
+5. **Settings cog at bottom, opens from left** — Gear icon sits in footer in the same style as nav icons. SettingsPanel now slides from left side using `var(--glass-frost)` and `var(--color-border)` tokens matching the sidebar's liquid glass theme.
+6. **AI orb separate at bottom** — LiquidOrb is standalone, centered at bottom of screen. First click shows centered floating setup dialog for provider/model/key. After setup, opens directly to pill/chat. Also reconfigurable via settings cog or orb's own ⚙ button.
+7. **Liquid glass effect** — All panels use CSS variables: `var(--glass-frost)` with backdrop-filter blur, `var(--color-border)`, `var(--glass-cast-shadow)`, and `inset 0 1px 0 var(--glass-specular)` for consistent glass aesthetic.
+
+**Files modified (5):**
+- `src/ui/LiquidGlassSidebar.jsx` — Full rewrite: collapsed/hamburger state, thin icon bar, flyout panels, sun/moon theme toggle, settings gear in footer
+- `src/ui/LiquidGlassSidebar.css` — Full rewrite: thin bar layout (56px), tooltips, flyout animations, footer styling
+- `src/ui/ModeToggle.jsx` — Replaced full component with simple sun/moon icon button (no text/track)
+- `src/ui/SettingsPanel.jsx` — Rewritten: slides from left, uses CSS var tokens for glass theme, provider tabs from aiConfig.js, model select, custom model input
+- `src/ui/LiquidOrb.jsx` — Added centered floating first-time setup dialog, isConfigured check, phase flow routing
+- `src/utils/aiConfig.js` — Added `endpoint` parameter to `saveAIConfig()`
+
+**Build:** ✓ SUCCESS (4720 modules, 0 errors)

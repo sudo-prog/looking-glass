@@ -1,46 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Sparkle, Eye, EyeSlash, Warning } from '@phosphor-icons/react';
+import { PROVIDERS, loadAIConfig, saveAIConfig } from '../utils/aiConfig.js';
 import './AIModal.css';
-
-const PROVIDERS = [
-  { id: 'openrouter', label: 'OPENROUTER',             placeholder: 'sk-or-...' },
-  { id: 'anthropic',  label: 'ANTHROPIC',              placeholder: 'sk-ant-...' },
-  { id: 'openai',     label: 'OPENAI',                 placeholder: 'sk-...' },
-  { id: 'litellm',    label: 'LITELLM (SELF-HOSTED)',  placeholder: 'http://localhost:4000' },
-];
-
-const MODELS = {
-  openrouter: [
-    'anthropic/claude-sonnet-4-5',
-    'anthropic/claude-3.5-sonnet',
-    'openai/gpt-4o',
-  ],
-  anthropic: [
-    'claude-sonnet-4-5',
-    'claude-3-5-sonnet-20241022',
-    'claude-3-haiku-20240307',
-  ],
-  openai: [
-    'gpt-4o',
-    'gpt-4o-mini',
-    'gpt-4-turbo',
-  ],
-  litellm: [
-    'claude-3-5-sonnet-20241022',
-    'gpt-4o',
-    'gemini/gemini-2.0-flash',
-  ],
-};
-
-// Minimal obfuscation — NOT real encryption.
-// Note: replace with Web Crypto API (AES-GCM) for production.
-const obfuscate = (key) => btoa(key.split('').reverse().join(''));
-const deobfuscate = (enc) => atob(enc).split('').reverse().join('');
 
 export default function AIModal({ isOpen, onClose }) {
   const [provider, setProvider] = useState('openrouter');
   const [apiKey, setApiKey] = useState('');
-  const [model, setModel] = useState(MODELS.openrouter[0]);
+  const [model, setModel] = useState('');
+  const [customModel, setCustomModel] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [status, setStatus] = useState('idle'); // 'idle' | 'testing' | 'ok' | 'error'
   const [errorMsg, setErrorMsg] = useState('');
@@ -51,10 +18,11 @@ export default function AIModal({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return;
     try {
-      const saved = JSON.parse(localStorage.getItem('lg-ai-config') || '{}');
-      if (saved.provider) setProvider(saved.provider);
-      if (saved.model) setModel(saved.model);
-      if (saved.key) setApiKey(deobfuscate(saved.key));
+      const cfg = loadAIConfig();
+      if (cfg.provider) setProvider(cfg.provider);
+      if (cfg.model) setModel(cfg.model);
+      if (cfg.model) setCustomModel(cfg.model);
+      if (cfg.key) setApiKey(cfg.key);
     } catch {}
     // Focus first input
     setTimeout(() => inputRef.current?.focus(), 50);
@@ -62,7 +30,11 @@ export default function AIModal({ isOpen, onClose }) {
 
   // Update model default when provider changes
   useEffect(() => {
-    setModel(MODELS[provider]?.[0] || '');
+    const p = PROVIDERS[provider];
+    if (p && p.models.length > 0) {
+      setModel(p.models[0]);
+      setCustomModel('');
+    }
     setStatus('idle');
     setErrorMsg('');
   }, [provider]);
@@ -78,23 +50,20 @@ export default function AIModal({ isOpen, onClose }) {
   }, [isOpen, onClose]);
 
   const handleSave = () => {
-    if (!apiKey.trim()) {
+    if (!apiKey.trim() && PROVIDERS[provider]?.needsKey) {
       setStatus('error');
       setErrorMsg('[ERROR: API KEY REQUIRED]');
       return;
     }
-    // Store obfuscated — client-side only
-    localStorage.setItem('lg-ai-config', JSON.stringify({
-      provider,
-      model,
-      key: obfuscate(apiKey.trim()),
-    }));
+    const finalModel = model === 'custom' ? customModel : model;
+    saveAIConfig({ provider, model: finalModel || PROVIDERS[provider]?.models[0], key: apiKey.trim() });
     setStatus('ok');
     setTimeout(onClose, 600);
   };
 
   const handleTest = async () => {
-    if (!apiKey.trim()) {
+    const p = PROVIDERS[provider];
+    if (!apiKey.trim() && p.needsKey) {
       setStatus('error');
       setErrorMsg('[ERROR: ENTER API KEY FIRST]');
       return;
@@ -102,11 +71,15 @@ export default function AIModal({ isOpen, onClose }) {
     setStatus('testing');
     setErrorMsg('');
     try {
+      const testUrl = p.baseURL?.includes('{model}')
+        ? p.baseURL.replace('{model}', p.models[0]) + `?key=${apiKey.trim()}`
+        : p.baseURL;
       const res = await fetch(
         provider === 'openrouter' ? 'https://openrouter.ai/api/v1/models' :
         provider === 'anthropic'  ? 'https://api.anthropic.com/v1/models' :
         provider === 'openai'     ? 'https://api.openai.com/v1/models' :
-        `${apiKey.includes('http') ? apiKey : 'http://localhost:4000'}/models`,
+        provider === 'google'     ? 'https://generativelanguage.googleapis.com/v1beta/models' :
+        `${(p.baseURL || 'http://localhost:4000').replace(/\/chat\/completions.*$/, '')}/models`,
         {
           headers: {
             'Authorization': `Bearer ${apiKey.trim()}`,
@@ -128,7 +101,7 @@ export default function AIModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const currentProvider = PROVIDERS.find(p => p.id === provider);
+  const currentProvider = PROVIDERS[provider];
 
   return (
     <div className="lg-ai-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -164,8 +137,8 @@ export default function AIModal({ isOpen, onClose }) {
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
             >
-              {PROVIDERS.map(p => (
-                <option key={p.id} value={p.id}>{p.label}</option>
+              {Object.entries(PROVIDERS).map(([pid, p]) => (
+                <option key={pid} value={pid}>{p.name}</option>
               ))}
             </select>
           </div>
@@ -177,13 +150,31 @@ export default function AIModal({ isOpen, onClose }) {
               id="ai-model"
               className="lg-ai-modal__select"
               value={model}
-              onChange={(e) => setModel(e.target.value)}
+              onChange={(e) => { setModel(e.target.value); if (e.target.value !== 'custom') setCustomModel(''); }}
             >
-              {(MODELS[provider] || []).map(m => (
+              {(PROVIDERS[provider]?.models || []).map(m => (
                 <option key={m} value={m}>{m}</option>
               ))}
+              <option value="custom">Custom model ID…</option>
             </select>
           </div>
+
+          {/* Custom model input */}
+          {(model === 'custom' || (!PROVIDERS[provider]?.models || !PROVIDERS[provider].models.includes(model))) && (
+            <div className="lg-ai-modal__field">
+              <label className="lg-ai-modal__label" htmlFor="ai-custom-model">CUSTOM MODEL ID</label>
+              <input
+                id="ai-custom-model"
+                type="text"
+                className="lg-ai-modal__input"
+                placeholder="e.g. llama-3.3-70b-versatile"
+                value={customModel}
+                onChange={(e) => setCustomModel(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </div>
+          )}
 
           {/* API key input */}
           <div className="lg-ai-modal__field">
@@ -196,7 +187,7 @@ export default function AIModal({ isOpen, onClose }) {
                 className={`lg-ai-modal__input ${status === 'error' ? 'lg-ai-modal__input--error' : ''}`}
                 value={apiKey}
                 onChange={(e) => { setApiKey(e.target.value); setStatus('idle'); setErrorMsg(''); }}
-                placeholder={currentProvider?.placeholder || 'Enter API key'}
+                placeholder={currentProvider?.keyPlaceholder || 'Enter API key'}
                 autoComplete="off"
                 spellCheck={false}
               />
@@ -214,7 +205,7 @@ export default function AIModal({ isOpen, onClose }) {
             {/* Security notice */}
             <p className="lg-ai-modal__notice">
               <Warning size={12} weight="regular" />
-              STORED CLIENT-SIDE ONLY · NEVER TRANSMITTED TO OUR SERVERS
+              STORED CLIENT-SIDE ONLY · SHARED WITH ORB & ALL AI FEATURES
             </p>
           </div>
 
@@ -239,7 +230,7 @@ export default function AIModal({ isOpen, onClose }) {
             TEST CONNECTION
           </button>
           <button className="lg-ai-modal__btn-primary" onClick={handleSave}>
-            SAVE &amp; CONNECT
+            SAVE & CONNECT
           </button>
         </div>
       </div>
