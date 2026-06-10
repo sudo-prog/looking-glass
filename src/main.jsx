@@ -13,6 +13,8 @@ import './styles/canvas.css';
 import './styles/tiptap.css';
 import './styles/stack-folder.css';
 import './styles/glass-fallback.css';
+import './styles/ui-chrome.css';
+import './styles/responsive.css';
 import './components/mobile/BottomSheet.css';
 
 async function detectGlassTier() {

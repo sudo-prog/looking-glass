@@ -189,6 +189,9 @@ Reviewed all 10 .jsx files + INTEGRATION.md in `~/Downloads/Claude_updates/` aga
 ## What's Live
 
 - Sidebar: 3-state cycle (FAB → expanded → fullmenu → FAB)
+- **Settings panel** (gear icon) — theme, density, AI provider config, data management
+- **Bookmarks panel** — browser bookmark import (HTML), Twitter/X bookmark URL import, search, delete
+- **Command Palette** — Ctrl+K shortcut, URL paste detection, New Note/Space actions
 - StackCard, FolderCard, DropModePicker — deployed
 - Canvas pan/zoom, drag, history, selection
 - Card types: note, bookmark, image, group, stack, folder
@@ -207,6 +210,48 @@ Reviewed all 10 .jsx files + INTEGRATION.md in `~/Downloads/Claude_updates/` aga
 4. **Test drag-and-drop** stack/folder creation
 5. **Verify StackCard** fan animation
 6. **Verify FolderCard** expand/collapse/rename
+7. ~~Menu UI deep audit~~ — **DONE 2026-06-10**
+
+### 2026-06-10 — Menu UI Deep Audit & Fix
+
+**Branch:** `develop`
+
+Deep audit and fix of all broken menu/sidebar elements. User reported: broken menu UI, missing icons, settings cog non-functional, secondary menu hidden, missing import bookmarks feature.
+
+**Root Cause — CSS Never Imported:**
+- `src/styles/ui-chrome.css` (779 lines) and `src/styles/responsive.css` (195 lines) were **never imported** in `main.jsx`
+- This killed all styling for: Command Palette, Context Menu, Bottom Sheet, Mode Toggle, Lightbox, Minimap, Spaces sidebar, and all responsive breakpoints
+- **Fix:** Added both CSS imports to `src/main.jsx`
+
+**Settings Cog Fixed:**
+- Gear icon was toggling dead `showTags` state — nothing rendered
+- **Created `src/ui/SettingsPanel.jsx`** — slide-in panel with Theme toggle, Density selector, AI Provider config (OpenAI/Anthropic/Gemini/Ollama), API key input, Export/Clear data, Save button
+
+**BOOKMARKS Nav + Import Feature:**
+- BOOKMARKS nav item had no handler — clicking did nothing
+- **Created `src/ui/BookmarksPanel.jsx`** with:
+  - Browser Bookmarks Import — parses Netscape HTML export format (Chrome/Firefox/Safari/Edge). Deduplicates URLs
+  - Twitter/X Bookmark Import — paste URL to save bookmark link with twitter tag
+  - Search/filter saved bookmarks, delete individual items, empty state guidance
+
+**Full Menu (State 2) Layout Fixed:**
+- Spacer div and AI Assistant button pushed menu sections below the fold
+- Fixed by hiding spacer/AI button in full menu mode
+- Added 2-column grid layout (`lg-sidebar__fullmenu-grid`) for compact display
+- All sections now visible: NAVIGATE (5 items), CREATE (3 items), AI ACTIONS (4 items), QUICK ACTIONS (2 items)
+
+**Command Palette Wired:**
+- `CommandPalette.jsx` existed but was never imported/rendered in App.jsx
+- Ctrl+K now opens Command Palette (replaced old `prompt()` hack)
+- Escape key properly closes Command Palette
+- Conditional rendering prevents always-on DOM
+
+**Sidebar Callback Props Added:**
+- `onSearch`, `onAddNote`, `onAddUrl`, `onExport` — all wired from App.jsx
+
+**Files Modified (4):** `main.jsx`, `App.jsx`, `LiquidGlassSidebar.jsx`, `LiquidGlassSidebar.css`
+**Files Created (2):** `SettingsPanel.jsx`, `BookmarksPanel.jsx`
+**Build:** ✓ SUCCESS (4723 modules, 0 errors)
 
 ### 2026-06-09 — Liquid AI Orb Integration
 

@@ -13,6 +13,7 @@ import { ScratchPad } from '../ui/ScratchPad.jsx';
 import { DropZoneHandler } from '../ui/DropZoneHandler.jsx';
 import { AISummarisePanel } from '../ui/AISummarisePanel.jsx';
 import { ContextMenu } from '../ui/ContextMenu.jsx';
+import { CommandPalette } from '../ui/CommandPalette.jsx';
 import { TagFilterBar, TagsPanel } from '../ui/TagsSystem.jsx';
 import { SpacesManager } from '../ui/SpacesManager.jsx';
 import LiquidOrb from '../ui/LiquidOrb.jsx';
@@ -66,6 +67,7 @@ export function App() {
   const [aiSummarise, setAiSummarise] = useState(null);
   const [spacesOpen, setSpacesOpen] = useState(false);
   const [showTags, setShowTags] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // Initialize
   useEffect(() => {
@@ -90,8 +92,7 @@ export function App() {
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        const query = prompt('Search...');
-        if (query !== null) search(query);
+        setCommandPaletteOpen(true);
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
@@ -116,14 +117,18 @@ export function App() {
         return;
       }
       if (e.key === 'Escape') {
-        clearSelection();
-        clearSearch();
+        if (commandPaletteOpen) {
+          setCommandPaletteOpen(false);
+        } else {
+          clearSelection();
+          clearSearch();
+        }
         return;
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedIds, search, clearSearch, clearSelection, addNote]);
+  }, [selectedIds, search, clearSearch, clearSelection, addNote, commandPaletteOpen]);
 
   const handleUndo = useCallback(() => {
     const result = history.current.undo();
@@ -363,6 +368,10 @@ export function App() {
         onTagsOpen={() => setShowTags(true)}
         onAIOrganise={handleAIOrganise}
         onAISummarise={() => setAiSummarise({ mode: 'card' })}
+        onSearch={() => setCommandPaletteOpen(true)}
+        onAddNote={() => addNote()}
+        onAddUrl={(url) => addUrl(url)}
+        onExport={handleExport}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -403,6 +412,19 @@ export function App() {
         <Lightbox
           item={lightboxItem}
           onClose={() => setLightboxItem(null)}
+        />
+      )}
+
+      {/* Command Palette */}
+      {commandPaletteOpen && (
+        <CommandPalette
+          isOpen={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+          onSearch={search}
+          onAddNote={() => addNote()}
+          onAddUrl={(url) => addUrl(url)}
+          searchQuery={searchQuery}
+          onClearSearch={clearSearch}
         />
       )}
 

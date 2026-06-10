@@ -18,9 +18,15 @@ import {
   MagnifyingGlass as SearchIcon,
   ListChecks,
   NotePencil,
+  Plus,
+  Download,
+  Globe,
+  Sliders,
 } from '@phosphor-icons/react';
 import AIModal     from './AIModal.jsx';
 import { ModeToggle } from './ModeToggle.jsx';
+import { SettingsPanel } from './SettingsPanel.jsx';
+import { BookmarksPanel } from './BookmarksPanel.jsx';
 import { toggleTheme, isDark } from '../utils/theme';
 import './LiquidGlassSidebar.css';
 
@@ -28,25 +34,28 @@ const NAV_ITEMS = [
   { id: 'canvas',    label: 'CANVAS',    Icon: SquaresFour },
   { id: 'search',    label: 'SEARCH',    Icon: MagnifyingGlass },
   { id: 'library',   label: 'LIBRARY',   Icon: FolderOpen },
-  { id: 'spaces',    label: 'SPACES',    Icon: SquaresFour },
+  { id: 'spaces',    label: 'SPACES',    Icon: Compass },
   { id: 'tags',      label: 'TAGS',      Icon: Tag },
   { id: 'saved',     label: 'BOOKMARKS', Icon: BookmarkSimple },
 ];
 
 const FULL_MENU_SECTIONS = [
   {
-    title: 'SPACES',
+    title: 'NAVIGATE',
     items: [
-      { id: 'home',    label: 'HOME',    Icon: House },
-      { id: 'explore', label: 'EXPLORE', Icon: Compass },
+      { id: 'home',      label: 'HOME',      Icon: House },
+      { id: 'explore',   label: 'EXPLORE',   Icon: Compass },
+      { id: 'all-tags',  label: 'ALL TAGS',  Icon: Hash },
+      { id: 'starred',   label: 'STARRED',   Icon: Star },
+      { id: 'archive',   label: 'ARCHIVE',   Icon: Archive },
     ],
   },
   {
-    title: 'LIBRARY',
+    title: 'CREATE',
     items: [
-      { id: 'archive', label: 'ARCHIVE', Icon: Archive },
-      { id: 'tags',    label: 'ALL TAGS', Icon: Hash },
-      { id: 'starred', label: 'STARRED',  Icon: Star },
+      { id: 'add-note',    label: 'NEW NOTE',    Icon: NotePencil },
+      { id: 'add-bookmark', label: 'NEW BOOKMARK', Icon: BookmarkSimple },
+      { id: 'add-url',     label: 'ADD URL',     Icon: Globe },
     ],
   },
 ];
@@ -58,14 +67,20 @@ const AI_QUICK_ACTIONS = [
   { id: 'ai-summarize',  label: 'SUMMARIZE',  Icon: NotePencil },
 ];
 
-export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrganise, onAISummarise }) {
+const QUICK_ACTIONS = [
+  { id: 'export',   label: 'EXPORT',   Icon: Download },
+  { id: 'settings', label: 'SETTINGS', Icon: Sliders },
+];
+
+export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrganise, onAISummarise, onSearch, onAddNote, onAddUrl, onExport }) {
   // State 0 = collapsed (FAB button only)
   // State 1 = expanded (standard sidebar with labels)
   // State 2 = full menu (wide drawer with sections)
   const [sidebarState, setSidebarState] = useState(0);
   const [activeItem, setActiveItem] = useState('canvas');
   const [showAIModal, setShowAIModal] = useState(false);
-  const [showTags, setShowTags] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showBookmarks, setShowBookmarks] = useState(false);
   const [dark, setDark] = useState(isDark());
   const sidebarRef = useRef(null);
   const [mobileExpanded, setMobileExpanded] = useState(false);
@@ -121,11 +136,28 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
 
   const handleNavClick = useCallback((id) => {
     setActiveItem(id);
-    if (id === 'spaces') onSpacesOpen?.();
-    if (id === 'tags')   onTagsOpen?.();
-    if (id === 'ai-organise') onAIOrganise?.();
-    if (id === 'ai-summarise') onAISummarise?.();
-  }, [onSpacesOpen, onTagsOpen, onAIOrganise, onAISummarise]);
+    if (id === 'spaces')    onSpacesOpen?.();
+    else if (id === 'tags')       onTagsOpen?.();
+    else if (id === 'saved')      setShowBookmarks(true);
+    else if (id === 'search')     onSearch?.();
+    else if (id === 'library')    onSearch?.(); // Could be a library panel in future
+    else if (id === 'canvas')     {} // Just sets active
+  }, [onSpacesOpen, onTagsOpen, onSearch]);
+
+  const handleFullMenuClick = useCallback((id) => {
+    setActiveItem(id);
+    if (id === 'home' || id === 'explore')   onSpacesOpen?.();
+    else if (id === 'all-tags')              onTagsOpen?.();
+    else if (id === 'starred' || id === 'archive') {} // Filter items
+    else if (id === 'add-note')              onAddNote?.();
+    else if (id === 'add-bookmark')          setShowBookmarks(true);
+    else if (id === 'add-url')               onAddUrl?.('https://');
+    else if (id === 'ai-tag' || id === 'ai-search') setShowAIModal(true);
+    else if (id === 'ai-organize')           onAIOrganise?.();
+    else if (id === 'ai-summarize')          onAISummarise?.();
+    else if (id === 'export')                onExport?.();
+    else if (id === 'settings')              setShowSettings(true);
+  }, [onSpacesOpen, onTagsOpen, onAddNote, onAddUrl, onAIOrganise, onAISummarise, onExport]);
 
   // Cycle: collapsed(0) → expanded(1) → fullmenu(2) → collapsed(0) → ...
   const handleToggle = () => {
@@ -168,6 +200,8 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
           <Sparkle size={22} weight="regular" />
         </button>
         <AIModal isOpen={showAIModal} onClose={() => setShowAIModal(false)} />
+        <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
+        <BookmarksPanel isOpen={showBookmarks} onClose={() => setShowBookmarks(false)} />
       </>
     );
   }
@@ -261,44 +295,61 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
             {FULL_MENU_SECTIONS.map((section) => (
               <div key={section.title} className="lg-sidebar__fullmenu-section">
                 <span className="lg-sidebar__fullmenu-title">{section.title}</span>
-                {section.items.map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    className="lg-sidebar__fullmenu-item"
-                    onClick={() => setActiveItem(id)}
-                  >
-                    <Icon size={16} weight="regular" />
-                    <span>{label}</span>
-                  </button>
-                ))}
+                <div className="lg-sidebar__fullmenu-grid">
+                  {section.items.map(({ id, label, Icon }) => (
+                    <button
+                      key={id}
+                      className="lg-sidebar__fullmenu-item"
+                      onClick={() => handleFullMenuClick(id)}
+                    >
+                      <Icon size={16} weight="regular" />
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             ))}
 
             {/* ── AI Quick Actions ────────── */}
             <div className="lg-sidebar__fullmenu-section">
               <span className="lg-sidebar__fullmenu-title">AI ACTIONS</span>
-              {AI_QUICK_ACTIONS.map(({ id, label, Icon }) => (
-                <button
-                  key={id}
-                  className="lg-sidebar__fullmenu-item lg-sidebar__fullmenu-item--ai"
-                  onClick={() => {
-                    if (id === 'ai-organise')  onAIOrganise?.();
-                    else if (id === 'ai-summarize') onAISummarise?.();
-                    else setShowAIModal(true);
-                  }}
-                >
-                  <Icon size={16} weight="regular" />
-                  <span>{label}</span>
-                </button>
-              ))}
+              <div className="lg-sidebar__fullmenu-grid">
+                {AI_QUICK_ACTIONS.map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    className="lg-sidebar__fullmenu-item lg-sidebar__fullmenu-item--ai"
+                    onClick={() => handleFullMenuClick(id)}
+                  >
+                    <Icon size={16} weight="regular" />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Quick Actions ────────── */}
+            <div className="lg-sidebar__fullmenu-section">
+              <div className="lg-sidebar__fullmenu-grid">
+                {QUICK_ACTIONS.map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    className="lg-sidebar__fullmenu-item"
+                    onClick={() => handleFullMenuClick(id)}
+                  >
+                    <Icon size={16} weight="regular" />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* ── Spacer ──────────────────────── */}
-        <div className="lg-sidebar__spacer" />
+        {/* ── Spacer (hidden in full menu) ── */}
+        {!isFullMenu && <div className="lg-sidebar__spacer" />}
 
-        {/* ── AI Assistant ────────────────── */}
+        {/* ── AI Assistant (hidden in full menu) ── */}
+        {!isFullMenu && (
         <button
           className="lg-sidebar__ai-btn"
           onClick={() => setShowAIModal(true)}
@@ -312,6 +363,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
             <span className="lg-sidebar__ai-sub">TAG · SEARCH · ORGANIZE</span>
           </div>
         </button>
+        )}
 
         {/* ── Footer ──────────────────────── */}
         <div className="lg-sidebar__footer">
@@ -319,7 +371,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
           <span className="lg-sidebar__version">V0.1 · LIQUID GLASS</span>
           <button
             className="lg-sidebar__settings-btn"
-            onClick={() => setShowTags((v) => !v)}
+            onClick={() => setShowSettings(true)}
             aria-label="Open settings"
             title="SETTINGS"
           >
@@ -328,8 +380,10 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
         </div>
       </aside>
 
-      {/* ── AI Modal ────────────────────── */}
+      {/* ── Panels ────────────────────── */}
       <AIModal isOpen={showAIModal} onClose={() => setShowAIModal(false)} />
+      <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      <BookmarksPanel isOpen={showBookmarks} onClose={() => setShowBookmarks(false)} />
     </>
   );
 }

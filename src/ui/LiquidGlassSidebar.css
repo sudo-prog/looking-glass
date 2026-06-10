@@ -243,7 +243,7 @@
 .lg-sidebar__fullmenu {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   padding: var(--space-3);
   flex: 1;
   overflow-y: auto;
@@ -266,13 +266,19 @@
   padding-bottom: var(--space-1);
 }
 
+/* Grid layout for full menu items — 2 columns for compact display */
+.lg-sidebar__fullmenu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
 .lg-sidebar__fullmenu-item {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  padding: 8px var(--space-3);
-  border-radius: var(--radius-md);
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
+  border-radius: var(--radius-sm);
   border: none;
   background: transparent;
   color: var(--text-secondary);
@@ -283,11 +289,23 @@
   letter-spacing: var(--tracking-wide);
   transition: background var(--duration-instant) var(--ease-out),
               color var(--duration-instant) var(--ease-out);
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.lg-sidebar__fullmenu-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lg-sidebar__fullmenu-item:hover {
   background: var(--state-hover);
   color: var(--text-primary);
+}
+
+.lg-sidebar__fullmenu-item:active {
+  background: var(--state-active);
 }
 
 /* AI quick action items */
