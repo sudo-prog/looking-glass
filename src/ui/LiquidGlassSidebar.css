@@ -1,10 +1,25 @@
 /* ════════════════════════════════════════════════
    LiquidGlassSidebar.css
-   Nothing Design System × WebGPU Liquid Glass
-   All values reference tokens from tokens.css
+   Floating pill menu with glass effect
    ════════════════════════════════════════════════ */
 
-/* ── FAB (Collapsed state — hamburger menu) ──── */
+/* ── Backdrop when menu is open ──────────────── */
+.lg-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.30);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: calc(var(--z-toolbar) - 1);
+  animation: lg-sidebar-fade-in 140ms var(--ease-out) both;
+}
+
+@keyframes lg-sidebar-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── FAB (Collapsed state — floating glass orb) ─ */
 .lg-sidebar-fab {
   position: fixed;
   top: 16px;
@@ -55,42 +70,39 @@
   }
 }
 
-/* ── Thin Icon Bar Layout ───────────────────── */
+/* ── Floating Pill Menu ────────────────────── */
 .lg-sidebar {
-  position: relative;
+  position: fixed;
+  top: 16px;
+  left: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 100%;
   overflow: visible;
-  border-right: 1px solid var(--color-border);
-  transition: width 240ms var(--ease-out);
-  will-change: width;
+  border: 1px solid var(--color-border);
+  background: var(--glass-frost);
+  backdrop-filter: blur(var(--glass-blur-xl)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-xl)) saturate(120%);
+  box-shadow:
+    inset 0 1px 0 var(--glass-specular),
+    8px 8px 48px var(--glass-cast-shadow);
   flex-shrink: 0;
-  width: 56px;
+  z-index: var(--z-toolbar);
+  animation: lg-sidebar-morph-in 220ms var(--ease-out) both;
+  transform-origin: top left;
 }
 
-/* Glass effect on sidebar */
-@supports (backdrop-filter: blur(1px)) {
-  .lg-sidebar {
-    background: var(--glass-frost);
-    backdrop-filter: blur(var(--glass-blur-lg)) saturate(110%);
-    -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(110%);
-    box-shadow:
-      inset 1px 0 0 var(--glass-specular),
-      4px 0 24px var(--glass-cast-shadow);
+@keyframes lg-sidebar-morph-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7) translateX(-8px) translateY(-8px);
+    border-radius: 50%;
   }
-}
-
-@supports not (backdrop-filter: blur(1px)) {
-  .lg-sidebar {
-    background: var(--color-bg-overlay);
+  to {
+    opacity: 1;
+    transform: scale(1) translateX(0) translateY(0);
+    border-radius: var(--glass-menu-radius, 24px);
   }
-}
-
-/* ── Header (brand area) ─────────────────────── */
-.lg-sidebar__header {
-  display: none; /* hidden in thin icon bar mode */
 }
 
 /* ── Navigation (icon column) ────────────────── */
@@ -99,9 +111,10 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 12px 0;
+  padding: 10px 6px;
   flex-shrink: 0;
   width: 100%;
+  position: relative;
 }
 
 .lg-sidebar__nav-item {
@@ -115,9 +128,15 @@
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  cursor: pointer;
+  cursor: grab;
+  text-align: left;
   transition: background var(--duration-instant) var(--ease-out),
-              color var(--duration-instant) var(--ease-out);
+              color var(--duration-instant) var(--ease-out),
+              transform 120ms var(--ease-out),
+              opacity 120ms var(--ease-out);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
 }
 
 .lg-sidebar__nav-item:hover {
@@ -127,6 +146,7 @@
 
 .lg-sidebar__nav-item:active {
   background: var(--state-active);
+  cursor: grabbing;
 }
 
 .lg-sidebar__nav-item:focus-visible {
@@ -152,15 +172,65 @@
   }
 }
 
+/* Dragging state */
+.lg-sidebar__nav-item--dragging {
+  opacity: 0.4;
+  transform: scale(0.9);
+}
+
+/* Long-press remove mode */
+.lg-sidebar__nav-item--removing {
+  animation: lg-sidebar-shake 0.3s ease-in-out;
+}
+
+@keyframes lg-sidebar-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px) rotate(-1deg); }
+  75% { transform: translateX(2px) rotate(1deg); }
+}
+
 .lg-sidebar__nav-icon {
   flex-shrink: 0;
+  pointer-events: none;
 }
 
-.lg-sidebar__nav-label {
-  display: none; /* hidden by default in thin bar mode */
+/* Remove button (shows on long press) */
+.lg-sidebar__nav-remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent, #D71921);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  animation: lg-sidebar-remove-pop 120ms var(--ease-out) both;
 }
 
-/* ── Tooltip (appears on hover over nav items) ── */
+@keyframes lg-sidebar-remove-pop {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+/* Drag hint dots at bottom of nav */
+.lg-sidebar__nav-drag-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 6px 0 2px;
+  opacity: 0.25;
+  color: var(--text-disabled);
+  pointer-events: none;
+}
+
+/* ── Tooltip (appears on hover) ──────────────── */
 .lg-sidebar__nav-tooltip {
   position: absolute;
   left: calc(100% + 10px);
@@ -192,10 +262,10 @@
 /* ── Section flyout panel (opens on icon click) ─ */
 .lg-sidebar__flyout {
   position: absolute;
-  left: calc(100% + 4px);
+  left: calc(100% + 8px);
   top: 0;
   min-width: 220px;
-  max-height: 100vh;
+  max-height: 80vh;
   overflow-y: auto;
   padding: 12px 0;
   border-radius: var(--radius-lg);
@@ -206,7 +276,7 @@
   box-shadow:
     8px 0 32px var(--glass-cast-shadow),
     inset 0 1px 0 var(--glass-specular);
-  z-index: 500;
+  z-index: 600;
   animation: lg-sidebar-flyin 160ms var(--ease-out) both;
   transform-origin: left center;
 }
@@ -314,19 +384,18 @@
   min-height: var(--space-2);
 }
 
-/* ── Footer (theme toggle + settings) ────────── */
+/* ── Footer ─────────────────────────────────── */
 .lg-sidebar__footer {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 8px 0;
+  padding: 8px 6px 10px;
   border-top: 1px solid var(--color-border);
   width: 100%;
   flex-shrink: 0;
 }
 
-/* Simple theme toggle icon button */
 .lg-sidebar__theme-btn {
   display: flex;
   align-items: center;
@@ -356,7 +425,6 @@
   outline-offset: var(--state-focus-offset);
 }
 
-/* Settings gear — same style as nav items */
 .lg-sidebar__settings-btn {
   display: flex;
   align-items: center;
@@ -386,7 +454,7 @@
   outline-offset: var(--state-focus-offset);
 }
 
-/* ── Mobile — sidebar becomes bottom bar ──────── */
+/* ── Responsive ─────────────────────────────── */
 @media (max-width: 767px) {
   .lg-sidebar-fab {
     top: auto;
@@ -396,28 +464,30 @@
     height: 44px;
   }
 
+  .lg-sidebar-backdrop { display: none; }
+
   .lg-sidebar {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
+    top: auto;
     height: auto;
     width: 100% !important;
     flex-direction: row;
     align-items: center;
     border-right: none;
     border-top: 1px solid var(--color-border);
+    border-radius: 20px 20px 0 0 !important;
     padding-bottom: env(safe-area-inset-bottom);
     z-index: var(--z-toolbar);
+    animation: none;
   }
-  .lg-sidebar__header { display: none; }
   .lg-sidebar__spacer { display: none; }
-  .lg-sidebar__footer {
-    display: none;
-  }
+  .lg-sidebar__footer { display: none; }
   .lg-sidebar__nav {
     flex-direction: row;
-    padding: var(--space-2);
+    padding: 4px 8px;
     flex: 1;
     overflow-x: auto;
     justify-content: space-around;
@@ -428,77 +498,32 @@
     gap: 2px;
     padding: 6px;
     height: auto;
-    border-radius: var(--radius-md);
     width: auto;
+    cursor: pointer;
   }
   .lg-sidebar__nav-tooltip { display: none; }
-  .lg-sidebar__flyout {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: calc(100% + 8px);
-    top: auto;
-    max-height: 50vh;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    box-shadow: 0 -8px 32px var(--glass-cast-shadow);
-  }
-}
-
-@media (max-width: 767px) {
-  .lg-sidebar {
-    position: fixed;
-    inset: auto 0 0 0;
-    top: auto; left: 0; right: 0; bottom: 0;
-    width: 100%;
-    height: calc(56px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-    border-radius: 20px 20px 0 0;
-    border-top: 1px solid var(--glass-border-dark, rgba(255,255,255,0.08));
-    border-left: none;
-    border-right: none;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-around;
-    padding-left: 8px;
-    padding-right: 8px;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    background: var(--glass-tint-dark, rgba(15, 15, 15, 0.70));
-    transform: translateY(0);
-    transition: height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-                border-radius 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-    z-index: 100;
-  }
-  .lg-sidebar__nav {
-    display: flex; flex-direction: row; gap: 0; width: 100%;
-    justify-content: space-around; align-items: center;
-  }
-  .lg-sidebar__nav-item {
-    flex: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    height: 56px; gap: 2px; font-size: 10px;
-    color: var(--text-secondary, #888);
-    cursor: pointer; transition: color 0.15s;
-    border-radius: 0;
-    width: auto;
-  }
-  .lg-sidebar__nav-item:active, .lg-sidebar__nav-item--active {
-    color: var(--text-primary, #F0F0F0);
-  }
-  .lg-sidebar__nav-item svg { width: 22px; height: 22px; }
+  .lg-sidebar__nav-remove { display: none !important; }
+  .lg-sidebar__nav-drag-hint { display: none; }
   .lg-sidebar__flyout {
     position: fixed;
     left: 8px;
     right: 8px;
-    bottom: calc(100% + 8px);
+    bottom: calc(100% + 4px);
     top: auto;
     max-height: 50vh;
-    min-width: auto;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     box-shadow: 0 -8px 32px var(--glass-cast-shadow);
   }
-  .lg-canvas-container {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  .lg-sidebar__nav-item svg { width: 22px; height: 22px; }
+}
+
+@media (max-width: 767px) {
+  @supports (backdrop-filter: blur(1px)) {
+    .lg-sidebar {
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: var(--glass-tint-dark, rgba(15, 15, 15, 0.70));
+    }
   }
 }
 
