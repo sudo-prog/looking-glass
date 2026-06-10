@@ -140,11 +140,12 @@ export function loadAIConfig() {
   }
 }
 
-export function saveAIConfig({ provider, model, key }) {
+export function saveAIConfig({ provider, model, key, endpoint }) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     provider,
     model,
     key: key ? obfuscate(key) : '',
+    endpoint: endpoint || '',
   }));
 }
 

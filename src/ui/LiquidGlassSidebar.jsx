@@ -5,94 +5,136 @@ import {
   FolderOpen,
   Tag,
   BookmarkSimple,
+  Compass,
   Sparkle,
   GearSix,
-  CaretLeft,
-  CaretRight,
   X,
   House,
-  Compass,
   Archive,
   Hash,
   Star,
-  MagnifyingGlass as SearchIcon,
-  ListChecks,
   NotePencil,
-  Plus,
-  Download,
   Globe,
-  Sliders,
+  Download,
+  Sun,
+  Moon,
+  List,
 } from '@phosphor-icons/react';
-import AIModal     from './AIModal.jsx';
-import { ModeToggle } from './ModeToggle.jsx';
 import { SettingsPanel } from './SettingsPanel.jsx';
 import { BookmarksPanel } from './BookmarksPanel.jsx';
 import { toggleTheme, isDark } from '../utils/theme';
 import './LiquidGlassSidebar.css';
 
 const NAV_ITEMS = [
-  { id: 'canvas',    label: 'CANVAS',    Icon: SquaresFour },
-  { id: 'search',    label: 'SEARCH',    Icon: MagnifyingGlass },
-  { id: 'library',   label: 'LIBRARY',   Icon: FolderOpen },
-  { id: 'spaces',    label: 'SPACES',    Icon: Compass },
-  { id: 'tags',      label: 'TAGS',      Icon: Tag },
-  { id: 'saved',     label: 'BOOKMARKS', Icon: BookmarkSimple },
+  { id: 'canvas',    label: 'Canvas',    Icon: SquaresFour },
+  { id: 'search',    label: 'Search',    Icon: MagnifyingGlass },
+  { id: 'library',   label: 'Library',   Icon: FolderOpen },
+  { id: 'spaces',    label: 'Spaces',    Icon: Compass },
+  { id: 'tags',      label: 'Tags',      Icon: Tag },
+  { id: 'saved',     label: 'Bookmarks', Icon: BookmarkSimple },
 ];
 
-const FULL_MENU_SECTIONS = [
-  {
-    title: 'NAVIGATE',
-    items: [
-      { id: 'home',      label: 'HOME',      Icon: House },
-      { id: 'explore',   label: 'EXPLORE',   Icon: Compass },
-      { id: 'all-tags',  label: 'ALL TAGS',  Icon: Hash },
-      { id: 'starred',   label: 'STARRED',   Icon: Star },
-      { id: 'archive',   label: 'ARCHIVE',   Icon: Archive },
+const SECTION_FLYOUTS = {
+  canvas: {
+    title: 'Canvas',
+    icon: SquaresFour,
+    sections: [
+      {
+        title: 'VIEW',
+        items: [
+          { id: 'home',     label: 'Home',      Icon: House },
+          { id: 'starred',  label: 'Starred',   Icon: Star },
+          { id: 'archive',  label: 'Archive',   Icon: Archive },
+        ],
+      },
+      {
+        title: 'CREATE',
+        items: [
+          { id: 'add-note',    label: 'New Note',    Icon: NotePencil },
+          { id: 'add-bookmark', label: 'New Bookmark', Icon: BookmarkSimple },
+          { id: 'add-url',     label: 'Add URL',     Icon: Globe },
+        ],
+      },
+      {
+        title: 'ACTIONS',
+        items: [
+          { id: 'export', label: 'Export', Icon: Download },
+        ],
+      },
     ],
   },
-  {
-    title: 'CREATE',
-    items: [
-      { id: 'add-note',    label: 'NEW NOTE',    Icon: NotePencil },
-      { id: 'add-bookmark', label: 'NEW BOOKMARK', Icon: BookmarkSimple },
-      { id: 'add-url',     label: 'ADD URL',     Icon: Globe },
+  spaces: {
+    title: 'Spaces',
+    icon: Compass,
+    sections: [
+      {
+        items: [
+          { id: 'explore',   label: 'Explore',   Icon: Compass },
+          { id: 'all-tags',  label: 'All Tags',  Icon: Hash },
+        ],
+      },
     ],
   },
-];
-
-const AI_QUICK_ACTIONS = [
-  { id: 'ai-tag',        label: 'TAG',        Icon: Tag },
-  { id: 'ai-search',     label: 'SEARCH',     Icon: SearchIcon },
-  { id: 'ai-organize',   label: 'ORGANIZE',   Icon: ListChecks },
-  { id: 'ai-summarize',  label: 'SUMMARIZE',  Icon: NotePencil },
-];
-
-const QUICK_ACTIONS = [
-  { id: 'export',   label: 'EXPORT',   Icon: Download },
-  { id: 'settings', label: 'SETTINGS', Icon: Sliders },
-];
+  tags: {
+    title: 'Tags',
+    icon: Tag,
+    sections: [
+      {
+        items: [
+          { id: 'all-tags',  label: 'Manage Tags', Icon: Hash },
+          { id: 'ai-tag',    label: 'AI Auto-Tag', Icon: Sparkle },
+        ],
+      },
+    ],
+  },
+  saved: {
+    title: 'Bookmarks',
+    icon: BookmarkSimple,
+    sections: [
+      {
+        items: [
+          { id: 'open-bookmarks', label: 'Open Bookmarks', Icon: BookmarkSimple },
+        ],
+      },
+    ],
+  },
+  search: {
+    title: 'Search',
+    icon: MagnifyingGlass,
+    sections: [
+      {
+        items: [
+          { id: 'open-search', label: 'Open Search', Icon: MagnifyingGlass },
+          { id: 'ai-search',  label: 'AI Search',  Icon: Sparkle },
+        ],
+      },
+    ],
+  },
+  library: {
+    title: 'Library',
+    icon: FolderOpen,
+    sections: [
+      {
+        items: [
+          { id: 'open-library', label: 'Browse Library', Icon: FolderOpen },
+        ],
+      },
+    ],
+  },
+};
 
 export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrganise, onAISummarise, onSearch, onAddNote, onAddUrl, onExport }) {
-  // State 0 = collapsed (FAB button only)
-  // State 1 = expanded (standard sidebar with labels)
-  // State 2 = full menu (wide drawer with sections)
-  const [sidebarState, setSidebarState] = useState(0);
+  const [collapsed, setCollapsed] = useState(true); // true = just FAB, false = thin icon bar
   const [activeItem, setActiveItem] = useState('canvas');
-  const [showAIModal, setShowAIModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
+  const [activeFlyout, setActiveFlyout] = useState(null);
   const [dark, setDark] = useState(isDark());
   const sidebarRef = useRef(null);
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const touchStartY = useRef(0);
-  const touchEndY = useRef(0);
 
-  const isCollapsed = sidebarState === 0;
-  const isExpanded  = sidebarState === 1;
-  const isFullMenu  = sidebarState === 2;
-
-  // Listen for theme changes from other sources (e.g. ModeToggle elsewhere)
+  // Listen for theme changes from other sources
   useEffect(() => {
     const handler = () => setDark(isDark());
     window.addEventListener('theme-change', handler);
@@ -111,63 +153,6 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Dispatch glass-surface-mount when mobile expanded
-  useEffect(() => {
-    if (!isMobile || !mobileExpanded || !sidebarRef.current) return;
-    window.dispatchEvent(new CustomEvent('glass-surface-mount', {
-      detail: {
-        id: 'sidebar-mobile',
-        element: sidebarRef.current,
-        uniforms: {
-          dark:  { refractionStrength: 0.22, blurRadius: 20, specularIntensity: 0.30, shadowIntensity: 0.15 },
-          light: { refractionStrength: 0.18, blurRadius: 20, specularIntensity: 0.50, shadowIntensity: 0.10 },
-        },
-      },
-    }));
-    return () => {
-      window.dispatchEvent(new CustomEvent('glass-surface-unmount', { detail: { id: 'sidebar-mobile' } }));
-    };
-  }, [isMobile, mobileExpanded]);
-
-  const handleThemeToggle = useCallback((newIsDark) => {
-    toggleTheme(newIsDark ? 'dark' : 'light');
-    setDark(newIsDark);
-  }, []);
-
-  const handleNavClick = useCallback((id) => {
-    setActiveItem(id);
-    if (id === 'spaces')    onSpacesOpen?.();
-    else if (id === 'tags')       onTagsOpen?.();
-    else if (id === 'saved')      setShowBookmarks(true);
-    else if (id === 'search')     onSearch?.();
-    else if (id === 'library')    onSearch?.(); // Could be a library panel in future
-    else if (id === 'canvas')     {} // Just sets active
-  }, [onSpacesOpen, onTagsOpen, onSearch]);
-
-  const handleFullMenuClick = useCallback((id) => {
-    setActiveItem(id);
-    if (id === 'home' || id === 'explore')   onSpacesOpen?.();
-    else if (id === 'all-tags')              onTagsOpen?.();
-    else if (id === 'starred' || id === 'archive') {} // Filter items
-    else if (id === 'add-note')              onAddNote?.();
-    else if (id === 'add-bookmark')          setShowBookmarks(true);
-    else if (id === 'add-url')               onAddUrl?.('https://');
-    else if (id === 'ai-tag' || id === 'ai-search') setShowAIModal(true);
-    else if (id === 'ai-organize')           onAIOrganise?.();
-    else if (id === 'ai-summarize')          onAISummarise?.();
-    else if (id === 'export')                onExport?.();
-    else if (id === 'settings')              setShowSettings(true);
-  }, [onSpacesOpen, onTagsOpen, onAddNote, onAddUrl, onAIOrganise, onAISummarise, onExport]);
-
-  // Cycle: collapsed(0) → expanded(1) → fullmenu(2) → collapsed(0) → ...
-  const handleToggle = () => {
-    setSidebarState(prev => (prev + 1) % 3);
-  };
-
-  const handleExpandFromCollapsed = () => {
-    if (isCollapsed) setSidebarState(1);
-  };
-
   // Wire to WebGPU glass renderer on mount
   useEffect(() => {
     if (!sidebarRef.current) return;
@@ -181,100 +166,87 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
         },
       },
     }));
-    return () => {
-      window.dispatchEvent(new CustomEvent('glass-surface-unmount', { detail: { id: 'sidebar' } }));
-    };
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
-  // ── State 0: Floating Action Button ──
-  if (isCollapsed) {
+  const handleThemeToggle = useCallback(() => {
+    const newDark = !dark;
+    toggleTheme(newDark ? 'dark' : 'light');
+    setDark(newDark);
+  }, [dark]);
+
+  const handleHamburgerClick = useCallback(() => {
+    setCollapsed(false);
+  }, []);
+
+  const handleNavClick = useCallback((id) => {
+    setActiveItem(id);
+    setActiveFlyout(id);
+
+    if (id === 'spaces')    onSpacesOpen?.();
+    else if (id === 'saved')      setShowBookmarks(true);
+    else if (id === 'search')     onSearch?.();
+    else if (id === 'library')    onSearch?.();
+    else if (id === 'tags')       onTagsOpen?.();
+  }, [onSpacesOpen, onTagsOpen, onSearch]);
+
+  const handleFlyoutClick = useCallback((id) => {
+    if (id === 'spaces' || id === 'explore' || id === 'home') {
+      onSpacesOpen?.();
+    }
+    if (id === 'all-tags') {
+      onTagsOpen?.();
+    }
+    if (id === 'open-bookmarks' || id === 'add-bookmark') {
+      setShowBookmarks(true);
+    }
+    if (id === 'open-search') {
+      onSearch?.();
+    }
+    if (id === 'add-note') {
+      onAddNote?.();
+    }
+    if (id === 'add-url') {
+      onAddUrl?.('https://');
+    }
+    if (id === 'export') {
+      onExport?.();
+    }
+    setActiveFlyout(null);
+  }, [onSpacesOpen, onTagsOpen, onSearch, onAddNote, onAddUrl, onExport]);
+
+  const closeFlyout = useCallback(() => {
+    setActiveFlyout(null);
+  }, []);
+
+  // ── Collapsed state: just the hamburger FAB ──
+  if (collapsed) {
     return (
       <>
         <button
           ref={sidebarRef}
           className="lg-sidebar-fab"
-          onClick={handleToggle}
-          aria-label="Open sidebar"
-          title="LOOKING GLASS"
+          onClick={handleHamburgerClick}
+          aria-label="Open sidebar menu"
+          title="Menu"
         >
-          <Sparkle size={22} weight="regular" />
+          <List size={22} weight="regular" />
         </button>
-        <AIModal isOpen={showAIModal} onClose={() => setShowAIModal(false)} />
         <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
         <BookmarksPanel isOpen={showBookmarks} onClose={() => setShowBookmarks(false)} />
       </>
     );
   }
 
-  const classNames = [
-    'lg-sidebar',
-    isMobile ? 'lg-sidebar--mobile' : 'lg-sidebar--desktop',
-    isExpanded  ? 'lg-sidebar--expanded'  : '',
-    isFullMenu  ? 'lg-sidebar--fullmenu'  : '',
-    (isMobile && mobileExpanded) ? 'lg-sidebar--expanded' : '',
-  ].filter(Boolean).join(' ');
-
-  const handleTouchStart = (e) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchMove = (e) => {
-    touchEndY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = () => {
-    if (!isMobile) return;
-    const diff = touchStartY.current - touchEndY.current;
-    if (mobileExpanded && diff < -80) {
-      setMobileExpanded(false);
-    }
-  };
-
-  const handleHandleClick = () => {
-    if (isMobile) setMobileExpanded((v) => !v);
-  };
-
   return (
     <>
       <aside
         ref={sidebarRef}
-        className={classNames}
+        className="lg-sidebar"
         aria-label="Looking Glass navigation"
         data-glass-surface="toolbar"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       >
-        {/* ── Mobile drag handle ── */}
-        {isMobile && (
-          <div
-            className="lg-sidebar__handle"
-            onClick={handleHandleClick}
-            role="button"
-            aria-label={mobileExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-            tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleHandleClick(); }}
-          />
-        )}
-        {/* ── Header ──────────────────────── */}
-        <div className="lg-sidebar__header">
-          <div className="lg-sidebar__brand" aria-hidden="true">
-            <div className="lg-sidebar__brand-mark">LG</div>
-            <span className="lg-sidebar__brand-name">LOOKING GLASS</span>
-          </div>
-          <button
-            className="lg-sidebar__toggle"
-            onClick={handleToggle}
-            aria-label={isFullMenu ? 'Show less' : isExpanded ? 'Show more' : 'Collapse'}
-            aria-expanded={true}
-          >
-            {isFullMenu
-              ? <CaretLeft  size={16} weight="regular" />
-              : <CaretRight size={16} weight="regular" />}
-          </button>
-        </div>
-
-        {/* ── Navigation ──────────────────── */}
+        {/* ── Navigation icons ── */}
         <nav className="lg-sidebar__nav" aria-label="Main navigation">
           {NAV_ITEMS.map(({ id, label, Icon }) => (
             <button
@@ -284,104 +256,76 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
               aria-current={activeItem === id ? 'page' : undefined}
             >
               <Icon size={20} weight="regular" className="lg-sidebar__nav-icon" />
-              <span className="lg-sidebar__nav-label">{label}</span>
+              <span className="lg-sidebar__nav-tooltip">{label}</span>
             </button>
           ))}
         </nav>
 
-        {/* ── Full Menu Section (only in state 2) ── */}
-        {isFullMenu && (
-          <div className="lg-sidebar__fullmenu">
-            {FULL_MENU_SECTIONS.map((section) => (
-              <div key={section.title} className="lg-sidebar__fullmenu-section">
-                <span className="lg-sidebar__fullmenu-title">{section.title}</span>
-                <div className="lg-sidebar__fullmenu-grid">
-                  {section.items.map(({ id, label, Icon }) => (
+        {/* ── Flyout panel ── */}
+        {activeFlyout && SECTION_FLYOUTS[activeFlyout] && (() => {
+          const flyout = SECTION_FLYOUTS[activeFlyout];
+          const FlyoutIcon = flyout.icon;
+          return (
+            <div className="lg-sidebar__flyout">
+              <div className="lg-sidebar__flyout-header">
+                <span className="lg-sidebar__flyout-title">
+                  <FlyoutIcon size={16} weight="regular" />
+                  {flyout.title}
+                </span>
+                <button
+                  className="lg-sidebar__flyout-close"
+                  onClick={closeFlyout}
+                  aria-label="Close panel"
+                >
+                  <X size={14} weight="regular" />
+                </button>
+              </div>
+              {flyout.sections.map((section, si) => (
+                <div key={si} className="lg-sidebar__flyout-section">
+                  {section.title && (
+                    <div className="lg-sidebar__flyout-section-title">{section.title}</div>
+                  )}
+                  {section.items.map(({ id, label, Icon: ItemIcon }) => (
                     <button
                       key={id}
-                      className="lg-sidebar__fullmenu-item"
-                      onClick={() => handleFullMenuClick(id)}
+                      className="lg-sidebar__flyout-item"
+                      onClick={() => handleFlyoutClick(id)}
                     >
-                      <Icon size={16} weight="regular" />
+                      <ItemIcon size={14} weight="regular" className="lg-sidebar__flyout-item-icon" />
                       <span>{label}</span>
                     </button>
                   ))}
                 </div>
-              </div>
-            ))}
-
-            {/* ── AI Quick Actions ────────── */}
-            <div className="lg-sidebar__fullmenu-section">
-              <span className="lg-sidebar__fullmenu-title">AI ACTIONS</span>
-              <div className="lg-sidebar__fullmenu-grid">
-                {AI_QUICK_ACTIONS.map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    className="lg-sidebar__fullmenu-item lg-sidebar__fullmenu-item--ai"
-                    onClick={() => handleFullMenuClick(id)}
-                  >
-                    <Icon size={16} weight="regular" />
-                    <span>{label}</span>
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
+          );
+        })()}
 
-            {/* ── Quick Actions ────────── */}
-            <div className="lg-sidebar__fullmenu-section">
-              <div className="lg-sidebar__fullmenu-grid">
-                {QUICK_ACTIONS.map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    className="lg-sidebar__fullmenu-item"
-                    onClick={() => handleFullMenuClick(id)}
-                  >
-                    <Icon size={16} weight="regular" />
-                    <span>{label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+        {/* ── Spacer ── */}
+        <div className="lg-sidebar__spacer" />
 
-        {/* ── Spacer (hidden in full menu) ── */}
-        {!isFullMenu && <div className="lg-sidebar__spacer" />}
-
-        {/* ── AI Assistant (hidden in full menu) ── */}
-        {!isFullMenu && (
-        <button
-          className="lg-sidebar__ai-btn"
-          onClick={() => setShowAIModal(true)}
-          aria-label="Open AI assistant setup"
-        >
-          <div className="lg-sidebar__ai-icon-wrap">
-            <Sparkle size={20} weight="regular" />
-          </div>
-          <div className="lg-sidebar__ai-text">
-            <span className="lg-sidebar__ai-title">AI ASSISTANT</span>
-            <span className="lg-sidebar__ai-sub">TAG · SEARCH · ORGANIZE</span>
-          </div>
-        </button>
-        )}
-
-        {/* ── Footer ──────────────────────── */}
+        {/* ── Footer (theme + settings) ── */}
         <div className="lg-sidebar__footer">
-          <ModeToggle isDark={dark} onToggle={handleThemeToggle} />
-          <span className="lg-sidebar__version">V0.1 · LIQUID GLASS</span>
+          <button
+            className="lg-sidebar__theme-btn"
+            onClick={handleThemeToggle}
+            aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={dark ? 'Light mode' : 'Dark mode'}
+          >
+            {dark ? <Sun size={18} weight="regular" /> : <Moon size={18} weight="regular" />}
+          </button>
           <button
             className="lg-sidebar__settings-btn"
             onClick={() => setShowSettings(true)}
             aria-label="Open settings"
-            title="SETTINGS"
+            title="Settings"
           >
-            <GearSix size={16} weight="regular" />
+            <GearSix size={18} weight="regular" />
           </button>
         </div>
       </aside>
 
-      {/* ── Panels ────────────────────── */}
-      <AIModal isOpen={showAIModal} onClose={() => setShowAIModal(false)} />
+      {/* ── Panels ── */}
       <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
       <BookmarksPanel isOpen={showBookmarks} onClose={() => setShowBookmarks(false)} />
     </>

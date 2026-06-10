@@ -1,7 +1,9 @@
 /**
  * LOOKING GLASS — Liquid AI Orb
- * A floating glass orb that opens into a pill toolbar, then a full AI chat.
- * Uses the shared AI config from aiConfig.js (same key as AIModal).
+ * A floating glass orb at the bottom center of the screen.
+ * First click shows centered floating setup dialog (API key + model).
+ * After setup, opens the pill then full AI chat.
+ * Uses the shared AI config from aiConfig.js (same key as SettingsPanel).
  * Supports ALL providers: OpenRouter, Anthropic, OpenAI, Gemini, Groq, Ollama, LiteLLM
  * + custom model IDs for any provider.
  */
@@ -63,8 +65,8 @@ async function callAI(userMsg, snapshot) {
   const key = cfg.key;
   const model = cfg.model;
 
-  if (!model) throw new Error(`No model selected — tap ⚙ to configure AI settings`);
-  if (p.needsKey && !key) throw new Error(`No API key — tap ⚙ to add your ${p.name} key`);
+  if (!model) throw new Error(`No model selected — configure AI in settings`);
+  if (p.needsKey && !key) throw new Error(`No API key — add your ${p.name} key in settings`);
 
   const prompt = `User instruction: "${userMsg}"\n\nCurrent UI snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
 
@@ -241,7 +243,6 @@ function buildFilter(id, url, lens) {
   </filter>`;
 }
 
-// eslint-disable-next-line no-unused-vars
 function esc(s) {
   const str = String(s);
   let result = '';
@@ -268,6 +269,7 @@ const ACTIONS = ['Fix errors', 'Add feature', 'Change theme', 'Edit self'];
 
 export default function LiquidOrb() {
   const [phase, setPhase] = useState('orb'); // 'orb' | 'pill' | 'chat'
+  const [showSetup, setShowSetup] = useState(false); // centered setup dialog
   const [thinking, setThinking] = useState(false);
   const [thinkLabel, setThinkLabel] = useState('');
   const [aiResponse, setAiResponse] = useState('');
@@ -284,6 +286,7 @@ export default function LiquidOrb() {
   const [customModel, setCustomModel] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [cfgStatus, setCfgStatus] = useState('');
+  const [isConfigured, setIsConfigured] = useState(false);
 
   const orbRef = useRef(null);
   const fdefsRef = useRef(null);
@@ -333,13 +336,17 @@ export default function LiquidOrb() {
     return () => spring.cancel();
   }, [applyOrbFilter]);
 
-  // ── Load shared config on mount ──────────────────────────────────
+  // ── Load shared config on mount & check if configured ────────────
   useEffect(() => {
     const cfg = loadAIConfig();
     setCfgProvider(cfg.provider);
     setCfgModel(cfg.model);
     setCfgKey(cfg.key);
     setCustomModel(cfg.model);
+    // Check if we have a model and key (if needed)
+    const p = getProviderDef(cfg.provider);
+    const hasConfig = !!cfg.model && (!p.needsKey || !!cfg.key);
+    setIsConfigured(hasConfig);
   }, []);
 
   // ── Mutation log helper ──────────────────────────────────────────
@@ -363,8 +370,14 @@ export default function LiquidOrb() {
     }
     springRef.current.target = 0;
     setTimeout(() => { springRef.current.target = ORB_LENS.depth; }, 80);
-    setTimeout(() => setPhase('pill'), 200);
-  }, [phase]);
+
+    // Check if configured — if not, show setup dialog
+    if (!isConfigured) {
+      setTimeout(() => setShowSetup(true), 200);
+    } else {
+      setTimeout(() => setPhase('pill'), 200);
+    }
+  }, [phase, isConfigured]);
 
   // ── Phase transitions ────────────────────────────────────────────
   const goToPhase = useCallback((next) => {
@@ -377,7 +390,31 @@ export default function LiquidOrb() {
     }
   }, []);
 
-  // ── Settings panel ───────────────────────────────────────────────
+  // ── Setup save handler ───────────────────────────────────────────────
+  const handleSaveSetup = useCallback(() => {
+    const p = getProviderDef(cfgProvider);
+    const modelToSave = cfgModel === 'custom' || (!p.models.includes(cfgModel) && cfgModel !== p.models[0])
+      ? customModel
+      : cfgModel;
+    const finalModel = modelToSave || p.models[0];
+    saveAIConfig({ provider: cfgProvider, model: finalModel, key: cfgKey });
+    setCfgModel(finalModel);
+    setCfgStatus(`✓ ${p.name} · ${finalModel}`);
+    logMut('fix', `${p.name} settings saved`);
+    setIsConfigured(true);
+    setShowSetup(false);
+    // Open the pill after setup
+    setTimeout(() => setPhase('pill'), 200);
+  }, [cfgProvider, cfgModel, cfgKey, customModel, logMut]);
+
+  const handleClearKey = useCallback(() => {
+    setCfgKey('');
+    saveAIConfig({ provider: cfgProvider, model: cfgModel, key: '' });
+    setIsConfigured(false);
+    logMut('rm', `Key cleared`);
+  }, [cfgProvider, cfgModel, logMut]);
+
+  // ── Settings panel (in-orb) ──────────────────────────────
   const handleSaveSettings = useCallback(() => {
     const p = getProviderDef(cfgProvider);
     const modelToSave = cfgModel === 'custom' || (!p.models.includes(cfgModel) && cfgModel !== p.models[0])
@@ -388,14 +425,9 @@ export default function LiquidOrb() {
     setCfgModel(finalModel);
     setCfgStatus(`✓ ${p.name} · ${finalModel}`);
     logMut('fix', `${p.name} settings saved`);
+    setIsConfigured(true);
     setSettingsOpen(false);
   }, [cfgProvider, cfgModel, cfgKey, customModel, logMut]);
-
-  const handleClearKey = useCallback(() => {
-    setCfgKey('');
-    saveAIConfig({ provider: cfgProvider, model: cfgModel, key: '' });
-    logMut('rm', `Key cleared`);
-  }, [cfgProvider, cfgModel, logMut]);
 
   // ── Send handler ─────────────────────────────────────────────────
   const handleSend = useCallback(async () => {
@@ -601,7 +633,9 @@ export default function LiquidOrb() {
       />
 
       {/* Hint */}
-      <div className={`lg-orb-hint ${phase !== 'orb' ? 'off' : ''}`}>Tap the orb</div>
+      <div className={`lg-orb-hint ${phase !== 'orb' ? 'off' : ''}`}>
+        {isConfigured ? 'Tap the orb' : 'Tap to set up AI'}
+      </div>
 
       {/* Mutation log */}
       <div className="lg-orb-mlog">
@@ -613,7 +647,7 @@ export default function LiquidOrb() {
         ))}
       </div>
 
-      {/* ── ORB ROOT ── */}
+      {/* ── Root container ── */}
       <div className="lg-orb-root">
         {/* ORB */}
         <div
@@ -749,22 +783,206 @@ export default function LiquidOrb() {
         </div>
       </div>
 
-      {/* ── Settings Panel ── */}
+      {/* ── Centered Setup Dialog (first-time) ── */}
+      {showSetup && (
+        <div
+          className="lg-orb-setup-overlay"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.50)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setShowSetup(false)}
+        >
+          <div
+            className="lg-orb-setup-dialog"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(420px, 92vw)',
+              background: 'var(--glass-frost)',
+              backdropFilter: 'blur(32px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '24px',
+              boxShadow: '0 24px 80px var(--glass-cast-shadow), inset 0 1px 0 var(--glass-specular)',
+              padding: '28px 24px',
+              fontFamily: "'DM Sans',system-ui,sans-serif",
+              color: 'var(--text-primary)',
+            }}
+          >
+            {/* Title */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: 20,
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, fontSize: 16, fontWeight: 600,
+                letterSpacing: '-0.01em',
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" />
+                </svg>
+                AI Assistant Setup
+              </div>
+              <button
+                onClick={() => setShowSetup(false)}
+                style={{
+                  background: 'none', border: 'none', color: 'var(--text-secondary)',
+                  cursor: 'pointer', padding: 4, borderRadius: 8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            {/* Provider tabs */}
+            <div style={{
+              display: 'flex', gap: 4, marginBottom: 16, padding: 3,
+              background: 'rgba(255,255,255,0.04)', borderRadius: 12, flexWrap: 'wrap',
+            }}>
+              {Object.entries(PROVIDERS).map(([pid, p]) => {
+                const active = pid === cfgProvider;
+                return (
+                  <button key={pid} style={{
+                    flex: '1 0 auto', background: active ? 'rgba(255,255,255,0.10)' : 'none',
+                    border: 'none', borderRadius: 9, padding: '6px 8px', cursor: 'pointer',
+                    fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: active ? 600 : 400,
+                    color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    transition: 'all 0.15s', whiteSpace: 'nowrap',
+                  }} onClick={() => {
+                    setCfgProvider(pid);
+                    setCfgModel(PROVIDERS[pid].models[0]);
+                    setCustomModel('');
+                  }}>
+                    <span style={{ marginRight: 4 }}>{p.icon}</span>{p.name}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Model select */}
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Model</div>
+            <select
+              style={{
+                width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
+                borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
+                fontFamily: "'DM Sans',sans-serif", fontSize: 12, outline: 'none',
+                marginBottom: 14, appearance: 'none', cursor: 'pointer',
+              }}
+              value={cfgModel}
+              onChange={(e) => {
+                setCfgModel(e.target.value);
+                if (e.target.value === 'custom') setCustomModel('');
+              }}
+            >
+              {providerDef.models.map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+              <option value="custom">Custom model ID…</option>
+            </select>
+
+            {/* Custom model input */}
+            {(cfgModel === 'custom' || !providerDef.models.includes(cfgModel)) && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Custom model ID</div>
+                <input type="text" placeholder="e.g. llama-3.3-70b-versatile" value={customModel}
+                  onChange={(e) => setCustomModel(e.target.value)}
+                  style={{
+                    width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
+                    borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
+                    fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
+                  }}
+                />
+              </div>
+            )}
+
+            {/* API Key */}
+            {providerDef.needsKey && (
+              <>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>{providerDef.keyLabel}</div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14 }}>
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    placeholder={providerDef.keyPlaceholder}
+                    value={cfgKey}
+                    onChange={(e) => setCfgKey(e.target.value)}
+                    style={{
+                      flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
+                      borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
+                      fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSetup(); }}
+                  />
+                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 4, opacity: 0.6 }}
+                    onClick={() => setShowKey(v => !v)}>
+                    {showKey ? '🙈' : '👁'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {cfgProvider === 'ollama' && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Endpoint</div>
+                <input type="text" placeholder="http://localhost:11434"
+                  style={{
+                    width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
+                    borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
+                    fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+              <button style={{
+                flex: 1, background: 'var(--color-accent, #8B5CF6)', color: '#fff',
+                border: 'none', borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
+                fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 500,
+              }} onClick={handleSaveSetup}>
+                Save & Continue
+              </button>
+              <button style={{
+                background: 'transparent', color: 'var(--text-secondary)',
+                border: '1px solid var(--color-border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
+                fontFamily: "'DM Sans',sans-serif", fontSize: 13,
+              }} onClick={() => setShowSetup(false)}>
+                Later
+              </button>
+            </div>
+
+            {/* Hint */}
+            <div style={{
+              marginTop: 14, fontSize: 11, color: 'var(--text-disabled)',
+              textAlign: 'center', letterSpacing: '0.02em',
+            }}>
+              You can change these anytime in the settings cog
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── In-orb Settings Panel (small floating) ── */}
       {settingsOpen && (
         <div
-          className="lg-orb-settings-panel lg-orb-settings-panel visible"
+          className="lg-orb-settings-panel visible"
           style={{
             position: 'fixed', top: 60, right: 18, zIndex: 900,
-            background: 'rgba(14,14,22,0.94)', border: '1px solid rgba(255,255,255,0.09)',
+            background: 'var(--glass-frost)',
+            backdropFilter: 'blur(32px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+            border: '1px solid var(--color-border)',
             borderRadius: 20, padding: '20px 18px', width: 310,
-            backdropFilter: 'blur(32px) saturate(180%)', WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.60), 0 1px 0 rgba(255,255,255,0.06) inset',
+            boxShadow: '0 20px 60px var(--glass-cast-shadow), inset 0 1px 0 var(--glass-specular)',
             fontFamily: "'DM Sans',system-ui,sans-serif",
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Provider tabs */}
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 14 }}>AI Provider</div>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>AI Provider</div>
           <div style={{ display: 'flex', gap: 4, marginBottom: 16, padding: 3, background: 'rgba(255,255,255,0.04)', borderRadius: 12, flexWrap: 'wrap' }}>
             {Object.entries(PROVIDERS).map(([pid, p]) => {
               const active = pid === cfgProvider;
@@ -773,7 +991,7 @@ export default function LiquidOrb() {
                   flex: '1 0 auto', background: active ? 'rgba(255,255,255,0.10)' : 'none',
                   border: 'none', borderRadius: 9, padding: '5px 6px', cursor: 'pointer',
                   fontFamily: "'DM Sans',sans-serif", fontSize: 10, fontWeight: active ? 600 : 400,
-                  color: active ? 'rgba(238,238,248,0.90)' : 'rgba(165,165,185,0.50)',
+                  color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                   transition: 'all 0.15s', whiteSpace: 'nowrap',
                 }} onClick={() => {
                   setCfgProvider(pid);
@@ -786,12 +1004,11 @@ export default function LiquidOrb() {
             })}
           </div>
 
-          {/* Model select */}
-          <div style={{ fontSize: 11, color: 'rgba(165,165,185,0.50)', marginBottom: 6 }}>Model</div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Model</div>
           <select
             style={{
-              width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
-              borderRadius: 10, padding: '8px 10px', color: 'rgba(238,238,248,0.85)',
+              width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
+              borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
               fontFamily: "'DM Sans',sans-serif", fontSize: 12, outline: 'none',
               marginBottom: 14, appearance: 'none', cursor: 'pointer',
             }}
@@ -807,23 +1024,21 @@ export default function LiquidOrb() {
             <option value="custom">Custom model ID…</option>
           </select>
 
-          {/* Custom model input */}
           {(cfgModel === 'custom' || !providerDef.models.includes(cfgModel)) && (
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, color: 'rgba(165,165,185,0.50)', marginBottom: 6 }}>Custom model ID</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Custom model ID</div>
               <input type="text" placeholder="e.g. llama-3.3-70b-versatile" value={customModel}
                 onChange={(e) => setCustomModel(e.target.value)}
                 style={{
-                  width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
-                  borderRadius: 10, padding: '8px 10px', color: 'rgba(238,238,248,0.85)',
+                  width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
+                  borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
                   fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
                 }}
               />
             </div>
           )}
 
-          {/* API Key */}
-          <div style={{ fontSize: 11, color: 'rgba(165,165,185,0.50)', marginBottom: 6 }}>{providerDef.keyLabel}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>{providerDef.keyLabel}</div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14 }}>
             <input
               type={showKey ? 'text' : 'password'}
@@ -831,8 +1046,8 @@ export default function LiquidOrb() {
               value={cfgKey}
               onChange={(e) => setCfgKey(e.target.value)}
               style={{
-                flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
-                borderRadius: 10, padding: '8px 10px', color: 'rgba(238,238,248,0.88)',
+                flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
+                borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
                 fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
               }}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSettings(); if (e.key === 'Escape') setSettingsOpen(false); }}
@@ -843,10 +1058,9 @@ export default function LiquidOrb() {
             </button>
           </div>
 
-          {/* Save / Clear */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
             <button style={{
-              flex: 1, background: 'rgba(238,238,248,0.90)', color: '#080808',
+              flex: 1, background: 'var(--color-accent, #8B5CF6)', color: '#fff',
               border: 'none', borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
               fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 500,
             }} onClick={handleSaveSettings}>Save</button>
@@ -857,10 +1071,9 @@ export default function LiquidOrb() {
             }} onClick={handleClearKey}>Clear</button>
           </div>
 
-          {/* Status */}
           <div style={{
             fontSize: 11, color: cfgKey ? 'rgba(80,200,120,0.60)' : 'rgba(255,140,80,0.65)',
-            lineHeight: 1.55, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)',
+            lineHeight: 1.55, paddingTop: 10, borderTop: '1px solid var(--color-border)',
           }}>
             {cfgKey
               ? `✓ ${providerDef.name} · ${cfgModel || 'no model'}`

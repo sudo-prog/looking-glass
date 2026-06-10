@@ -253,25 +253,25 @@ Deep audit and fix of all broken menu/sidebar elements. User reported: broken me
 **Files Created (2):** `SettingsPanel.jsx`, `BookmarksPanel.jsx`
 **Build:** ✓ SUCCESS (4723 modules, 0 errors)
 
-### 2026-06-09 — Liquid AI Orb Integration
-
+### 2026-06-10 — Menu UI Redesign
 **Branch:** `develop`
 
-Integrated the Liquid AI Orb (`LiquidAIOrb-v3.html`) as a React component with full multi-provider AI support. Previously the standalone HTML file was hardcoded to Claude only — now it uses the same shared API config as the sidebar AIModal.
+Complete menu UI redesign as per user requirements:
 
-**New files (4):**
-- `src/utils/aiConfig.js` — Shared AI config utility. Single source of truth for provider/model/key stored in `lg-ai-config` localStorage. Supports 7 providers: OpenRouter, Anthropic, OpenAI, Gemini, Groq, Ollama, LiteLLM + custom model IDs.
-- `src/ui/LiquidOrb.jsx` — Full React component: SVG glass displacement (Aave four-fold technique), spring physics, phase machine (orb → pill → chat), multi-provider AI caller, self-editing mutation system, settings panel with provider tabs + custom model input.
-- `src/ui/LiquidOrb.css` — All styles for orb, pill, chat, settings, mutation log, animations.
+1. **Hamburger icon (3 stacked lines)** — Collapsed FAB shows `List` icon from Phosphor. Click expands to thin icon bar.
+2. **Thin icon bar with hover tooltips** — 56px-wide strip with icons only. Hovering shows glass tooltips with labels (no persistent text).
+3. **Flyout panels on click** — Each nav icon opens a section-specific flyout panel to the right with categorized actions (Canvas → VIEW/CREATE/ACTIONS, Spaces → Explore/All Tags, etc.)
+4. **Sun/moon theme toggle** — Single icon button (sun when dark, moon when light). No track, no text.
+5. **Settings cog at bottom, opens from left** — Gear icon sits in footer in the same style as nav icons. SettingsPanel now slides from left side using `var(--glass-frost)` and `var(--color-border)` tokens matching the sidebar's liquid glass theme.
+6. **AI orb separate at bottom** — LiquidOrb is standalone, centered at bottom of screen. First click shows centered floating setup dialog for provider/model/key. After setup, opens directly to pill/chat. Also reconfigurable via settings cog or orb's own ⚙ button.
+7. **Liquid glass effect** — All panels use CSS variables: `var(--glass-frost)` with backdrop-filter blur, `var(--color-border)`, `var(--glass-cast-shadow)`, and `inset 0 1px 0 var(--glass-specular)` for consistent glass aesthetic.
 
-**Modified files (2):**
-- `src/ui/AIModal.jsx` — Refactored to import from `aiConfig.js` instead of its own hardcoded PROVIDERS/MODELS. Added "Custom model ID…" dropdown option. Now shares config with Orb.
-- `src/components/App.jsx` — Added `<LiquidOrb />` import and render.
+**Files modified (5):**
+- `src/ui/LiquidGlassSidebar.jsx` — Full rewrite: collapsed/hamburger state, thin icon bar, flyout panels, sun/moon theme toggle, settings gear in footer
+- `src/ui/LiquidGlassSidebar.css` — Full rewrite: thin bar layout (56px), tooltips, flyout animations, footer styling
+- `src/ui/ModeToggle.jsx` — Replaced full component with simple sun/moon icon button (no text/track)
+- `src/ui/SettingsPanel.jsx` — Rewritten: slides from left, uses CSS var tokens for glass theme, provider tabs from aiConfig.js, model select, custom model input
+- `src/ui/LiquidOrb.jsx` — Added centered floating first-time setup dialog, isConfigured check, phase flow routing
+- `src/utils/aiConfig.js` — Added `endpoint` parameter to `saveAIConfig()`
 
-**Key architecture:**
-- Both AIModal (sidebar) and LiquidOrb read/write the same `lg-ai-config` localStorage key via `loadAIConfig()`/`saveAIConfig()` from `aiConfig.js`
-- AI caller routes to correct API format per provider: Anthropic Messages API, Google Gemini, or OpenAI-compatible (OpenAI/Groq/OpenRouter/Ollama/LiteLLM)
-- Orb has its own ⚙ settings panel (provider tabs, model select, custom model input, API key)
-- Orb's mutation system can self-edit: PATCH_ELEMENT, SET_CSS, SET_CSS_VAR, MUTATE_LENS, REWRITE_ORB, ADD_FEATURE, REMOVE_FEATURE, SHOW_NOTIFICATION
-
-**Build:** ✓ SUCCESS (4718 modules)
+**Build:** ✓ SUCCESS (4720 modules, 0 errors)
