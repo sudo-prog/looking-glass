@@ -275,3 +275,29 @@ Complete menu UI redesign as per user requirements:
 - `src/utils/aiConfig.js` — Added `endpoint` parameter to `saveAIConfig()`
 
 **Build:** ✓ SUCCESS (4720 modules, 0 errors)
+
+### 2026-06-10 — Floating Pill Menu + Theme Customization (User Feedback #2)
+**Branch:** `develop` → `main` → deployed
+
+Second round of menu UI refinements based on user feedback:
+
+**Changes:**
+1. **Floating glass pill menu** — Collapsed state is a round floating glass orb (Sparkle icon). Click morphs it into a floating pill shape with all icons. Uses `--glass-menu-radius` CSS variable driven by theme thickness setting. Backdrop overlay appears when open.
+2. **Drag to reorder icons** — Icons are draggable. Hold and drag to rearrange. Position persists to `lg-theme-config` in localStorage.
+3. **Long-press to remove** — Hold an icon for 600ms to enter remove mode (shake animation + red X button appears). Click X to remove it to the icon pool.
+4. **Icon pool manager in settings** — New "Icons" tab in Settings panel. Shows active menu icons as drag chips, and an icon pool below for available icons. Drag from pool into menu, drag within menu to reorder, click X to remove.
+5. **Theme customization** — New "Theme" tab in Settings panel:
+   - Dark/Light mode toggle (simple icon)
+   - Glass Opacity slider (10%–100%) — adjusts `--glass-frost` alpha
+   - Glass Thickness slider (1–5) — controls `--glass-menu-radius` (12px–42px)
+   - Glass Blur slider (4px–60px) — controls backdrop-filter blur
+   - Color pickers for: Accent Color, Text Primary, Text Secondary, Glass BG Color
+   - All changes live-previewed on the UI
+   - Save button persists via `themeConfig.js`
+6. **All panels open from left** — BookmarksPanel now slides from left with `var(--glass-frost)` and `var(--color-border)` tokens matching all other panels.
+7. **New file:** `src/utils/themeConfig.js` — Utility for loading/saving/applying `lg-theme-config` from localStorage. Handles hex-to-rgba conversion, thickness-to-radius mapping, CSS variable injection.
+
+**Files modified (4):** `LiquidGlassSidebar.jsx`, `LiquidGlassSidebar.css`, `SettingsPanel.jsx`, `BookmarksPanel.jsx`
+**Files created (1):** `themeConfig.js`
+**Build:** ✓ SUCCESS (4721 modules, 0 errors)
+**Deploy:** ✓ SUCCESS (GitHub Pages)

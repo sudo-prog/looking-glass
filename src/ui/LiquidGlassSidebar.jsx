@@ -18,6 +18,7 @@ import {
   Download,
   Sun,
   Moon,
+  List,
 } from '@phosphor-icons/react';
 import { SettingsPanel } from './SettingsPanel.jsx';
 import { BookmarksPanel } from './BookmarksPanel.jsx';
@@ -307,7 +308,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
           aria-label="Open menu"
           title="Menu"
         >
-          <Sparkle size={22} weight="regular" />
+          <List size={22} weight="regular" />
         </button>
         <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
         <BookmarksPanel isOpen={showBookmarks} onClose={() => setShowBookmarks(false)} />
