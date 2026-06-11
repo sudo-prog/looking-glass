@@ -6,9 +6,10 @@
  */
 
 const STORAGE_KEY = 'lg-ai-config';
+const CUSTOM_PROVIDERS_KEY = 'lg-custom-providers';
 
-// ── Provider definitions ────────────────────────────────────────────────────
-export const PROVIDERS = {
+// ── Built-in provider definitions ──────────────────────────────────────────────
+const BUILTIN_PROVIDERS = {
   openrouter: {
     name: 'OpenRouter',
     icon: '⇄',
@@ -26,6 +27,7 @@ export const PROVIDERS = {
     ],
     needsKey: true,
     showBaseURL: false,
+    builtin: true,
   },
   anthropic: {
     name: 'Anthropic',
@@ -41,6 +43,7 @@ export const PROVIDERS = {
     ],
     needsKey: true,
     showBaseURL: false,
+    builtin: true,
   },
   openai: {
     name: 'OpenAI',
@@ -58,6 +61,7 @@ export const PROVIDERS = {
     ],
     needsKey: true,
     showBaseURL: false,
+    builtin: true,
   },
   google: {
     name: 'Gemini',
@@ -72,6 +76,7 @@ export const PROVIDERS = {
     ],
     needsKey: true,
     showBaseURL: false,
+    builtin: true,
   },
   groq: {
     name: 'Groq',
@@ -87,6 +92,7 @@ export const PROVIDERS = {
     ],
     needsKey: true,
     showBaseURL: false,
+    builtin: true,
   },
   ollama: {
     name: 'Ollama',
@@ -103,6 +109,7 @@ export const PROVIDERS = {
     ],
     needsKey: false,
     showBaseURL: true,
+    builtin: true,
   },
   litellm: {
     name: 'LiteLLM',
@@ -117,8 +124,82 @@ export const PROVIDERS = {
     ],
     needsKey: false,
     showBaseURL: true,
+    builtin: true,
   },
 };
+
+// ── Custom providers (stored in localStorage) ─────────────────────────────────
+let _customProviders = {};
+
+function loadCustomProviders() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_PROVIDERS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function saveCustomProviders(cps) {
+  _customProviders = cps;
+  localStorage.setItem(CUSTOM_PROVIDERS_KEY, JSON.stringify(cps));
+}
+
+function initCustomProviders() {
+  _customProviders = loadCustomProviders();
+}
+
+// Initialize on module load
+initCustomProviders();
+
+/**
+ * All providers = built-in + custom.
+ * Mutated in-place is fine — consumers re-import this object each time.
+ */
+export const PROVIDERS = { ...BUILTIN_PROVIDERS, ..._customProviders };
+
+/**
+ * Re-sync PROVIDERS from localStorage (for live updates across tabs).
+ */
+export function refreshProviders() {
+  _customProviders = loadCustomProviders();
+  Object.keys(PROVIDERS).forEach(k => { if (!BUILTIN_PROVIDERS[k]) delete PROVIDERS[k]; });
+  Object.assign(PROVIDERS, _customProviders);
+}
+
+/**
+ * Add a custom provider. Returns the generated id.
+ */
+export function addCustomProvider({ name, icon, baseURL, models, needsKey, showBaseURL }) {
+  const id = 'custom_' + Date.now();
+  const provider = {
+    name,
+    icon: icon || '⊕',
+    keyPlaceholder: 'Enter API key…',
+    keyLabel: `${name} API Key`,
+    baseURL: baseURL || '',
+    models: models || ['custom-model'],
+    needsKey: needsKey !== false,
+    showBaseURL: showBaseURL !== false,
+    builtin: false,
+  };
+  PROVIDERS[id] = provider;
+  _customProviders[id] = provider;
+  saveCustomProviders(_customProviders);
+  return id;
+}
+
+/**
+ * Remove a custom provider by id. Cannot remove built-in providers.
+ */
+export function removeCustomProvider(id) {
+  if (BUILTIN_PROVIDERS[id]) return false;
+  delete PROVIDERS[id];
+  delete _customProviders[id];
+  saveCustomProviders(_customProviders);
+  return true;
+}
 
 // ── Minimal obfuscation (NOT real encryption) ───────────────────────────────
 const obfuscate = (key) => btoa(key.split('').reverse().join(''));
@@ -134,6 +215,7 @@ export function loadAIConfig() {
       provider: parsed.provider || 'openrouter',
       model:    parsed.model    || '',
       key:      parsed.key ? deobfuscate(parsed.key) : '',
+      endpoint: parsed.endpoint || '',
     };
   } catch {
     return { provider: 'openrouter', model: '', key: '' };
