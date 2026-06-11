@@ -8,7 +8,7 @@
  * + custom model IDs for any provider.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { PROVIDERS, loadAIConfig, saveAIConfig, getProviderDef } from '../utils/aiConfig.js';
+import { PROVIDERS, loadAIConfig, saveAIConfig, getProviderDef, addCustomProvider, removeCustomProvider, refreshProviders } from '../utils/aiConfig.js';
 import './LiquidOrb.css';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -287,6 +287,13 @@ export default function LiquidOrb() {
   const [showKey, setShowKey] = useState(false);
   const [cfgStatus, setCfgStatus] = useState('');
   const [isConfigured, setIsConfigured] = useState(false);
+  // Custom provider add form
+  const [showAddProvider, setShowAddProvider] = useState(false);
+  const [newProviderName, setNewProviderName] = useState('');
+  const [newProviderIcon, setNewProviderIcon] = useState('');
+  const [newProviderURL, setNewProviderURL] = useState('');
+  const [newProviderModels, setNewProviderModels] = useState('');
+  const [newProviderNeedsKey, setNewProviderNeedsKey] = useState(true);
 
   const orbRef = useRef(null);
   const fdefsRef = useRef(null);
@@ -413,6 +420,46 @@ export default function LiquidOrb() {
     setIsConfigured(false);
     logMut('rm', `Key cleared`);
   }, [cfgProvider, cfgModel, logMut]);
+
+  // ── Add custom provider handler ──
+  const handleAddCustomProvider = useCallback(() => {
+    if (!newProviderName.trim() || !newProviderURL.trim()) return;
+    const models = newProviderModels.split(',').map(s => s.trim()).filter(Boolean);
+    const id = addCustomProvider({
+      name: newProviderName.trim(),
+      icon: newProviderIcon.trim() || '⊕',
+      baseURL: newProviderURL.trim(),
+      models: models.length > 0 ? models : ['custom-model'],
+      needsKey: newProviderNeedsKey,
+      showBaseURL: true,
+    });
+    // Refresh providers and switch to the new one
+    refreshProviders();
+    setCfgProvider(id);
+    setCfgModel(models.length > 0 ? models[0] : 'custom-model');
+    setCustomModel('');
+    setShowAddProvider(false);
+    setNewProviderName('');
+    setNewProviderIcon('');
+    setNewProviderURL('');
+    setNewProviderModels('');
+    setNewProviderNeedsKey(true);
+    logMut('add', `Added provider: ${newProviderName}`);
+  }, [newProviderName, newProviderIcon, newProviderURL, newProviderModels, newProviderNeedsKey, logMut]);
+
+  // ── Remove custom provider handler ──
+  const handleRemoveProvider = useCallback((pid) => {
+    if (!confirm(`Remove "${PROVIDERS[pid]?.name}"? This will remove it from the list.`)) return;
+    removeCustomProvider(pid);
+    // If we removed the active provider, switch to openrouter
+    if (cfgProvider === pid) {
+      setCfgProvider('openrouter');
+      setCfgModel('anthropic/claude-sonnet-4-5');
+      setCfgKey('');
+      setCustomModel('');
+    }
+    logMut('rm', `Removed provider: ${PROVIDERS[pid]?.name || pid}`);
+  }, [cfgProvider, logMut]);
 
   // ── Settings panel (in-orb) ──────────────────────────────
   const handleSaveSettings = useCallback(() => {
@@ -845,23 +892,81 @@ export default function LiquidOrb() {
             }}>
               {Object.entries(PROVIDERS).map(([pid, p]) => {
                 const active = pid === cfgProvider;
+                const isCustom = !p.builtin;
                 return (
-                  <button key={pid} style={{
-                    flex: '1 0 auto', background: active ? 'rgba(255,255,255,0.10)' : 'none',
-                    border: 'none', borderRadius: 9, padding: '6px 8px', cursor: 'pointer',
-                    fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: active ? 600 : 400,
-                    color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    transition: 'all 0.15s', whiteSpace: 'nowrap',
-                  }} onClick={() => {
-                    setCfgProvider(pid);
-                    setCfgModel(PROVIDERS[pid].models[0]);
-                    setCustomModel('');
-                  }}>
-                    <span style={{ marginRight: 4 }}>{p.icon}</span>{p.name}
-                  </button>
+                  <div key={pid} style={{ position: 'relative', flex: '1 0 auto' }}>
+                    <button style={{
+                      width: '100%', background: active ? 'rgba(255,255,255,0.10)' : 'none',
+                      border: 'none', borderRadius: 9, padding: '6px 8px', cursor: 'pointer',
+                      fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: active ? 600 : 400,
+                      color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      transition: 'all 0.15s', whiteSpace: 'nowrap',
+                    }} onClick={() => {
+                      setCfgProvider(pid);
+                      setCfgModel(PROVIDERS[pid].models[0]);
+                      setCustomModel('');
+                    }}>
+                      <span style={{ marginRight: 4 }}>{p.icon}</span>{p.name}
+                    </button>
+                    {isCustom && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleRemoveProvider(pid); }}
+                        style={{
+                          position: 'absolute', top: -4, right: -4, width: 16, height: 16,
+                          borderRadius: '50%', border: 'none', background: 'rgba(255,60,60,0.6)',
+                          color: '#fff', fontSize: 10, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          lineHeight: 1, padding: 0, zIndex: 10,
+                        }}
+                        title={`Remove ${p.name}`}
+                      >×</button>
+                    )}
+                  </div>
                 );
               })}
+              <button
+                onClick={() => setShowAddProvider(v => !v)}
+                style={{
+                  flex: '0 0 auto', width: 32, height: 32,
+                  border: '1px dashed var(--color-border)', borderRadius: 9,
+                  background: 'transparent', cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)',
+                  fontSize: 14, fontFamily: "'DM Sans',sans-serif",
+                }}
+                title="Add custom LLM / API"
+              >+</button>
             </div>
+
+            {/* Add custom provider form */}
+            {showAddProvider && (
+              <div style={{
+                marginBottom: 16, padding: '12px 14px', borderRadius: 12,
+                border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.03)',
+                display: 'flex', flexDirection: 'column', gap: 8,
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-disabled)', textTransform: 'uppercase' }}>Add Custom Provider</div>
+                <input type="text" placeholder="Provider name (e.g. Local LLM)" value={newProviderName}
+                  onChange={e => setNewProviderName(e.target.value)}
+                  style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, outline: 'none' }}
+                />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input type="text" placeholder="Icon (emoji, e.g. 🤖)" value={newProviderIcon} style={{ width: 50, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: 11, outline: 'none', textAlign: 'center' }} onChange={e => setNewProviderIcon(e.target.value)} />
+                  <input type="text" placeholder="API endpoint URL" value={newProviderURL} style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none' }} onChange={e => setNewProviderURL(e.target.value)} />
+                </div>
+                <input type="text" placeholder="Models (comma-separated, e.g. model-a, model-b)" value={newProviderModels}
+                  onChange={e => setNewProviderModels(e.target.value)}
+                  style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none' }}
+                />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={newProviderNeedsKey} onChange={e => setNewProviderNeedsKey(e.target.checked)} />
+                  Requires API key
+                </label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={handleAddCustomProvider} style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'var(--color-accent, #8B5CF6)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: "'DM Sans',sans-serif" }}>Add Provider</button>
+                  <button onClick={() => setShowAddProvider(false)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, fontFamily: "'DM Sans',sans-serif" }}>Cancel</button>
+                </div>
+              </div>
+            )}
 
             {/* Model select */}
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Model</div>
@@ -986,22 +1091,49 @@ export default function LiquidOrb() {
           <div style={{ display: 'flex', gap: 4, marginBottom: 16, padding: 3, background: 'rgba(255,255,255,0.04)', borderRadius: 12, flexWrap: 'wrap' }}>
             {Object.entries(PROVIDERS).map(([pid, p]) => {
               const active = pid === cfgProvider;
+              const isCustom = !p.builtin;
               return (
-                <button key={pid} style={{
-                  flex: '1 0 auto', background: active ? 'rgba(255,255,255,0.10)' : 'none',
-                  border: 'none', borderRadius: 9, padding: '5px 6px', cursor: 'pointer',
-                  fontFamily: "'DM Sans',sans-serif", fontSize: 10, fontWeight: active ? 600 : 400,
-                  color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  transition: 'all 0.15s', whiteSpace: 'nowrap',
-                }} onClick={() => {
-                  setCfgProvider(pid);
-                  setCfgModel(PROVIDERS[pid].models[0]);
-                  setCustomModel('');
-                }}>
-                  <div style={{ fontSize: 13, marginBottom: 2 }}>{p.icon}</div>{p.name}
-                </button>
+                <div key={pid} style={{ position: 'relative', flex: '1 0 auto' }}>
+                  <button style={{
+                    width: '100%', background: active ? 'rgba(255,255,255,0.10)' : 'none',
+                    border: 'none', borderRadius: 9, padding: '5px 6px', cursor: 'pointer',
+                    fontFamily: "'DM Sans',sans-serif", fontSize: 10, fontWeight: active ? 600 : 400,
+                    color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    transition: 'all 0.15s', whiteSpace: 'nowrap',
+                  }} onClick={() => {
+                    setCfgProvider(pid);
+                    setCfgModel(PROVIDERS[pid].models[0]);
+                    setCustomModel('');
+                  }}>
+                    <div style={{ fontSize: 13, marginBottom: 2 }}>{p.icon}</div>{p.name}
+                  </button>
+                  {isCustom && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleRemoveProvider(pid); }}
+                      style={{
+                        position: 'absolute', top: -4, right: -4, width: 16, height: 16,
+                        borderRadius: '50%', border: 'none', background: 'rgba(255,60,60,0.6)',
+                        color: '#fff', fontSize: 10, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        lineHeight: 1, padding: 0, zIndex: 10,
+                      }}
+                      title={`Remove ${p.name}`}
+                    >×</button>
+                  )}
+                </div>
               );
             })}
+            <button
+              onClick={() => { setSettingsOpen(false); setShowAddProvider(true); setShowSetup(true); }}
+              style={{
+                flex: '0 0 auto', width: 28, height: 28,
+                border: '1px dashed var(--color-border)', borderRadius: 9,
+                background: 'transparent', cursor: 'pointer', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)',
+                fontSize: 13, fontFamily: "'DM Sans',sans-serif",
+              }}
+              title="Add custom LLM / API"
+            >+</button>
           </div>
 
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Model</div>
