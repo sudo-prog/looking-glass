@@ -93,64 +93,61 @@ export function applyThemeConfig(config) {
   }
 
   // ── Background image ─────────────────────────────────
-  const bgStyleEl = getOrCreateStyleEl('lg-theme-bg');
-  let bgCSS = '';
-
+  // Use DOM elements instead of pseudo-elements (pseudo-elements
+  // are overridden by other CSS rules on body)
   if (t.bgImage) {
     const sizing = t.bgImageMode === 'cover' ? 'cover' :
       t.bgImageMode === 'tile' ? 'auto' :
       t.bgImageMode === 'stretch' ? '100% 100%' : 'auto';
     const repeat = t.bgImageMode === 'tile' ? 'repeat' : 'no-repeat';
-    const pos = t.bgImageMode === 'center' ? 'center center' : 'center center';
+    const pos = 'center center';
 
-    bgCSS += `
-      body::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        z-index: -2;
-        background-image: url("${t.bgImage}");
-        background-size: ${sizing};
-        background-repeat: ${repeat};
-        background-position: ${pos};
-        opacity: ${t.bgImageOpacity};
-        pointer-events: none;
-      }`;
+    const bgEl = ensureOverlayEl('lg-theme-bg-image');
+    Object.assign(bgEl.style, {
+      position: 'fixed',
+      inset: '0',
+      zIndex: '-2',
+      backgroundImage: `url("${t.bgImage}")`,
+      backgroundSize: sizing,
+      backgroundRepeat: repeat,
+      backgroundPosition: pos,
+      opacity: String(t.bgImageOpacity),
+      pointerEvents: 'none',
+    });
 
     // Overlay 1
-    if (t.bgOverlay1 && t.bgOverlay1Opacity > 0) {
-      bgCSS += `
-        body::after {
-          content: '';
-          position: fixed;
-          inset: 0;
-          z-index: -1;
-          background: ${hexToRgba(t.bgOverlay1, t.bgOverlay1Opacity)};
-          pointer-events: none;
-        }`;
+    const overlay1 = t.bgOverlay1 && t.bgOverlay1Opacity > 0;
+    const overlay1El = ensureOverlayEl('lg-theme-overlay1');
+    if (overlay1) {
+      Object.assign(overlay1El.style, {
+        position: 'fixed',
+        inset: '0',
+        zIndex: '-1',
+        background: hexToRgba(t.bgOverlay1, t.bgOverlay1Opacity),
+        pointerEvents: 'none',
+      });
+    } else {
+      overlay1El.style.cssText = '';
     }
 
     // Overlay 2 (stacked on top of overlay 1)
     if (t.bgOverlay2 && t.bgOverlay2Opacity > 0) {
-      bgCSS += `
-        .lg-theme-overlay2 {
-          position: fixed;
-          inset: 0;
-          z-index: -1;
-          background: ${hexToRgba(t.bgOverlay2, t.bgOverlay2Opacity)};
-          pointer-events: none;
-        }`;
-      ensureOverlay2El();
+      const overlay2El = ensureOverlayEl('lg-theme-overlay2');
+      Object.assign(overlay2El.style, {
+        position: 'fixed',
+        inset: '0',
+        zIndex: '-1',
+        background: hexToRgba(t.bgOverlay2, t.bgOverlay2Opacity),
+        pointerEvents: 'none',
+      });
     } else {
-      removeOverlay2El();
+      removeOverlayEl('lg-theme-overlay2');
     }
   } else {
-    // No background image — clear pseudo-elements
-    bgCSS = `body::before { display: none; } body::after { display: none; }`;
-    removeOverlay2El();
+    removeOverlayEl('lg-theme-bg-image');
+    removeOverlayEl('lg-theme-overlay1');
+    removeOverlayEl('lg-theme-overlay2');
   }
-
-  bgStyleEl.textContent = bgCSS;
 
   // ── Typography ───────────────────────────────────────
   // Font import
@@ -213,16 +210,18 @@ function getOrCreateStyleEl(id) {
   return el;
 }
 
-function ensureOverlay2El() {
-  if (!document.querySelector('.lg-theme-overlay2')) {
-    const div = document.createElement('div');
-    div.className = 'lg-theme-overlay2';
-    document.body.appendChild(div);
+function ensureOverlayEl(id) {
+  let el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = id;
+    document.body.appendChild(el);
   }
+  return el;
 }
 
-function removeOverlay2El() {
-  const el = document.querySelector('.lg-theme-overlay2');
+function removeOverlayEl(id) {
+  const el = document.getElementById(id);
   if (el) el.remove();
 }
 
