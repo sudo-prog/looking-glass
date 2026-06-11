@@ -301,3 +301,82 @@ Second round of menu UI refinements based on user feedback:
 **Files created (1):** `themeConfig.js`
 **Build:** ✓ SUCCESS (4721 modules, 0 errors)
 **Deploy:** ✓ SUCCESS (GitHub Pages)
+
+### 2026-06-11 — Full Theme Customization + Background Image + Custom LLMs
+**Branch:** `develop` → `main` → deployed
+
+Extended theme system with background images, fonts, and custom AI providers.
+
+**Theme customization expanded (`themeConfig.js` + `SettingsPanel.jsx`):**
+- Glass Color picker — custom hex color for glass panels
+- Background Color picker — custom page background
+- Accent Color, Text Primary, Text Secondary — all with eyedropper color pickers + hex input
+- **Background Image upload** — full-screen image behind everything:
+  - Display modes: Cover / Center / Tile / Stretch
+  - Opacity slider (10%–100%)
+  - Two overlay color layers (each with color picker + opacity slider)
+  - Uses dedicated DOM `<div>` elements (`#lg-theme-bg-image`, `#lg-theme-overlay1`, `#lg-theme-overlay2`) instead of `body::before` pseudo-elements
+  - When active: `body` and `.canvas-viewport` made transparent via injected `<style>` so the image shows through
+- **Typography section:**
+  - Upload font file (.ttf/.otf/.woff) — auto-generates `@font-face` + applies globally
+  - Google Fonts @import URL textarea — paste any CSS import
+  - Font Family CSS input — set the font-family value
+  - Base Font Size slider (10–24px)
+  - Text Drop Shadow toggle — color, offset X/Y, blur
+  - Text Stroke (outline) toggle — color, width
+- All settings live-preview in real-time on the UI
+- Settings tab structure: MODE → GLASS → COLORS → BACKGROUND → TYPOGRAPHY
+
+**Bug fixes (3):**
+1. **Background image not showing** — `body { background: var(--color-bg) }` (opaque) and `.canvas-viewport { background-color: var(--canvas-bg) }` (opaque) covered the `z-index: -2` image div. Fixed by injecting `body { background: transparent !important; } .canvas-viewport { background-color: transparent !important; }` when a bg image is active.
+2. **X remove button persists during drag** — `handleDragStart` now calls `setShowRemove({})` and clears the long-press timer. `handlePointerUp` resets both `showRemove` and `longPressItem`.
+3. **Nav items don't match menu curvature** — Changed `.lg-sidebar__nav-item`, `.lg-sidebar__flyout`, `.lg-sidebar__theme-btn`, `.lg-sidebar__settings-btn` border-radius from fixed `--radius-lg`/`--radius-md` to `var(--glass-menu-radius, 24px)` so they all shift together when thickness changes.
+
+**Custom LLM / API / Local Agent support (`aiConfig.js` + `LiquidOrb.jsx`):**
+- Custom providers stored in `lg-custom-providers` localStorage key
+- `addCustomProvider()` — creates and persists a new provider with name, icon, baseURL, models, needsKey flag
+- `removeCustomProvider()` — removes a custom provider (built-in providers are protected via `builtin: true` flag)
+- `refreshProviders()` — re-syncs the shared PROVIDERS object from localStorage
+- **Setup dialog "+" button** — dashed-border square at the end of provider tabs, opens add provider form (name, icon, API URL, comma-separated models, requires API key checkbox)
+- **Custom provider "×" button** — small red circle with × on non-builtin provider tabs, confirmation prompt before removal, falls back to OpenRouter if removed provider was active
+- Same "+" / "×" UI applied to both the centered setup dialog and the in-orb settings panel
+
+**Files modified (3):** `LiquidOrb.jsx`, `LiquidGlassSidebar.jsx`, `LiquidGlassSidebar.css`
+**Files modified (2):** `themeConfig.js`, `aiConfig.js`
+**Build:** ✓ SUCCESS (4721 modules, 0 errors)
+**Deploy:** ✓ SUCCESS (GitHub Pages)
+
+---
+
+## What's Live (Current)
+
+- **Hamburger FAB** — 3 horizontal lines, morphs into floating glass pill menu
+- **Thin icon bar** — 56px wide, icons only, hover tooltips
+- **Flyout panels** — click icon opens categorized section panel
+- **Sun/moon toggle** — simple icon, no text
+- **Settings cog** — bottom of sidebar, opens SettingsPanel from left
+- **Settings Panel** — slides from left, glass-frost theme:
+  - Theme tab: mode, glass (opacity/thickness/blur/color), colors, background image + overlays, typography (font upload, Google Fonts, size, shadow, stroke)
+  - Icons tab: drag-to-reorder, add/remove from pool
+  - AI tab: provider/model/key config
+  - Data tab: export/clear
+- **AI Orb** — separate at bottom center, centered floating setup dialog, provider/model/key, custom LLM add/remove
+- **Bookmarks panel** — browser import, Twitter/X import, search
+- **Command Palette** — Ctrl+K, URL paste detection
+- **Liquid glass effect** — `var(--glass-frost)`, `backdrop-filter`, `var(--color-border)`, `var(--glass-cast-shadow)`, `var(--glass-specular)` throughout
+- All theme changes live-preview in real-time
+
+---
+
+## Deploy Pipeline
+
+- `develop` branch → merge to `main` → GitHub Actions auto-deploys to GitHub Pages
+- Workflow: `.github/workflows/deploy.yml` — uses `actions/upload-pages-artifact@v3` + `actions/deploy-pages@v4`
+- CDN cache can lag 30-60s after push
+- JS bundle: ~816KB, CSS: ~59KB
+
+---
+
+## Session Log
+
+### 2026-06-05 — V2 Rewrite + Deploy Setup
