@@ -248,6 +248,8 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
+    setShowRemove({});
+    setLongPressItem(null);
   }, []);
 
   const handleRemoveIcon = useCallback((e, id) => {
@@ -265,6 +267,11 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
   // ── Drag to reorder ──
   const handleDragStart = useCallback((e, index) => {
     setDraggingIndex(index);
+    setShowRemove({});   // clear any lingering X buttons
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', String(index));
   }, []);
