@@ -102,6 +102,13 @@ export function applyThemeConfig(config) {
     const repeat = t.bgImageMode === 'tile' ? 'repeat' : 'no-repeat';
     const pos = 'center center';
 
+    // Make body and canvas transparent so bg image shows through
+    const bgTransStyle = getOrCreateStyleEl('lg-theme-bg-transparency');
+    bgTransStyle.textContent = `
+      body { background: transparent !important; }
+      .canvas-viewport { background-color: transparent !important; }
+    `;
+
     const bgEl = ensureOverlayEl('lg-theme-bg-image');
     Object.assign(bgEl.style, {
       position: 'fixed',
@@ -147,6 +154,9 @@ export function applyThemeConfig(config) {
     removeOverlayEl('lg-theme-bg-image');
     removeOverlayEl('lg-theme-overlay1');
     removeOverlayEl('lg-theme-overlay2');
+    // Restore opaque body/canvas backgrounds
+    const bgTransStyle = getOrCreateStyleEl('lg-theme-bg-transparency');
+    bgTransStyle.textContent = '';
   }
 
   // ── Typography ───────────────────────────────────────
