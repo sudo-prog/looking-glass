@@ -40,7 +40,8 @@ export const THEME_DEFAULTS = {
   fontStrokeColor: 'rgba(0,0,0,0.20)',
   fontStrokeWidth: 1,
 
-  // Menu icon order
+  // Canvas texture
+  canvasTexture: 'dot-grid',  // 'none' | 'dot-grid' | 'linen' | 'graph-paper'
   menuIconOrder: [
     'canvas', 'search', 'library', 'spaces', 'tags', 'saved',
   ],
@@ -157,6 +158,24 @@ export function applyThemeConfig(config) {
     // Restore opaque body/canvas backgrounds
     const bgTransStyle = getOrCreateStyleEl('lg-theme-bg-transparency');
     bgTransStyle.textContent = '';
+  }
+
+  // ── Canvas texture ────────────────────────────────────
+  const textureStyleEl = getOrCreateStyleEl('lg-theme-canvas-texture');
+  const texture = t.canvasTexture || 'dot-grid';
+  const darkMode = isDarkMode(root);
+  if (texture === 'none' || !texture) {
+    textureStyleEl.textContent = '';
+  } else if (texture === 'dot-grid') {
+    const dotColor = darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    textureStyleEl.textContent = `.canvas-viewport { background-image: radial-gradient(circle, ${dotColor} 1px, transparent 1px); background-size: 20px 20px; }`;
+  } else if (texture === 'linen') {
+    const lineColor = darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
+    textureStyleEl.textContent = `.canvas-viewport { background-image: repeating-linear-gradient(0deg, transparent, transparent 19px, ${lineColor} 19px, ${lineColor} 20px), repeating-linear-gradient(90deg, transparent, transparent 19px, ${lineColor} 19px, ${lineColor} 20px); }`;
+  } else if (texture === 'graph-paper') {
+    const majorColor = darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+    const minorColor = darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
+    textureStyleEl.textContent = `.canvas-viewport { background-image: linear-gradient(${minorColor} 1px, transparent 1px), linear-gradient(90deg, ${minorColor} 1px, transparent 1px), linear-gradient(${majorColor} 1px, transparent 1px), linear-gradient(90deg, ${majorColor} 1px, transparent 1px); background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px; }`;
   }
 
   // ── Typography ───────────────────────────────────────

@@ -60,6 +60,48 @@ function spacesSlice(set, get) {
           viewport:   defaultCanvas.viewport,
           item_count: 0,
         });
+
+        // Onboarding: add demo items if user hasn't seen them
+        if (!localStorage.getItem('lg-onboarding-done')) {
+          const demoItems = [
+            {
+              id: crypto.randomUUID(), type: 'note', canvas_id: defaultCanvas.id,
+              created_at: Date.now(), updated_at: Date.now(),
+              x: -200, y: -180, width: 280, height: 160, rotation: 0, z_index: 0,
+              content: { title: '👋 Welcome to Looking Glass', description: 'Your visual memory canvas. Drag, drop, and organize anything here.', url: null, image_url: null, text: 'This is a note card. Double-click to edit. Drag to move around the canvas.', file_path: null, embed_html: null },
+              meta: { source: 'demo', tags: ['welcome'], color: null, pinned: false, archived: false, group_id: null, twitter_id: null, domain: null, read_at: null, fetch_status: 'done' },
+              style: { background: null, text_color: null, font_size: null, opacity: 1 },
+            },
+            {
+              id: crypto.randomUUID(), type: 'bookmark', canvas_id: defaultCanvas.id,
+              created_at: Date.now(), updated_at: Date.now(),
+              x: 120, y: -120, width: 300, height: 120, rotation: 0, z_index: 1,
+              content: { title: '🔖 Bookmark Card', description: 'Save links and web clips here', url: 'https://example.com', image_url: null, text: null, file_path: null, embed_html: null },
+              meta: { source: 'demo', tags: ['demo'], color: null, pinned: false, archived: false, group_id: null, twitter_id: null, domain: 'example.com', read_at: null, fetch_status: 'done' },
+              style: { background: null, text_color: null, font_size: null, opacity: 1 },
+            },
+            {
+              id: crypto.randomUUID(), type: 'stack', canvas_id: defaultCanvas.id,
+              created_at: Date.now(), updated_at: Date.now(),
+              x: -180, y: 60, width: 260, height: 200, rotation: 0, z_index: 2,
+              content: { title: '📚 Stack', description: 'A stack of related cards', url: null, image_url: null, text: null, file_path: null, embed_html: null },
+              meta: { source: 'demo', tags: ['demo'], color: null, pinned: false, archived: false, group_id: null, twitter_id: null, domain: null, read_at: null, fetch_status: 'done' },
+              style: { background: null, text_color: null, font_size: null, opacity: 1 },
+            },
+            {
+              id: crypto.randomUUID(), type: 'folder', canvas_id: defaultCanvas.id,
+              created_at: Date.now(), updated_at: Date.now(),
+              x: 140, y: 100, width: 280, height: 180, rotation: 0, z_index: 3,
+              content: { title: '📁 Folder', description: 'Organize cards into folders', url: null, image_url: null, text: null, file_path: null, embed_html: null },
+              meta: { source: 'demo', tags: ['demo'], color: null, pinned: false, archived: false, group_id: null, twitter_id: null, domain: null, read_at: null, fetch_status: 'done' },
+              style: { background: null, text_color: null, font_size: null, opacity: 1 },
+            },
+          ];
+          for (const item of demoItems) {
+            await idbStore.bulkImport([item]);
+          }
+          spaces[0].item_count = demoItems.length;
+        }
       }
 
       for (const space of spaces) {

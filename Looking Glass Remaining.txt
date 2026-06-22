@@ -1,0 +1,40 @@
+
+Looking Glass — Remaining Work (Priority Order)
+
+
+Tauri (desktop)	⚠️ Config only	All config files written (src-tauri/tauri.conf.json, Cargo.toml, src/main.rs, src/lib.rs, build.rs) — but Rust must be installed on your local machine to compile. Replit can't run cargo build. To use it: install Rust → cargo install tauri-cli --version "^2" → cargo tauri dev
+Capacitor (mobile)	⚠️ Config only	capacitor.config.ts written — but the @capacitor/core packages need installing locally. Run: pnpm add @capacitor/core @capacitor/cli @capacitor/android @capacitor/ios → pnpm build && pnpm exec cap sync → open in Android Studio or Xcode
+
+
+
+
+🔴 Critical / Highest Impact
+
+    Onboarding demo canvas — app opens to blank screen; new users have no idea what to do. A pre-populated canvas showing all card types + a short tooltip tour would dramatically improve first impressions
+
+    GitHub auto-backup — OAuth flow → user picks a private repo → canvas JSON auto-commits on save. Core "own your data" promise. The config is wired in Tauri/Capacitor already
+    Touch / mobile gesture parity — pinch-to-zoom, two-finger pan, and tap behaviours need polish for PWA on iPhone/Android; currently desktop-first
+
+🟡 High Impact / Product Quality
+
+
+    Backgrounds & themes — dark/light/custom canvas textures (linen, dot grid variations, plain); currently locked to light dot grid
+    Micro-sounds — subtle audio feedback on card drop, create, delete (< 5ms, opt-in in settings). Listed in roadmap, very distinguishing
+
+🟢 Polish / Completeness
+
+
+    Tests — Vitest unit tests for Quadtree, schema, exporters; Playwright E2E for drag, marquee, folder creation
+    Design.md a11y report — contrast ratios + WCAG pass/fail in the Super Design extractor output (the roadmap spec calls for this)
+    Design token live preview — show a live swatch/preview panel inside Super Design.md panel as tokens are generated
+
+
+🔵 Commercial / Phase 4 (when ready to monetise)
+
+    Cloud sync — Supabase or similar; multi-device canvas sync (opt-in, paid tier)
+    Real-time collaboration — Yjs CRDT for shared canvases (opt-in, paid tier)
+    Version history / timeline — checkpoint diffs with visual rewind
+    Browser extension — one-click clip any page/image/selection to canvas
+    Plugin system — custom card types, importers, exporters
+    Monetisation — Stripe/Lemon Squeezy, freemium gating (local = free, sync + AI credits = paid)
+
