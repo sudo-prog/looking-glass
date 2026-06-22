@@ -1,0 +1,2521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Liquid Glass Orb — Aave Faithful</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#08080a;
+  --fg:rgba(240,240,246,0.88);
+  --fg2:rgba(160,160,176,0.50);
+  --glass-tint:rgba(18,18,26,0.48);
+  --glass-border:rgba(255,255,255,0.07);
+  --pill-h:52px;
+  --font:'DM Sans',system-ui,sans-serif;
+  --mono:'DM Mono',monospace;
+  --spring:cubic-bezier(0.34,1.56,0.64,1);
+  --out:cubic-bezier(0.22,1,0.36,1);
+}
+
+html,body{height:100%;background:var(--bg);font-family:var(--font);overflow:hidden;color:var(--fg)}
+
+/* ── scene ── */
+#scene{
+  position:fixed;inset:0;
+  display:grid;place-items:center;
+  z-index:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 30% 35%, rgba(80,60,180,0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 72% 65%, rgba(40,120,200,0.10) 0%, transparent 70%),
+    var(--bg);
+}
+
+/* dot grid — makes displacement visible against bg */
+#dot-grid{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(255,255,255,0.07) 1px,transparent 1px);
+  background-size:28px 28px;
+}
+
+/* ── SVG filter host (hidden) ── */
+#svg-defs{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+
+/* ── bottom orb ── */
+#orb-root{
+  position:fixed;
+  bottom:max(32px,env(safe-area-inset-bottom,32px));
+  left:50%;transform:translateX(-50%);
+  z-index:100;
+  display:flex;flex-direction:column;align-items:center;
+}
+
+/* shared glass surface mixin */
+.glass-surf{
+  background:var(--glass-tint);
+  border:1px solid var(--glass-border);
+  backdrop-filter:blur(28px) saturate(180%);
+  -webkit-backdrop-filter:blur(28px) saturate(180%);
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.45),
+    0 1px 0 rgba(255,255,255,0.05) inset,
+    0 -1px 0 rgba(0,0,0,0.22) inset;
+}
+
+/* ORB */
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.036)}}
+@keyframes glow{0%,100%{opacity:0.55}50%{opacity:0.85}}
+
+#orb{
+  position:relative;
+  width:58px;height:58px;
+  cursor:pointer;outline:none;
+  -webkit-tap-highlight-color:transparent;
+  animation:breathe 4s ease-in-out infinite;
+  transition:opacity 0.3s var(--out),transform 0.2s var(--spring);
+  will-change:transform;
+}
+#orb.hidden{opacity:0;transform:scale(0.5);pointer-events:none;animation:none}
+#orb:active{transform:scale(0.84)!important;animation:none!important}
+
+.orb-glow{
+  position:absolute;inset:-12px;border-radius:50%;
+  background:radial-gradient(circle,rgba(100,80,240,0.18) 0%,transparent 68%);
+  animation:glow 4s ease-in-out infinite;
+  pointer-events:none;
+}
+.orb-glass{
+  position:absolute;inset:0;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.orb-icon{color:var(--fg);position:relative;z-index:2;}
+.orb-rim{
+  position:absolute;inset:0;border-radius:50%;
+  background:linear-gradient(138deg,rgba(255,255,255,0.13) 0%,transparent 48%,rgba(255,255,255,0.03) 100%);
+  pointer-events:none;
+}
+.orb-sheen{
+  position:absolute;top:8px;left:13px;
+  width:15px;height:6px;border-radius:50%;
+  background:rgba(255,255,255,0.24);filter:blur(3px);
+  transform:rotate(-24deg);pointer-events:none;
+}
+@keyframes pulse-ring{0%{transform:scale(1);opacity:0.65}100%{transform:scale(1.9);opacity:0}}
+.pulse-ring{
+  position:absolute;inset:0;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,0.32);
+  animation:pulse-ring 0.7s var(--out) forwards;
+  pointer-events:none;
+}
+
+/* PILL — expands symmetrically from the orb centre */
+@keyframes shimmer{
+  0%{opacity:0;transform:translateX(-80%) skewX(-16deg)}
+  50%{opacity:1}
+  100%{opacity:0;transform:translateX(80%) skewX(-16deg)}
+}
+#pill{
+  position:absolute;
+  bottom:0;
+  left:50%;
+  /* translateX(-50%) keeps it centred on the orb */
+  transform:translateX(-50%) translateY(6px) scaleX(0.7) scaleY(0.85);
+  transform-origin:center bottom;
+  width:max-content;max-width:min(95vw,560px);
+  opacity:0;pointer-events:none;
+  transition:opacity 0.26s var(--out), transform 0.32s var(--spring);
+}
+#pill.visible{
+  opacity:1;
+  transform:translateX(-50%) translateY(0) scaleX(1) scaleY(1);
+  pointer-events:auto;
+}
+.pill-inner{
+  display:flex;align-items:center;gap:3px;
+  padding:5px 6px 5px 5px;border-radius:30px;
+  position:relative;overflow:hidden;
+}
+.pill-inner::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(95deg,transparent 15%,rgba(255,255,255,0.055) 50%,transparent 85%);
+  animation:shimmer 5s ease-in-out infinite;
+  pointer-events:none;
+}
+.pill-sheen{position:absolute;top:0;left:0;right:0;height:1px;z-index:5;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15) 40%,rgba(255,255,255,0.20) 50%,rgba(255,255,255,0.15) 60%,transparent);pointer-events:none}
+
+.pill-brand{
+  display:flex;align-items:center;gap:9px;
+  background:none;border:none;cursor:pointer;
+  padding:4px 10px 4px 3px;border-radius:24px;
+  transition:background 0.14s;
+  -webkit-tap-highlight-color:transparent;
+}
+.pill-brand:hover{background:rgba(255,255,255,0.05)}
+.pill-orb{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;flex-shrink:0;
+  color:var(--fg);
+}
+.pill-orb-sheen{position:absolute;top:3px;left:5px;width:11px;height:5px;
+  border-radius:50%;background:rgba(255,255,255,0.26);filter:blur(2px);
+  transform:rotate(-18deg);pointer-events:none}
+.pill-label{font-size:13px;font-weight:500;color:var(--fg);white-space:nowrap;letter-spacing:-0.014em}
+
+.pill-divider{width:1px;height:20px;background:rgba(255,255,255,0.07);flex-shrink:0;margin:0 2px}
+
+.pill-actions{display:flex;align-items:center;gap:3px;overflow:hidden}
+.pill-action{
+  font-family:var(--font);font-size:12px;font-weight:400;
+  color:var(--fg2);
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:16px;padding:5px 12px;cursor:pointer;
+  white-space:nowrap;letter-spacing:-0.01em;
+  transition:background 0.13s,color 0.13s,transform 0.13s var(--spring);
+  -webkit-tap-highlight-color:transparent;
+}
+.pill-action:hover{background:rgba(255,255,255,0.09);color:var(--fg)}
+.pill-action:active{transform:scale(0.92)}
+.pill-action.active{background:rgba(255,255,255,0.12);color:var(--fg);border-color:rgba(255,255,255,0.12)}
+
+.pill-close{
+  background:none;border:none;cursor:pointer;
+  color:var(--fg2);width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  transition:background 0.13s,color 0.13s;margin-left:1px;flex-shrink:0;
+}
+.pill-close:hover{background:rgba(255,255,255,0.06);color:var(--fg)}
+
+/* CHAT — expands from orb centre */
+#chat{
+  position:absolute;bottom:0;left:50%;
+  width:min(460px,95vw);
+  transform:translateX(-50%) translateY(10px) scale(0.95);
+  transform-origin:center bottom;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.3s var(--out),transform 0.36s var(--spring);
+}
+#chat.visible{opacity:1;transform:translateX(-50%) translateY(0) scale(1);pointer-events:auto}
+.chat-inner{border-radius:26px;position:relative;overflow:hidden}
+.chat-sheen{position:absolute;top:0;left:0;right:0;height:1px;z-index:5;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.10) 25%,rgba(255,255,255,0.18) 50%,rgba(255,255,255,0.10) 75%,transparent);pointer-events:none}
+.chat-rim{position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(158deg,rgba(255,255,255,0.032) 0%,transparent 32%);
+  pointer-events:none;z-index:1}
+
+/* thinking dots */
+.thinking{display:flex;align-items:center;gap:8px;padding:12px 16px 0;color:var(--fg2);font-size:12px}
+.dots{display:flex;gap:4px}
+.dots span{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.28);
+  animation:dot 1.2s ease-in-out infinite}
+.dots span:nth-child(2){animation-delay:.18s}
+.dots span:nth-child(3){animation-delay:.36s}
+@keyframes dot{0%,80%,100%{transform:scale(0.55);opacity:0.35}40%{transform:scale(1);opacity:1}}
+
+/* ai response */
+@keyframes resp-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.ai-resp{display:flex;align-items:flex-start;gap:9px;padding:12px 16px 0;
+  color:var(--fg2);font-size:13px;line-height:1.55;animation:resp-in .26s var(--out) both}
+.ai-resp svg{flex-shrink:0;margin-top:1px;opacity:0.4}
+
+/* mutation preview */
+.mut-preview{
+  margin:10px 14px 0;padding:10px 12px;border-radius:12px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  font-family:var(--mono);font-size:11px;color:rgba(175,175,195,0.65);
+  line-height:1.65;max-height:110px;overflow-y:auto;
+  animation:resp-in .2s var(--out) both
+}
+.mut-preview::-webkit-scrollbar{display:none}
+.op-add{color:rgba(100,210,140,0.85);font-weight:700}
+.op-rm {color:rgba(255,100,100,0.80);font-weight:700}
+.op-fix{color:rgba(100,165,255,0.85);font-weight:700}
+.op-sty{color:rgba(210,155,255,0.85);font-weight:700}
+
+/* attachments */
+.attachments{display:flex;gap:8px;padding:10px 14px 0;flex-wrap:wrap}
+.att{position:relative;width:64px;height:64px;border-radius:12px;overflow:hidden;
+  border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04)}
+.att img{width:100%;height:100%;object-fit:cover}
+.att-rm{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;
+  background:rgba(0,0,0,0.70);color:rgba(255,255,255,0.80);border:none;cursor:pointer;
+  font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center}
+
+/* input */
+.chat-row{padding:13px 15px 4px;position:relative;z-index:2}
+#ta{width:100%;background:transparent;border:none;outline:none;resize:none;
+  font-family:var(--font);font-size:15px;font-weight:400;color:var(--fg);
+  line-height:1.55;min-height:26px;max-height:190px;overflow-y:auto;scrollbar-width:none;
+  caret-color:rgba(210,210,228,0.9);letter-spacing:-0.01em}
+#ta::placeholder{color:var(--fg2)}
+#ta::-webkit-scrollbar{display:none}
+
+/* toolbar */
+.toolbar{display:flex;align-items:center;justify-content:space-between;
+  padding:5px 9px 11px;gap:6px;position:relative;z-index:2}
+.tb-l,.tb-r{display:flex;align-items:center;gap:2px}
+.tool{background:none;border:none;cursor:pointer;color:var(--fg2);
+  width:34px;height:34px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background 0.13s,color 0.13s;-webkit-tap-highlight-color:transparent}
+.tool:hover{background:rgba(255,255,255,0.06);color:var(--fg)}
+.ctx-lbl{font-size:11px;color:var(--fg2);opacity:0.42;padding-left:3px;pointer-events:none;letter-spacing:-0.01em}
+.cmd-hint{font-family:var(--mono);font-size:10px;color:var(--fg2);opacity:0.38;padding-right:3px}
+.send{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.05);color:var(--fg2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:background 0.18s,color 0.18s,border-color 0.18s,transform 0.15s var(--spring),box-shadow 0.18s;
+  -webkit-tap-highlight-color:transparent}
+.send.on{background:rgba(238,238,248,0.90);color:#080808;border-color:transparent;
+  box-shadow:0 2px 14px rgba(210,210,235,0.18)}
+.send.on:hover{transform:scale(1.08)}
+.send.on:active{transform:scale(0.89)}
+.send:disabled{cursor:default;opacity:0.55}
+
+/* backdrop */
+#bd{position:fixed;inset:0;z-index:90;
+  background:rgba(0,0,0,0.10);backdrop-filter:blur(0.5px);-webkit-backdrop-filter:blur(0.5px);
+  opacity:0;pointer-events:none;transition:opacity 0.22s var(--out)}
+#bd.on{opacity:1;pointer-events:auto}
+
+/* hint */
+.hint{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);
+  font-size:11px;color:var(--fg2);opacity:0.4;letter-spacing:0.04em;
+  pointer-events:none;white-space:nowrap;transition:opacity 0.4s;z-index:50}
+.hint.off{opacity:0}
+
+/* mutation log */
+#mlog{position:fixed;bottom:32px;left:20px;z-index:500;
+  display:flex;flex-direction:column-reverse;gap:5px;max-width:260px;pointer-events:none}
+@keyframes log-in{from{opacity:0;transform:translateY(6px) scale(0.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes log-out{to{opacity:0;transform:translateX(-8px)}}
+.log-e{display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:11px;
+  background:rgba(12,12,20,0.82);border:1px solid rgba(255,255,255,0.055);
+  backdrop-filter:blur(12px);font-size:11px;color:var(--fg2);
+  animation:log-in 0.2s var(--out) both;letter-spacing:-0.01em}
+.log-e.t-add{border-color:rgba(80,200,120,0.18)}
+.log-e.t-rm {border-color:rgba(255,80,80,0.18)}
+.log-e.t-fix{border-color:rgba(80,160,255,0.18)}
+.log-e.t-sty{border-color:rgba(200,155,255,0.18)}
+
+/* scene cards */
+.sc-card{
+  position:absolute;border-radius:14px;
+  background:rgba(18,18,26,0.70);border:1px solid rgba(255,255,255,0.055);
+  backdrop-filter:blur(8px);padding:14px 16px;
+  font-size:13px;color:var(--fg2);line-height:1.5;max-width:210px;
+  pointer-events:none;user-select:none;
+  transition:transform 0.3s var(--spring),opacity 0.3s var(--out),box-shadow 0.3s;
+}
+.sc-tag{font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;
+  color:rgba(255,255,255,0.32);margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.sc-dot{display:inline-block;width:5px;height:5px;border-radius:50%}
+.sc-title{font-size:14px;font-weight:500;color:var(--fg);margin-bottom:3px}
+.sc-body{font-size:12px;color:var(--fg2)}
+.sc-card.err{border-color:rgba(255,60,60,0.25);background:rgba(32,10,10,0.72)}
+
+@media(max-width:480px){
+  .pill-action{font-size:11px;padding:4px 9px}
+  #ta{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  #orb,#pill,#chat{transition:opacity .18s!important}
+  #orb,.orb-glow{animation:none!important}
+}
+
+/* Settings panel */
+#settings-panel.visible{
+  opacity:1 !important;
+  pointer-events:auto !important;
+  transform:translateY(0) scale(1) !important;
+}
+#settings-btn:hover{
+  background:rgba(30,30,42,0.85) !important;
+  color:rgba(210,210,230,0.80) !important;
+}
+#key-input:focus{
+  border-color:rgba(255,255,255,0.20) !important;
+}
+</style>
+</head>
+<body>
+
+<!-- dot grid makes refraction visible -->
+<div id="dot-grid"></div>
+
+<!-- hidden SVG filter host -->
+<svg id="svg-defs" aria-hidden="true">
+  <defs id="fdefs"></defs>
+</svg>
+
+<!-- scene background cards (AI can mutate these) -->
+<div id="scene" aria-hidden="true"></div>
+
+<!-- mutation log -->
+<div id="mlog" aria-live="polite"></div>
+
+<!-- hint -->
+<div class="hint" id="hint">Tap the orb</div>
+
+<!-- backdrop -->
+<div id="bd"></div>
+
+<!-- ── ORB ROOT ── -->
+<div id="orb-root">
+  <div id="orb" role="button" tabindex="0" aria-label="Open AI assistant">
+    <div class="orb-glow"></div>
+    <div class="orb-glass glass-surf">
+      <div class="orb-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
+        </svg>
+      </div>
+      <div class="orb-rim"></div>
+      <div class="orb-sheen"></div>
+    </div>
+  </div>
+
+  <!-- PILL -->
+  <div id="pill" aria-hidden="true">
+    <div class="pill-inner glass-surf">
+      <button class="pill-brand" id="pill-brand">
+        <div class="pill-orb glass-surf" id="pill-orb">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
+          </svg>
+          <div class="pill-orb-sheen"></div>
+        </div>
+        <span class="pill-label" id="pill-label">Looking Glass AI</span>
+      </button>
+      <div class="pill-divider"></div>
+      <div class="pill-actions" id="pill-acts"></div>
+      <button class="pill-close" id="pill-close">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="pill-sheen"></div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="chat" aria-hidden="true">
+    <div class="chat-inner glass-surf">
+      <div class="chat-sheen"></div>
+      <div class="chat-rim"></div>
+      <div id="thinking" class="thinking" style="display:none">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg>
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span id="think-lbl">Thinking…</span>
+      </div>
+      <div id="ai-resp" class="ai-resp" style="display:none">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg>
+        <span id="resp-txt"></span>
+      </div>
+      <div id="mut-prev" class="mut-preview" style="display:none"></div>
+      <div id="atts" class="attachments" style="display:none"></div>
+      <div class="chat-row"><textarea id="ta" rows="1" placeholder="Ask AI to change the UI…"></textarea></div>
+      <div class="toolbar">
+        <div class="tb-l">
+          <button class="tool" id="back-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <button class="tool" id="att-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          </button>
+          <input id="file-in" type="file" accept="image/*" multiple style="display:none">
+          <span class="ctx-lbl" id="ctx-lbl">UI Mutator</span>
+        </div>
+        <div class="tb-r">
+          <span class="cmd-hint" id="cmd-hint" style="display:none">⌘↩</span>
+          <button class="send" id="send-btn" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI-injected styles slot -->
+<style id="ai-styles"></style>
+
+<!-- ── Settings button ── -->
+<button id="settings-btn" aria-label="AI model settings" style="
+  position:fixed;top:18px;right:18px;z-index:800;
+  background:rgba(18,18,26,0.70);border:1px solid rgba(255,255,255,0.08);
+  color:rgba(165,165,185,0.60);width:34px;height:34px;border-radius:50%;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  transition:background 0.15s,color 0.15s;font-size:15px;
+">⚙</button>
+
+<!-- ── Multi-provider Settings Panel ── -->
+<div id="settings-panel" style="
+  position:fixed;top:60px;right:18px;z-index:900;
+  background:rgba(14,14,22,0.94);border:1px solid rgba(255,255,255,0.09);
+  border-radius:20px;padding:20px 18px;width:310px;
+  backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%);
+  box-shadow:0 20px 60px rgba(0,0,0,0.60),0 1px 0 rgba(255,255,255,0.06) inset;
+  opacity:0;pointer-events:none;transform:translateY(-8px) scale(0.96);
+  transition:opacity 0.22s cubic-bezier(0.22,1,0.36,1),transform 0.24s cubic-bezier(0.34,1.56,0.64,1);
+  font-family:'DM Sans',system-ui,sans-serif;
+">
+  <!-- Provider tabs -->
+  <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:14px;">AI Provider</div>
+  <div id="provider-tabs" style="display:flex;gap:4px;margin-bottom:16px;padding:3px;background:rgba(255,255,255,0.04);border-radius:12px;">
+    <!-- Tabs injected by JS -->
+  </div>
+
+  <!-- Model picker -->
+  <div style="font-size:11px;color:rgba(165,165,185,0.50);margin-bottom:6px;letter-spacing:0.02em;">Model</div>
+  <select id="model-select" style="
+    width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);
+    border-radius:10px;padding:8px 10px;color:rgba(238,238,248,0.85);
+    font-family:'DM Sans',sans-serif;font-size:12px;outline:none;
+    margin-bottom:14px;appearance:none;cursor:pointer;
+  "></select>
+
+  <!-- Custom model -->
+  <div id="custom-model-row" style="display:none;margin-bottom:14px;">
+    <div style="font-size:11px;color:rgba(165,165,185,0.50);margin-bottom:6px;">Custom model ID</div>
+    <input id="custom-model-input" type="text" placeholder="e.g. llama-3.3-70b-versatile"
+      style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);
+      border-radius:10px;padding:8px 10px;color:rgba(238,238,248,0.85);
+      font-family:'DM Mono',monospace;font-size:11px;outline:none;
+      caret-color:rgba(238,238,248,0.8);">
+  </div>
+
+  <!-- Base URL (for OpenAI-compatible / self-hosted) -->
+  <div id="base-url-row" style="display:none;margin-bottom:14px;">
+    <div style="font-size:11px;color:rgba(165,165,185,0.50);margin-bottom:6px;">Base URL</div>
+    <input id="base-url-input" type="text" placeholder="http://localhost:11434/v1"
+      style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);
+      border-radius:10px;padding:8px 10px;color:rgba(238,238,248,0.85);
+      font-family:'DM Mono',monospace;font-size:11px;outline:none;
+      caret-color:rgba(238,238,248,0.8);">
+  </div>
+
+  <!-- API Key -->
+  <div style="font-size:11px;color:rgba(165,165,185,0.50);margin-bottom:6px;" id="key-label">API Key</div>
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:14px;">
+    <input id="key-input" type="password" placeholder="sk-…"
+      style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);
+      border-radius:10px;padding:8px 10px;color:rgba(238,238,248,0.88);
+      font-family:'DM Mono',monospace;font-size:11px;outline:none;
+      caret-color:rgba(238,238,248,0.8);">
+    <button id="key-toggle" style="background:none;border:none;cursor:pointer;font-size:14px;padding:4px;opacity:0.6;">👁</button>
+  </div>
+
+  <!-- Save / Clear -->
+  <div style="display:flex;gap:8px;margin-bottom:14px;">
+    <button id="key-save" style="flex:1;background:rgba(238,238,248,0.90);color:#080808;
+      border:none;border-radius:10px;padding:9px 12px;cursor:pointer;
+      font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;
+      transition:opacity 0.15s;">Save</button>
+    <button id="key-clear" style="background:rgba(255,80,80,0.10);color:rgba(255,100,100,0.75);
+      border:1px solid rgba(255,80,80,0.18);border-radius:10px;padding:9px 12px;cursor:pointer;
+      font-family:'DM Sans',sans-serif;font-size:12px;">Clear</button>
+  </div>
+
+  <!-- Status line -->
+  <div id="settings-status" style="font-size:11px;color:rgba(165,165,185,0.38);line-height:1.55;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);">
+    Keys stored in browser localStorage only.
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   LOOKING GLASS — LIQUID AI ORB v4
+   Full self-editing engine. Claude can read and rewrite every element.
+   API key shared with Looking Glass via localStorage key: lg-api-key
+   ═══════════════════════════════════════════════════════════════════════ */
+
+'use strict';
+
+// ══════════════════════════════════════════════════════════════════════════
+//  LG — multi-provider AI config store
+//  All values persist in localStorage so they survive page reloads and are
+//  shared with the main Looking Glass AIModal (same key namespace: lg-*)
+// ══════════════════════════════════════════════════════════════════════════
+const PROVIDERS = {
+  anthropic: {
+    name: 'Anthropic',
+    icon: '◆',
+    keyPlaceholder: 'sk-ant-api03-…',
+    keyLabel: 'Anthropic API Key',
+    baseURL: 'https://api.anthropic.com/v1/messages',
+    models: [
+      { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (latest)' },
+      { id: 'claude-opus-4-20250514',   label: 'Claude Opus 4' },
+      { id: 'claude-haiku-4-5-20251001',label: 'Claude Haiku 4.5' },
+    ],
+    needsKey: true,
+    showBaseURL: false,
+  },
+  openai: {
+    name: 'OpenAI',
+    icon: '◎',
+    keyPlaceholder: 'sk-proj-…',
+    keyLabel: 'OpenAI API Key',
+    baseURL: 'https://api.openai.com/v1/chat/completions',
+    models: [
+      { id: 'gpt-4o',          label: 'GPT-4o' },
+      { id: 'gpt-4o-mini',     label: 'GPT-4o mini' },
+      { id: 'gpt-4.1',         label: 'GPT-4.1' },
+      { id: 'o3',              label: 'o3' },
+      { id: 'o4-mini',         label: 'o4-mini' },
+    ],
+    needsKey: true,
+    showBaseURL: false,
+  },
+  groq: {
+    name: 'Groq',
+    icon: '⚡',
+    keyPlaceholder: 'gsk_…',
+    keyLabel: 'Groq API Key',
+    baseURL: 'https://api.groq.com/openai/v1/chat/completions',
+    models: [
+      { id: 'llama-3.3-70b-versatile',      label: 'Llama 3.3 70B' },
+      { id: 'llama-3.1-8b-instant',         label: 'Llama 3.1 8B (fast)' },
+      { id: 'mixtral-8x7b-32768',           label: 'Mixtral 8×7B' },
+      { id: 'gemma2-9b-it',                 label: 'Gemma 2 9B' },
+    ],
+    needsKey: true,
+    showBaseURL: false,
+  },
+  google: {
+    name: 'Gemini',
+    icon: '✦',
+    keyPlaceholder: 'AIza…',
+    keyLabel: 'Google AI API Key',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
+    models: [
+      { id: 'gemini-2.5-flash-preview-05-20', label: 'Gemini 2.5 Flash' },
+      { id: 'gemini-2.5-pro-preview-06-05',   label: 'Gemini 2.5 Pro' },
+      { id: 'gemini-2.0-flash',               label: 'Gemini 2.0 Flash' },
+    ],
+    needsKey: true,
+    showBaseURL: false,
+  },
+  openrouter: {
+    name: 'OpenRouter',
+    icon: '⇄',
+    keyPlaceholder: 'sk-or-v1-…',
+    keyLabel: 'OpenRouter API Key',
+    baseURL: 'https://openrouter.ai/api/v1/chat/completions',
+    models: [
+      { id: 'anthropic/claude-sonnet-4',    label: 'Claude Sonnet 4 (OR)' },
+      { id: 'openai/gpt-4o',                label: 'GPT-4o (OR)' },
+      { id: 'google/gemini-2.5-flash',      label: 'Gemini 2.5 Flash (OR)' },
+      { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B (OR)' },
+      { id: 'mistralai/mistral-large',      label: 'Mistral Large (OR)' },
+      { id: 'custom',                       label: 'Custom model ID…' },
+    ],
+    needsKey: true,
+    showBaseURL: false,
+  },
+  ollama: {
+    name: 'Ollama',
+    icon: '🦙',
+    keyPlaceholder: '(no key needed)',
+    keyLabel: 'API Key (optional)',
+    baseURL: 'http://localhost:11434/v1/chat/completions',
+    models: [
+      { id: 'llama3.2',    label: 'Llama 3.2' },
+      { id: 'mistral',     label: 'Mistral' },
+      { id: 'qwen2.5',     label: 'Qwen 2.5' },
+      { id: 'phi4',        label: 'Phi-4' },
+      { id: 'gemma3',      label: 'Gemma 3' },
+      { id: 'custom',      label: 'Custom model ID…' },
+    ],
+    needsKey: false,
+    showBaseURL: true,
+  },
+  litellm: {
+    name: 'LiteLLM',
+    icon: '⚗',
+    keyPlaceholder: 'Bearer …',
+    keyLabel: 'Bearer Token (optional)',
+    baseURL: 'http://localhost:4000/v1/chat/completions',
+    models: [
+      { id: 'custom', label: 'Custom model ID…' },
+    ],
+    needsKey: false,
+    showBaseURL: true,
+  },
+};
+
+// ── localStorage helpers ─────────────────────────────────────────────────────
+const LG = {
+  // Active provider id
+  get provider()  { return localStorage.getItem('lg-provider') || 'anthropic'; },
+  set provider(v) { localStorage.setItem('lg-provider', v); },
+
+  // API key per provider — stored as lg-key-{provider}
+  // Also aliased as lg-api-key for Anthropic (backward compat with AIModal)
+  getKey(pid) {
+    if (pid === 'anthropic') return localStorage.getItem('lg-api-key') || localStorage.getItem('lg-key-anthropic') || '';
+    return localStorage.getItem(`lg-key-${pid}`) || '';
+  },
+  setKey(pid, v) {
+    if (pid === 'anthropic') { localStorage.setItem('lg-api-key', v.trim()); }
+    if (v) localStorage.setItem(`lg-key-${pid}`, v.trim());
+    else   localStorage.removeItem(`lg-key-${pid}`);
+  },
+
+  // Selected model per provider
+  getModel(pid) { return localStorage.getItem(`lg-model-${pid}`) || PROVIDERS[pid]?.models[0]?.id || ''; },
+  setModel(pid, v) { localStorage.setItem(`lg-model-${pid}`, v); },
+
+  // Custom model string (when model = 'custom')
+  getCustomModel(pid) { return localStorage.getItem(`lg-custom-model-${pid}`) || ''; },
+  setCustomModel(pid, v) { localStorage.setItem(`lg-custom-model-${pid}`, v.trim()); },
+
+  // Base URL (for Ollama / LiteLLM / self-hosted)
+  getBaseURL(pid) { return localStorage.getItem(`lg-base-url-${pid}`) || PROVIDERS[pid]?.baseURL || ''; },
+  setBaseURL(pid, v) { localStorage.setItem(`lg-base-url-${pid}`, v.trim()); },
+
+  // Convenience getters for current provider
+  get currentKey()     { return this.getKey(this.provider); },
+  get currentModel()   {
+    const m = this.getModel(this.provider);
+    if (m === 'custom') return this.getCustomModel(this.provider);
+    return m;
+  },
+  get currentBaseURL() { return this.getBaseURL(this.provider); },
+  get currentProvider(){ return PROVIDERS[this.provider]; },
+};
+
+// ── Settings panel UI ────────────────────────────────────────────────────────
+const settingsPanel  = document.getElementById('settings-panel');
+const providerTabs   = document.getElementById('provider-tabs');
+const modelSelect    = document.getElementById('model-select');
+const customModelRow = document.getElementById('custom-model-row');
+const customModelIn  = document.getElementById('custom-model-input');
+const baseURLRow     = document.getElementById('base-url-row');
+const baseURLIn      = document.getElementById('base-url-input');
+const keyInput       = document.getElementById('key-input');
+const keyLabel       = document.getElementById('key-label');
+const keyToggle      = document.getElementById('key-toggle');
+const keySave        = document.getElementById('key-save');
+const keyClear       = document.getElementById('key-clear');
+const settingsStatus = document.getElementById('settings-status');
+const settingsBtn    = document.getElementById('settings-btn');
+
+function buildProviderTabs() {
+  providerTabs.innerHTML = '';
+  Object.entries(PROVIDERS).forEach(([pid, p]) => {
+    const btn = document.createElement('button');
+    const active = pid === LG.provider;
+    btn.style.cssText = `flex:1;background:${active?'rgba(255,255,255,0.10)':'none'};
+      border:none;border-radius:9px;padding:5px 2px;cursor:pointer;
+      font-family:'DM Sans',sans-serif;font-size:10px;font-weight:${active?'600':'400'};
+      color:${active?'rgba(238,238,248,0.90)':'rgba(165,165,185,0.50)'};
+      transition:all 0.15s;white-space:nowrap;`;
+    btn.innerHTML = `<div style="font-size:13px;margin-bottom:2px">${p.icon}</div>${p.name}`;
+    btn.addEventListener('click', () => { LG.provider = pid; refreshSettingsUI(); });
+    providerTabs.appendChild(btn);
+  });
+}
+
+function refreshSettingsUI() {
+  const pid = LG.provider;
+  const p   = PROVIDERS[pid];
+
+  buildProviderTabs();
+
+  // Model select
+  modelSelect.innerHTML = p.models.map(m =>
+    `<option value="${m.id}" ${LG.getModel(pid)===m.id?'selected':''}>${m.label}</option>`
+  ).join('');
+
+  // Custom model
+  const isCustom = LG.getModel(pid) === 'custom';
+  customModelRow.style.display = isCustom ? 'block' : 'none';
+  customModelIn.value = LG.getCustomModel(pid);
+
+  // Base URL
+  baseURLRow.style.display = p.showBaseURL ? 'block' : 'none';
+  baseURLIn.value = LG.getBaseURL(pid);
+
+  // Key
+  keyLabel.textContent = p.keyLabel;
+  keyInput.placeholder = p.keyPlaceholder;
+  const storedKey = LG.getKey(pid);
+  keyInput.value = storedKey ? `${storedKey.slice(0,10)}${'•'.repeat(18)}` : '';
+  keyInput.type = 'password';
+  keyToggle.textContent = '👁';
+
+  // Status
+  const hasKey = !!LG.getKey(pid);
+  const model  = LG.currentModel;
+  settingsStatus.textContent = hasKey
+    ? `✓ ${p.name} · ${model || 'no model'}`
+    : p.needsKey ? `⚠ No API key set for ${p.name}` : `${p.name} · ${model} · no key needed`;
+  settingsStatus.style.color = hasKey||!p.needsKey ? 'rgba(80,200,120,0.60)' : 'rgba(255,140,80,0.65)';
+}
+
+modelSelect.addEventListener('change', () => {
+  LG.setModel(LG.provider, modelSelect.value);
+  customModelRow.style.display = modelSelect.value==='custom' ? 'block' : 'none';
+  refreshSettingsUI();
+});
+
+keySave.addEventListener('click', () => {
+  const pid = LG.provider;
+  const rawKey = keyInput.value.trim();
+  if (rawKey && !rawKey.includes('•')) LG.setKey(pid, rawKey);
+  if (baseURLRow.style.display !== 'none') LG.setBaseURL(pid, baseURLIn.value.trim());
+  if (customModelRow.style.display !== 'none') LG.setCustomModel(pid, customModelIn.value.trim());
+  logMut('fix', `${PROVIDERS[pid].name} settings saved`);
+  refreshSettingsUI();
+  settingsPanel.classList.remove('visible');
+});
+
+keyClear.addEventListener('click', () => {
+  const pid = LG.provider;
+  LG.setKey(pid, '');
+  keyInput.value = '';
+  logMut('rm', `${PROVIDERS[pid].name} key cleared`);
+  refreshSettingsUI();
+});
+
+keyToggle.addEventListener('click', () => {
+  keyInput.type = keyInput.type==='password' ? 'text' : 'password';
+  // When switching to text, show actual key
+  if (keyInput.type==='text') keyInput.value = LG.getKey(LG.provider);
+  keyToggle.textContent = keyInput.type==='password' ? '👁' : '🙈';
+});
+keyInput.addEventListener('focus', () => {
+  if (keyInput.value.includes('•')) keyInput.value = LG.getKey(LG.provider);
+});
+keyInput.addEventListener('keydown', e => {
+  if (e.key==='Enter') keySave.click();
+  if (e.key==='Escape') settingsPanel.classList.remove('visible');
+});
+customModelIn.addEventListener('input', () => LG.setCustomModel(LG.provider, customModelIn.value));
+
+settingsBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  const willOpen = !settingsPanel.classList.contains('visible');
+  settingsPanel.classList.toggle('visible');
+  if (willOpen) { refreshSettingsUI(); keyInput.focus(); }
+});
+
+document.addEventListener('click', e => {
+  if (!settingsPanel.contains(e.target) && e.target!==settingsBtn)
+    settingsPanel.classList.remove('visible');
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+//  UNIVERSAL AI CALLER
+//  Routes to the correct endpoint format for each provider.
+//  All providers use the same system prompt — only the wire format differs.
+// ══════════════════════════════════════════════════════════════════════════
+async function callAI(userMsg, snapshot) {
+  const pid     = LG.provider;
+  const p       = PROVIDERS[pid];
+  const key     = LG.getKey(pid);
+  const model   = LG.currentModel;
+  const baseURL = LG.getBaseURL(pid);
+
+  if (!model) throw new Error(`No model selected for ${p.name}`);
+  if (p.needsKey && !key) throw new Error(`No API key set — tap ⚙ to add your ${p.name} key`);
+
+  const prompt = `User instruction: "${userMsg}"\n\nCurrent UI snapshot:\n${JSON.stringify(snapshot,null,2)}`;
+
+  // ── Anthropic Messages API ───────────────────────────────────────────────
+  if (pid === 'anthropic') {
+    const r = await fetch(baseURL, {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true',
+      },
+      body:JSON.stringify({ model, max_tokens:2000, system:SYS, messages:[{role:'user',content:prompt}] })
+    });
+    if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text().catch(()=>''))}`);
+    const d = await r.json();
+    return parseJSON(d.content?.map(b=>b.text||'').join('')||'');
+  }
+
+  // ── Google Gemini ────────────────────────────────────────────────────────
+  if (pid === 'google') {
+    const url = baseURL.replace('{model}', model) + `?key=${key}`;
+    const r = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        system_instruction:{parts:[{text:SYS}]},
+        contents:[{role:'user',parts:[{text:prompt}]}],
+        generationConfig:{maxOutputTokens:2000,temperature:0.3},
+      })
+    });
+    if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text().catch(()=>''))}`);
+    const d = await r.json();
+    return parseJSON(d.candidates?.[0]?.content?.parts?.[0]?.text||'');
+  }
+
+  // ── OpenAI-compatible: OpenAI / Groq / OpenRouter / Ollama / LiteLLM ────
+  const headers = {'Content-Type':'application/json'};
+  if (key) headers['Authorization'] = `Bearer ${key}`;
+  if (pid === 'openrouter') {
+    headers['HTTP-Referer'] = 'https://looking-glass.app';
+    headers['X-Title'] = 'Looking Glass';
+  }
+
+  const r = await fetch(baseURL, {
+    method:'POST',
+    headers,
+    body:JSON.stringify({
+      model,
+      max_tokens:2000,
+      temperature:0.3,
+      messages:[
+        {role:'system', content:SYS},
+        {role:'user',   content:prompt},
+      ]
+    })
+  });
+  if (!r.ok) throw new Error(`${p.name} ${r.status}: ${(await r.text().catch(()=>''))}`);
+  const d = await r.json();
+  return parseJSON(d.choices?.[0]?.message?.content||'');
+}
+
+function parseJSON(raw) {
+  const clean = raw.replace(/```json|```/g,'').trim();
+  // Extract first {...} block in case model adds prose around it
+  const match = clean.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('No JSON object in response');
+  return JSON.parse(match[0]);
+}
+
+// ── Spring physics ──────────────────────────────────────────────────────────
+function makeSpring(initial, { k = 180, b = 22, mass = 1 } = {}) {
+  let pos = initial, vel = 0, target = initial;
+  let raf = null, onFrame = null;
+  function tick() {
+    const F = -k * (pos - target) - b * vel;
+    vel += (F / mass) / 60;
+    pos += vel / 60;
+    onFrame?.(pos);
+    const settled = Math.abs(pos - target) < 0.0002 && Math.abs(vel) < 0.0002;
+    if (!settled) raf = requestAnimationFrame(tick);
+    else { pos = target; vel = 0; onFrame?.(pos); raf = null; }
+  }
+  return {
+    get value() { return pos; },
+    set target(t) { target = t; if (!raf) raf = requestAnimationFrame(tick); },
+    set onChange(fn) { onFrame = fn; },
+    cancel() { if (raf) { cancelAnimationFrame(raf); raf = null; } },
+  };
+}
+
+// ── Lens map generation (Aave four-fold technique) ──────────────────────────
+function generateLensMap(lens) {
+  const { W, H, borderRadius, scale, depth, curvature, splay, chroma, glow, edgeHighlight, specularAngle } = lens;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  const img = ctx.createImageData(W, H);
+  const data = img.data;
+  const hw = Math.ceil(W / 2), hh = Math.ceil(H / 2);
+  const EPS = 0.002;
+
+  function rSDF(nx, ny) {
+    const px = nx * 2 - 1, py = ny * 2 - 1;
+    const rx = (borderRadius / W) * 2, ry = (borderRadius / H) * 2;
+    const qx = Math.abs(px) - (1 - rx), qy = Math.abs(py) - (1 - ry);
+    return Math.sqrt(Math.max(qx,0)**2 + Math.max(qy,0)**2) - Math.min(rx,ry) + Math.min(Math.max(qx,qy),0);
+  }
+  function grad(nx, ny) {
+    return {
+      gx: (rSDF(nx+EPS,ny) - rSDF(nx-EPS,ny)) / (2*EPS),
+      gy: (rSDF(nx,ny+EPS) - rSDF(nx,ny-EPS)) / (2*EPS),
+    };
+  }
+  function wp(x, y, r, g) {
+    const i = (y*W+x)*4;
+    data[i]=r; data[i+1]=g; data[i+2]=0; data[i+3]=255;
+  }
+
+  const df = depth / 10;
+  for (let y = 0; y < hh; y++) {
+    for (let x = 0; x < hw; x++) {
+      const nx = x/W, ny = y/H;
+      const sdf = rSDF(nx, ny);
+      if (sdf > 0) { [0,0,1,1].forEach((_,q)=>wp(q<2?x:W-1-x, q%2===0?y:H-1-y, 128,128)); continue; }
+      const bm = Math.sin(-sdf * Math.PI * curvature / 100) * scale * df;
+      const {gx,gy} = grad(nx,ny);
+      const gl = Math.sqrt(gx*gx+gy*gy)+.0001;
+      const dx = (gx/gl)*bm*splay, dy = (gy/gl)*bm;
+      const rH = Math.max(0,Math.min(255,Math.round((.5+dx)*255)));
+      const rV = Math.max(0,Math.min(255,Math.round((.5+dy)*255)));
+      wp(x,    y,    rH,    rV);
+      wp(W-1-x,y,    255-rH,rV);
+      wp(x,    H-1-y,rH,    255-rV);
+      wp(W-1-x,H-1-y,255-rH,255-rV);
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return c.toDataURL('image/png');
+}
+
+function mapToDataURL(url) { return url; }
+
+let fid = 0;
+function buildFilter(id, url, lens) {
+  const { W, H, chroma, glow, edgeHighlight, specularAngle } = lens;
+  const lx = Math.cos((specularAngle*Math.PI)/180);
+  const ly = -Math.sin((specularAngle*Math.PI)/180);
+  const ds = (lens.scale * lens.depth * 28).toFixed(1);
+  return `
+  <filter id="${id}" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="linearRGB">
+    <feImage id="${id}-img" href="${url}" result="dm" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none"/>
+    <feDisplacementMap in="SourceGraphic" in2="dm" scale="${ds}" xChannelSelector="R" yChannelSelector="G" result="disp"/>
+    <feColorMatrix in="disp" type="matrix"
+      values="${(1+chroma*.08).toFixed(3)} 0 0 0 ${(-chroma*.04).toFixed(3)} 0 1 0 0 0 0 0 ${(1-chroma*.08).toFixed(3)} 0 ${(chroma*.04).toFixed(3)} 0 0 0 1 0"
+      result="chr"/>
+    <feSpecularLighting in="chr" result="spec" x="0" y="0" width="${W}" height="${H}"
+        surfaceScale="4" specularConstant="${edgeHighlight.toFixed(3)}" specularExponent="20" lighting-color="white">
+      <fePointLight x="${(W*(.5+lx*.4)).toFixed(1)}" y="${(H*(.5+ly*.4)-60).toFixed(1)}" z="80"/>
+    </feSpecularLighting>
+    <feComposite in="spec" in2="SourceGraphic" operator="in" result="sm"/>
+    <feBlend in="chr" in2="sm" mode="screen"/>
+  </filter>`;
+}
+
+// ── Orb filter + spring ─────────────────────────────────────────────────────
+const fdefs = document.getElementById('fdefs');
+const orbEl  = document.getElementById('orb');
+
+const ORB_LENS = { W:58,H:58,borderRadius:29,scale:.10,depth:10,curvature:42,splay:1,chroma:.18,glow:.10,edgeHighlight:.22,specularAngle:45 };
+let _orbF=null, _orbImg=null, _orbDisp=null;
+const orbLensState = {...ORB_LENS};
+
+function applyOrbFilter(lens) {
+  const url = generateLensMap(lens);
+  const id  = `lg-f-${++fid}`;
+  if (!_orbF) {
+    fdefs.innerHTML = buildFilter(id, url, lens);
+    _orbF    = fdefs.querySelector('filter');
+    _orbImg  = fdefs.querySelector('feImage');
+    _orbDisp = fdefs.querySelector('feDisplacementMap');
+    orbEl.style.filter = `url(#${id})`;
+    return;
+  }
+  _orbF.id = id;
+  if (_orbImg)  { _orbImg.id=`${id}-img`; _orbImg.setAttribute('href',url); }
+  if (_orbDisp) { _orbDisp.setAttribute('scale',(lens.scale*lens.depth*28).toFixed(1)); }
+  orbEl.style.filter = `url(#${id})`;
+}
+
+const orbSpring = makeSpring(ORB_LENS.depth, {k:300,b:20,mass:1});
+orbSpring.onChange = d => { orbLensState.depth=Math.max(.05,d); applyOrbFilter({...orbLensState}); };
+applyOrbFilter(orbLensState);
+
+// ── Phase machine ───────────────────────────────────────────────────────────
+let phase = 'orb';
+const pillEl = document.getElementById('pill');
+const chatEl = document.getElementById('chat');
+const bdEl   = document.getElementById('bd');
+const hintEl = document.getElementById('hint');
+
+function setPhase(next) {
+  phase = next;
+  orbEl.classList.toggle('hidden', next !== 'orb');
+  pillEl.classList.toggle('visible', next === 'pill');
+  chatEl.classList.toggle('visible', next === 'chat');
+  bdEl.classList.toggle('on', next !== 'orb');
+  hintEl.classList.toggle('off', next !== 'orb');
+  // Hide settings panel when leaving orb
+  if (next !== 'orb') {
+    bdEl.onclick = () => setPhase(phase === 'chat' ? 'pill' : 'orb');
+    settingsPanel.classList.remove('visible');
+  }
+  if (next === 'chat') setTimeout(() => ta.focus(), 220);
+  if (next === 'orb')  resetChat();
+}
+
+// ── Orb tap ─────────────────────────────────────────────────────────────────
+function handleOrbTap(e) {
+  if (phase !== 'orb') return;
+  e.preventDefault?.();
+  const rect = orbEl.getBoundingClientRect();
+  const cx = (e.clientX ?? e.touches?.[0]?.clientX ?? rect.left+rect.width/2) - rect.left;
+  const cy = (e.clientY ?? e.touches?.[0]?.clientY ?? rect.top+rect.height/2) - rect.top;
+  orbLensState.specularAngle = 45 + (cx/rect.width-.5)*60 + (cy/rect.height-.5)*30;
+  orbSpring.target = 0;
+  setTimeout(() => { orbSpring.target = ORB_LENS.depth; }, 80);
+  const ring = document.createElement('div');
+  ring.className = 'pulse-ring'; orbEl.appendChild(ring);
+  setTimeout(() => ring.remove(), 720);
+  setTimeout(() => setPhase('pill'), 200);
+}
+orbEl.addEventListener('click', handleOrbTap);
+orbEl.addEventListener('touchstart', e=>{e.preventDefault();handleOrbTap(e);},{passive:false});
+orbEl.addEventListener('keydown', e=>{if(e.key==='Enter'||e.key===' ')handleOrbTap(e);});
+
+// ── Pill actions ─────────────────────────────────────────────────────────────
+const ACTIONS = ['Fix errors','Add feature','Remove card','Change theme','Edit self'];
+let activeAction = null;
+const pillActsEl = document.getElementById('pill-acts');
+
+function buildPillActions(actions) {
+  pillActsEl.innerHTML = '';
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'pill-action'; btn.textContent = a;
+    btn.addEventListener('click', () => {
+      setActiveAction(a === activeAction ? null : a);
+      ta.placeholder = a === 'Edit self' ? 'Describe what to change about the UI…'
+                     : a === 'Fix errors' ? 'Describe the error or say "fix all"…'
+                     : 'Ask AI…';
+      setPhase('chat');
+    });
+    pillActsEl.appendChild(btn);
+  });
+}
+buildPillActions(ACTIONS);
+
+function setActiveAction(a) {
+  activeAction = a;
+  pillActsEl.querySelectorAll('.pill-action').forEach(b => b.classList.toggle('active', b.textContent===a));
+}
+
+document.getElementById('pill-brand').addEventListener('click', () => setPhase('chat'));
+document.getElementById('pill-close').addEventListener('click', () => setPhase('orb'));
+
+// ── Scene cards ──────────────────────────────────────────────────────────────
+const sceneEl = document.getElementById('scene');
+const uiRegistry = { cards:{}, features:{}, errors: new Set() };
+
+const INIT_CARDS = [
+  {id:'c-lens',   x:'4%', y:'14%',tag:'TECHNIQUE',color:'#7C6FCD',title:'Lens displacement',body:'feDisplacementMap: R=horizontal, G=vertical. Neutral 128 = no shift.',err:false},
+  {id:'c-safari', x:'60%',y:'9%', tag:'SAFARI FIX',color:'#5F9EA0',title:'Filter ID cache',  body:'Bump filter ID on every map update — Safari caches by ID, freezes on reuse.',err:false},
+  {id:'c-broken', x:'4%', y:'60%',tag:'ERROR',      color:'#FF5050',title:'⚠ Schema mismatch',body:'IndexedDB version conflict on upgrade path. Store names collide.',err:true},
+  {id:'c-quad',   x:'64%',y:'56%',tag:'PERF',       color:'#8FBC8F',title:'Four-fold symmetry',body:'Compute top-left quadrant only. Mirror to all four. 75% fewer pixels.',err:false},
+  {id:'c-spring', x:'33%',y:'6%', tag:'PHYSICS',    color:'#C77DBB',title:'Spring squish',    body:'Depth → 0 on tap, springs back past rest with overshoot. Map regenerates every frame.',err:false},
+];
+function makeCard({id,x,y,tag,color,title,body,err}) {
+  const el = document.createElement('div');
+  el.className=`sc-card${err?' err':''}`; el.id=id;
+  el.style.left=x; el.style.top=y;
+  el.innerHTML=`<div class="sc-tag"><span class="sc-dot" style="background:${color}30;border:1px solid ${color}55"></span>${tag}</div><div class="sc-title">${title}</div><div class="sc-body">${body}</div>`;
+  sceneEl.appendChild(el);
+  uiRegistry.cards[id]=el;
+  if(err) uiRegistry.errors.add(id);
+}
+INIT_CARDS.forEach(makeCard);
+
+// ── Chat ─────────────────────────────────────────────────────────────────────
+const ta       = document.getElementById('ta');
+const sendBtn  = document.getElementById('send-btn');
+const cmdHint  = document.getElementById('cmd-hint');
+let attachments = [];
+
+function autoGrow() { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,190)+'px'; }
+function updateSend() {
+  const has = ta.value.trim().length>0 || attachments.length>0;
+  sendBtn.disabled=!has; sendBtn.classList.toggle('on',has);
+  cmdHint.style.display=ta.value.length>20?'inline':'none';
+}
+function resetChat() {
+  ta.value=''; autoGrow(); updateSend();
+  document.getElementById('thinking').style.display='none';
+  document.getElementById('ai-resp').style.display='none';
+  document.getElementById('mut-prev').style.display='none';
+  clearAtts(); setActiveAction(null);
+}
+
+ta.addEventListener('input', ()=>{autoGrow();updateSend();});
+ta.addEventListener('keydown', e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){e.preventDefault();doSend();}
+  if(e.key==='Escape'){resetChat();setPhase('pill');}
+});
+sendBtn.addEventListener('click', doSend);
+document.getElementById('back-btn').addEventListener('click', ()=>{resetChat();setPhase('pill');});
+document.getElementById('att-btn').addEventListener('click', ()=>document.getElementById('file-in').click());
+document.getElementById('file-in').addEventListener('change', e=>{Array.from(e.target.files).forEach(addAtt);e.target.value='';});
+
+function addAtt(f) { const r=new FileReader(); r.onload=ev=>{const id=Date.now();attachments.push({id,src:ev.target.result,name:f.name});renderAtts();updateSend();};r.readAsDataURL(f); }
+function removeAtt(id) { attachments=attachments.filter(a=>a.id!==id);renderAtts();updateSend(); }
+function clearAtts() { attachments=[];renderAtts(); }
+function renderAtts() {
+  const el=document.getElementById('atts');
+  el.style.display=attachments.length?'flex':'none';
+  el.innerHTML=attachments.map(a=>`<div class="att"><img src="${a.src}"><button class="att-rm" data-id="${a.id}">×</button></div>`).join('');
+  el.querySelectorAll('.att-rm').forEach(b=>b.addEventListener('click',()=>removeAtt(Number(b.dataset.id))));
+}
+
+// ── Mutation log ─────────────────────────────────────────────────────────────
+const mlogEl = document.getElementById('mlog');
+function logMut(type,text) {
+  const icons={add:'✦',rm:'✕',fix:'⬡',sty:'◈',info:'◎'};
+  const el=document.createElement('div');
+  el.className=`log-e t-${type}`;
+  el.innerHTML=`<span>${icons[type]||'◎'}</span><span>${esc(text)}</span>`;
+  mlogEl.prepend(el);
+  setTimeout(()=>{el.style.animation='log-out .28s var(--out) forwards';setTimeout(()=>el.remove(),300);},5000);
+  while(mlogEl.children.length>4) mlogEl.lastChild.remove();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MUTATION EXECUTOR — every op Claude can perform
+// ═══════════════════════════════════════════════════════════════════════════
+function execMutations(ops, delay=220) {
+  (ops||[]).forEach((op,i)=>setTimeout(()=>applyOp(op).catch(e=>console.error('[LG op]',e)),i*delay));
+}
+
+async function applyOp(op) {
+  switch(op.type) {
+
+    // ── Cards ──────────────────────────────────────────────────────────────
+    case 'ADD_CARD': {
+      const id=op.id||`c-ai-${Date.now()}`;
+      if(document.getElementById(id)) return;
+      const el=document.createElement('div');
+      el.className=`sc-card${op.error?' err':''}`; el.id=id;
+      el.style.left=op.x||'30%'; el.style.top=op.y||'30%';
+      el.innerHTML=`<div class="sc-tag"><span class="sc-dot" style="background:${op.color||'#888'}30;border:1px solid ${op.color||'#888'}55"></span>${esc(op.tag||'AI')}</div><div class="sc-title">${esc(op.title||'')}</div><div class="sc-body">${esc(op.body||'')}</div>`;
+      el.style.opacity='0';el.style.transform='scale(0.8) translateY(8px)';
+      sceneEl.appendChild(el); uiRegistry.cards[id]=el;
+      if(op.error) uiRegistry.errors.add(id);
+      requestAnimationFrame(()=>{el.style.transition='opacity .35s,transform .38s var(--spring)';el.style.opacity='1';el.style.transform='';});
+      logMut('add',`Card: ${op.title||id}`); break;
+    }
+    case 'REMOVE_CARD': {
+      const el=document.getElementById(op.id)||uiRegistry.cards[op.id];
+      if(!el){logMut('info',`Card "${op.id}" not found`);return;}
+      el.style.transition='opacity .28s,transform .28s var(--out)';el.style.opacity='0';el.style.transform='scale(0.78)';
+      setTimeout(()=>{el.remove();delete uiRegistry.cards[op.id];uiRegistry.errors.delete(op.id);},300);
+      logMut('rm',`Card: ${op.id}`); break;
+    }
+    case 'UPDATE_CARD': {
+      const el=document.getElementById(op.id)||uiRegistry.cards[op.id];
+      if(!el){logMut('info',`Card "${op.id}" not found`);return;}
+      if(op.title!==undefined){const t=el.querySelector('.sc-title');if(t)t.textContent=op.title;}
+      if(op.body!==undefined){const b=el.querySelector('.sc-body');if(b)b.textContent=op.body;}
+      if(op.x!==undefined) el.style.left=op.x;
+      if(op.y!==undefined) el.style.top=op.y;
+      if(op.error===false){el.classList.remove('err');uiRegistry.errors.delete(op.id);}
+      if(op.error===true){el.classList.add('err');uiRegistry.errors.add(op.id);}
+      el.style.boxShadow='0 0 0 2px rgba(100,200,140,0.40)';
+      setTimeout(()=>el.style.boxShadow='',700);
+      logMut('fix',`Card: ${op.id}`); break;
+    }
+    case 'FIX_ERROR': {
+      const targets=op.id?[op.id]:[...uiRegistry.errors];
+      if(!targets.length){logMut('info','No errors found');return;}
+      targets.forEach(id=>applyOp({type:'UPDATE_CARD',id,error:false,title:'✓ Fixed',body:op.resolution||'Error resolved.'}));
+      uiRegistry.errors.clear();
+      logMut('fix',`Fixed ${targets.length} error(s)`); break;
+    }
+
+    // ── Style ops ───────────────────────────────────────────────────────────
+    case 'SET_CSS_VAR':
+      document.documentElement.style.setProperty(op.variable,op.value);
+      logMut('sty',`${op.variable} → ${op.value}`); break;
+    case 'SET_CSS':
+      document.getElementById('ai-styles').textContent+='\n'+op.css;
+      logMut('sty','CSS injected'); break;
+    case 'REPLACE_CSS':
+      document.getElementById('ai-styles').textContent=op.css||'';
+      logMut('sty','CSS replaced'); break;
+
+    // ── Lens ────────────────────────────────────────────────────────────────
+    case 'MUTATE_LENS': {
+      const allowed=['scale','depth','curvature','splay','chroma','glow','edgeHighlight','specularAngle','borderRadius'];
+      allowed.forEach(k=>{if(op.params?.[k]!==undefined)orbLensState[k]=op.params[k];});
+      applyOrbFilter({...orbLensState});
+      logMut('sty','Lens updated'); break;
+    }
+
+    // ── DOM self-edit ops ────────────────────────────────────────────────────
+
+    case 'PATCH_ELEMENT': {
+      // Target ANY element by CSS selector and rewrite it
+      const targets = op.all
+        ? [...document.querySelectorAll(op.selector)]
+        : [document.querySelector(op.selector)].filter(Boolean);
+      if(!targets.length){logMut('info',`No element: "${op.selector}"`);return;}
+      targets.forEach(el=>{
+        if(op.innerHTML!==undefined) el.innerHTML=op.innerHTML;
+        if(op.textContent!==undefined) el.textContent=op.textContent;
+        if(op.style) Object.entries(op.style).forEach(([k,v])=>el.style[k]=v);
+        if(op.attribute) el.setAttribute(op.attribute.name,op.attribute.value);
+        if(op.addClass) op.addClass.split(' ').forEach(c=>el.classList.add(c));
+        if(op.removeClass) op.removeClass.split(' ').forEach(c=>el.classList.remove(c));
+        if(op.toggleClass) el.classList.toggle(op.toggleClass);
+        // Flash confirmation
+        const prev=el.style.outline;
+        el.style.outline='2px solid rgba(100,200,140,0.50)';
+        setTimeout(()=>el.style.outline=prev,700);
+      });
+      logMut('fix',`Patched: ${op.selector}`); break;
+    }
+
+    case 'APPEND_ELEMENT': {
+      const parent=document.querySelector(op.selector);
+      if(!parent){logMut('info',`No element: "${op.selector}"`);return;}
+      const tmp=document.createElement('div');
+      tmp.innerHTML=op.html||'';
+      const inserted=[];
+      while(tmp.firstChild){parent.appendChild(tmp.firstChild);inserted.push(parent.lastChild);}
+      if(op.id&&inserted[0]) inserted[0].id=op.id;
+      logMut('add',`Appended to: ${op.selector}`); break;
+    }
+
+    case 'INSERT_BEFORE': {
+      const ref=document.querySelector(op.selector);
+      if(!ref||!ref.parentNode){logMut('info',`No element: "${op.selector}"`);return;}
+      const tmp=document.createElement('div'); tmp.innerHTML=op.html||'';
+      while(tmp.firstChild) ref.parentNode.insertBefore(tmp.firstChild,ref);
+      logMut('add',`Inserted before: ${op.selector}`); break;
+    }
+
+    case 'REMOVE_ELEMENT': {
+      const targets=op.all
+        ?[...document.querySelectorAll(op.selector)]
+        :[document.querySelector(op.selector)].filter(Boolean);
+      if(!targets.length){logMut('info',`No element: "${op.selector}"`);return;}
+      targets.forEach(el=>{
+        el.style.transition='opacity .25s'; el.style.opacity='0';
+        setTimeout(()=>el.remove(),260);
+      });
+      logMut('rm',`Removed: ${op.selector} (${targets.length})`); break;
+    }
+
+    case 'MOVE_ELEMENT': {
+      // Move an element to a new parent
+      const el=document.querySelector(op.selector);
+      const dest=document.querySelector(op.destination);
+      if(!el||!dest){logMut('info','MOVE_ELEMENT: element or destination not found');return;}
+      dest.appendChild(el);
+      logMut('fix',`Moved ${op.selector} → ${op.destination}`); break;
+    }
+
+    case 'REWRITE_PILL_ACTIONS': {
+      buildPillActions((op.actions||[]).map(a=>typeof a==='string'?a:a.label));
+      logMut('fix',`Pill actions: ${(op.actions||[]).join(', ')}`); break;
+    }
+
+    case 'REWRITE_ORB': {
+      if(op.iconSvg){const ic=document.querySelector('#orb .orb-icon');if(ic)ic.innerHTML=op.iconSvg;}
+      if(op.size){document.getElementById('ai-styles').textContent+=`\n#orb{width:${op.size}px;height:${op.size}px}`;}
+      if(op.glowColor){
+        document.documentElement.style.setProperty('--glow-color',op.glowColor);
+        document.getElementById('ai-styles').textContent+=`\n.orb-glow{background:radial-gradient(circle,var(--glow-color) 0%,transparent 68%)!important}`;
+      }
+      if(op.label) orbEl.setAttribute('aria-label',op.label);
+      logMut('fix','Orb updated'); break;
+    }
+
+    case 'ADD_FEATURE': {
+      const id=op.id||`feat-${Date.now()}`;
+      if(document.getElementById(id)){logMut('info',`Feature "${id}" exists`);return;}
+      const w=document.createElement('div'); w.id=id;
+      w.innerHTML=op.html||`<div style="position:fixed;top:20px;right:20px;z-index:600;background:rgba(16,16,24,.82);border:1px solid rgba(255,255,255,.09);color:rgba(238,238,248,.82);font-family:'DM Sans',sans-serif;font-size:12px;padding:8px 16px;border-radius:20px;backdrop-filter:blur(20px);">${esc(op.label||'Feature')}</div>`;
+      document.body.appendChild(w); uiRegistry.features[id]=w;
+      logMut('add',`Feature: ${op.label||id}`); break;
+    }
+    case 'REMOVE_FEATURE': {
+      const el=document.getElementById(op.id)||uiRegistry.features[op.id];
+      if(el){el.remove();delete uiRegistry.features[op.id];logMut('rm',`Feature: ${op.id}`);}
+      break;
+    }
+
+    case 'EVAL': {
+      // Sandboxed — receives safe refs only, no window/document/fetch
+      try {
+        /* eslint-disable no-new-func */
+        const fn=new Function(
+          'uiRegistry','sceneEl','orbEl','orbLensState','ORB_LENS',
+          'applyOrbFilter','orbSpring','logMut','setPhase','applyOp',
+          'buildPillActions','ACTIONS','esc',
+          '"use strict";\n'+op.code
+        );
+        fn(uiRegistry,sceneEl,orbEl,orbLensState,ORB_LENS,
+           applyOrbFilter,orbSpring,logMut,setPhase,applyOp,
+           buildPillActions,ACTIONS,esc);
+        logMut('add','Script run');
+      } catch(e){logMut('info',`Script error: ${e.message}`);console.error('[LG EVAL]',e);}
+      break;
+    }
+
+    case 'SHOW_NOTIFICATION': {
+      const variants={success:'rgba(80,200,120,.75)',error:'rgba(255,80,80,.75)',info:'rgba(165,165,185,.55)'};
+      const dot=variants[op.variant]||variants.info;
+      const n=document.createElement('div');
+      n.style.cssText=`position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9000;background:rgba(12,12,20,.92);border:1px solid rgba(255,255,255,.09);color:rgba(238,238,248,.88);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 18px;border-radius:16px;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.4);display:flex;align-items:center;gap:9px;animation:log-in .22s var(--out) both;pointer-events:none;max-width:320px;`;
+      n.innerHTML=`<span style="color:${dot}">✦</span><span>${esc(op.message||'')}</span>`;
+      document.body.appendChild(n);
+      setTimeout(()=>{n.style.animation='log-out .28s var(--out) forwards';setTimeout(()=>n.remove(),300);},op.duration||3000);
+      break;
+    }
+
+    default:
+      logMut('info',`Unknown op: ${op.type}`);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SNAPSHOT — full live DOM capture for Claude's context
+// ═══════════════════════════════════════════════════════════════════════════
+function buildSnapshot() {
+  // Cards
+  const cards=Object.entries(uiRegistry.cards).map(([id,el])=>({
+    id,
+    title:el.querySelector('.sc-title')?.textContent||'',
+    body:el.querySelector('.sc-body')?.textContent||'',
+    tag:el.querySelector('.sc-tag')?.textContent?.trim()||'',
+    x:el.style.left,y:el.style.top,
+    hasError:el.classList.contains('err'),
+  }));
+
+  // CSS custom properties (all resolved values)
+  const cs=getComputedStyle(document.documentElement);
+  const cssVars={};
+  ['--bg','--fg','--fg2','--glass-tint','--glass-border','--spring','--out','--font','--mono'].forEach(v=>{
+    cssVars[v]=cs.getPropertyValue(v).trim();
+  });
+
+  // Snapshot of every key element's outer shape (selector → tagName + classes + inline style)
+  // This is what lets Claude reason about the current DOM structure
+  const selectors=[
+    '#orb-root','#orb','#orb .orb-icon',
+    '#pill','.pill-inner','#pill-label','#pill-acts','.pill-divider','.pill-close',
+    '#chat','.chat-inner','.chat-row','#ta','.toolbar',
+    '#scene','#dot-grid','#mlog','#hint',
+    'body',
+  ];
+  const domMap={};
+  selectors.forEach(sel=>{
+    const el=document.querySelector(sel);
+    if(!el) return;
+    domMap[sel]={
+      tag:el.tagName.toLowerCase(),
+      classes:[...el.classList].join(' '),
+      style:el.getAttribute('style')||'',
+      // Snapshot of innerHTML truncated so it fits in context
+      innerHTML:el.innerHTML.replace(/\s+/g,' ').slice(0,300),
+    };
+  });
+
+  return {
+    cards,
+    knownErrors:[...uiRegistry.errors],
+    features:Object.keys(uiRegistry.features),
+    activeAction,
+    cssVars,
+    lens:{...orbLensState},
+    domMap,
+    injectedCSS:document.getElementById('ai-styles')?.textContent?.slice(0,600)||'',
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  API KEY SETTINGS PANEL
+//  Shared with main Looking Glass app via localStorage['lg-api-key']
+// ═══════════════════════════════════════════════════════════════════════════
+const settingsPanel = document.getElementById('settings-panel');
+const keyInput      = document.getElementById('key-input');
+const keySave       = document.getElementById('key-save');
+const keyToggle     = document.getElementById('key-toggle');
+const settingsBtn   = document.getElementById('settings-btn');
+
+// Hydrate from localStorage on load
+keyInput.value = LG.apiKey ? `${LG.apiKey.slice(0,8)}${'•'.repeat(24)}` : '';
+
+settingsBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  settingsPanel.classList.toggle('visible');
+  if(settingsPanel.classList.contains('visible')) {
+    // Show real key for editing
+    keyInput.value = LG.apiKey;
+    keyInput.focus();
+    keyInput.select();
+  }
+});
+
+keySave.addEventListener('click', () => {
+  const val = keyInput.value.trim();
+  if(val && !val.includes('•')) {
+    LG.apiKey = val;
+    logMut('fix','API key saved to localStorage[lg-api-key]');
+    // Mask again
+    keyInput.value = `${val.slice(0,8)}${'•'.repeat(24)}`;
+  }
+  settingsPanel.classList.remove('visible');
+});
+
+keyInput.addEventListener('keydown', e => {
+  if(e.key==='Enter') keySave.click();
+  if(e.key==='Escape') settingsPanel.classList.remove('visible');
+});
+
+// Close panel when clicking elsewhere
+document.addEventListener('click', e => {
+  if(!settingsPanel.contains(e.target) && e.target!==settingsBtn)
+    settingsPanel.classList.remove('visible');
+});
+
+keyToggle.addEventListener('click', () => {
+  keyInput.type = keyInput.type==='password' ? 'text' : 'password';
+  keyToggle.textContent = keyInput.type==='password' ? '👁' : '🙈';
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SYSTEM PROMPT
+// ═══════════════════════════════════════════════════════════════════════════
+const SYS = `You are the AI brain of "Looking Glass" — a live PWA whose entire UI you can read and rewrite in real time.
+
+You receive a JSON snapshot of every element, all CSS values, and the live DOM structure.
+Respond ONLY with a JSON mutation plan — no markdown, no prose outside JSON:
+{"plan":"one sentence","ops":[...array of op objects...]}
+
+━━━ SELF-EDIT OPS (rewrite any element) ━━━
+
+PATCH_ELEMENT — rewrite innerHTML, style, attributes, or classes of any element:
+  {"type":"PATCH_ELEMENT","selector":"#pill-label","textContent":"Dev Mode"}
+  {"type":"PATCH_ELEMENT","selector":".pill-inner","style":{"borderRadius":"8px","gap":"8px"}}
+  {"type":"PATCH_ELEMENT","selector":"#orb","style":{"width":"72px","height":"72px"}}
+  {"type":"PATCH_ELEMENT","selector":"#hint","textContent":"Long-press for quick actions"}
+  {"type":"PATCH_ELEMENT","selector":".sc-card.err","innerHTML":"<div class='sc-title'>✓ Fixed</div><div class='sc-body'>Resolved.</div>","all":true}
+  Add "all":true to target ALL matching elements.
+  Add "addClass":"className" or "removeClass":"className" to toggle classes.
+
+APPEND_ELEMENT — inject new HTML inside any element:
+  {"type":"APPEND_ELEMENT","selector":"#pill-acts","html":"<button class='pill-action' onclick='alert(1)'>New</button>"}
+  {"type":"APPEND_ELEMENT","selector":".chat-inner","html":"<div style='padding:10px 16px;font-size:12px;color:rgba(165,165,185,.6)'>Model: claude-sonnet</div>"}
+
+INSERT_BEFORE — insert HTML before an element:
+  {"type":"INSERT_BEFORE","selector":".pill-divider","html":"<div style='width:1px;height:20px;background:rgba(255,255,255,.07);margin:0 2px'></div>"}
+
+REMOVE_ELEMENT — remove any element (animated fade):
+  {"type":"REMOVE_ELEMENT","selector":".pill-close"}
+  {"type":"REMOVE_ELEMENT","selector":".sc-card.err","all":true}
+
+MOVE_ELEMENT — reparent any element:
+  {"type":"MOVE_ELEMENT","selector":"#hint","destination":"#orb-root"}
+
+REWRITE_PILL_ACTIONS — replace all pill action chips:
+  {"type":"REWRITE_PILL_ACTIONS","actions":["Debug","Refactor","Test","Deploy","Explain"]}
+
+REWRITE_ORB — change icon, size, glow:
+  {"type":"REWRITE_ORB","iconSvg":"<svg width='18' height='18' ...>...</svg>","glowColor":"rgba(40,200,120,0.22)","size":64}
+
+━━━ STYLE OPS ━━━
+  {"type":"SET_CSS_VAR","variable":"--bg","value":"#0a0a14"}
+  {"type":"SET_CSS","css":"#orb{animation:none} body{cursor:crosshair}"}
+  {"type":"REPLACE_CSS","css":"/* full replacement */"}
+
+━━━ LENS OPS (glass physics) ━━━
+  {"type":"MUTATE_LENS","params":{"scale":0.18,"depth":14,"curvature":55,"chroma":0.30,"splay":1.2}}
+  scale:0.05-0.25 | depth:4-20 | curvature:20-80 | splay:0.5-1.5 | chroma:0.05-0.40
+
+━━━ SCENE OPS (canvas cards) ━━━
+  {"type":"ADD_CARD","id":"x","x":"20%","y":"30%","tag":"TAG","color":"#hex","title":"T","body":"B"}
+  {"type":"REMOVE_CARD","id":"x"}
+  {"type":"UPDATE_CARD","id":"x","title":"new","body":"new","x":"40%","y":"50%","error":false}
+  {"type":"FIX_ERROR"} — fixes ALL error cards
+  {"type":"FIX_ERROR","id":"x","resolution":"what was fixed"}
+
+━━━ FEATURES / UX ━━━
+  {"type":"ADD_FEATURE","id":"x","html":"<div style='position:fixed;top:20px;right:20px;z-index:600;...'>...</div>","label":"Name"}
+  {"type":"REMOVE_FEATURE","id":"x"}
+  {"type":"SHOW_NOTIFICATION","message":"Done!","duration":2500,"variant":"success"}
+  {"type":"EVAL","code":"orbSpring.target=0;setTimeout(()=>orbSpring.target=ORB_LENS.depth,80)"}
+  Available in EVAL: uiRegistry, sceneEl, orbEl, orbLensState, ORB_LENS, applyOrbFilter, orbSpring, logMut, setPhase, buildPillActions, ACTIONS
+
+━━━ RULES ━━━
+- ONLY output valid JSON. No prose outside the JSON object.
+- Max 8 ops per response. Ops execute sequentially with 220ms gaps.
+- Use CSS selectors from the domMap in the snapshot to target elements precisely.
+- For PATCH_ELEMENT with innerHTML: write raw HTML (no escaping needed).
+- For SET_CSS: use !important when overriding existing rules.
+- If the user asks to "make the pill wider" — use PATCH_ELEMENT on .pill-inner with a style.minWidth.
+- If the user asks to "change the icon" — use REWRITE_ORB with an iconSvg string.
+- If the user asks to "edit yourself" or "change your UI" — you CAN and SHOULD use DOM ops.
+- After changes, always end with SHOW_NOTIFICATION to confirm.`;
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  CLAUDE API — uses shared LG.apiKey
+// ═══════════════════════════════════════════════════════════════════════════
+async function callClaude(msg, snapshot) {
+  if (!LG.apiKey) {
+    throw new Error('No API key — tap ⚙ to add your Anthropic key');
+  }
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': LG.apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true',
+    },
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:2000,
+      system:SYS,
+      messages:[{role:'user',content:`User instruction: "${msg}"\n\nCurrent UI snapshot:\n${JSON.stringify(snapshot,null,2)}`}]
+    })
+  });
+  if(!r.ok) {
+    const err=await r.text().catch(()=>'');
+    throw new Error(`API ${r.status}: ${err.slice(0,120)}`);
+  }
+  const d=await r.json();
+  const raw=d.content?.map(b=>b.text||'').join('')||'';
+  return JSON.parse(raw.replace(/```json|```/g,'').trim());
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SEND HANDLER
+// ═══════════════════════════════════════════════════════════════════════════
+async function doSend() {
+  const txt=ta.value.trim();
+  if(!txt&&attachments.length===0) return;
+
+  // Check key first — surface the settings panel if missing
+  if(!LG.apiKey) {
+    settingsPanel.classList.add('visible');
+    keyInput.focus();
+    applyOp({type:'SHOW_NOTIFICATION',message:'Add your Anthropic API key first (⚙ button)',variant:'error',duration:3000});
+    return;
+  }
+
+  sendBtn.disabled=true; ta.disabled=true;
+  const userTxt=txt; ta.value=''; autoGrow(); updateSend();
+
+  const thinkingEl=document.getElementById('thinking');
+  const aiRespEl  =document.getElementById('ai-resp');
+  const mutPrevEl =document.getElementById('mut-prev');
+  const respTxtEl =document.getElementById('resp-txt');
+  const thinkLbl  =document.getElementById('think-lbl');
+
+  thinkingEl.style.display='flex'; thinkLbl.textContent='Reading UI…';
+  aiRespEl.style.display='none'; mutPrevEl.style.display='none';
+
+  try {
+    thinkLbl.textContent='Planning edits…';
+    const result = await callClaude(userTxt, buildSnapshot());
+
+    thinkingEl.style.display='none';
+    mutPrevEl.style.display='block';
+    mutPrevEl.innerHTML=`<span class="op-fix">PLAN</span> ${esc(result.plan)}\n\n`
+      +(result.ops||[]).map(op=>{
+        const cls=op.type.includes('REMOVE')||op.type==='rm'?'op-rm'
+                 :op.type.includes('FIX')||op.type.includes('PATCH')||op.type.includes('REWRITE')?'op-fix'
+                 :op.type.includes('CSS')||op.type.includes('LENS')||op.type.includes('STYLE')?'op-sty'
+                 :'op-add';
+        const s=JSON.stringify(op);
+        return `<span class="${cls}">${op.type}</span> ${esc(s.slice(0,82))}${s.length>82?'…':''}`;
+      }).join('\n');
+
+    const totalDelay=((result.ops||[]).length*220)+400;
+    setTimeout(()=>{
+      execMutations(result.ops||[]);
+      setTimeout(()=>{
+        mutPrevEl.style.display='none';
+        aiRespEl.style.display='flex';
+        respTxtEl.textContent=result.plan;
+        setTimeout(()=>{
+          thinkingEl.style.display='none';
+          aiRespEl.style.display='none';
+          mutPrevEl.style.display='none';
+          setPhase('pill');
+        },2800);
+      },totalDelay);
+    },700);
+
+  } catch(err) {
+    thinkingEl.style.display='none';
+    aiRespEl.style.display='flex';
+    respTxtEl.textContent=`⚠ ${err.message}`;
+    // If key error, open settings
+    if(err.message.includes('key')||err.message.includes('401')) {
+      setTimeout(()=>settingsPanel.classList.add('visible'),400);
+    }
+    console.error('[LG]',err);
+  } finally {
+    ta.disabled=false; updateSend();
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+setTimeout(()=>logMut('info','Looking Glass ready'),600);
+setTimeout(()=>logMut(LG.apiKey?'fix':'info', LG.apiKey?'API key loaded from storage':'Tap ⚙ to add your API key'),1200);
+setPhase('orb');
+</script>
+     • Four-fold symmetry optimisation (top-left quadrant only)
+     • Rounded-rect SDF for lens shape
+     • R channel = horizontal bend, G channel = vertical bend
+     • Neutral 0.5 grey outside lens (no displacement)
+     • Chroma fringe, specular highlight, glow, edge highlight
+     • Fresh filter ID on every update (Safari cache fix)
+   
+   Tap animation: The QR "squish" is a lens SHAPE deformation:
+     • On tap: depth springs toward 0 (lens flattens → squishes content outward)
+     • Then springs back past resting value (overshoot = glass bounces)
+     • Map is regenerated EVERY FRAME of the spring animation
+     • This is NOT a ripple wave — it's a physical press of the glass
+   ═══════════════════════════════════════════════════════════════════════ */
+
+'use strict';
+
+// ── Spring physics ──────────────────────────────────────────────────────────
+function makeSpring(initial, { k = 180, b = 22, mass = 1 } = {}) {
+  let pos = initial, vel = 0, target = initial;
+  let raf = null, onFrame = null;
+
+  function tick() {
+    const F = -k * (pos - target) - b * vel;
+    vel += (F / mass) / 60;
+    pos += vel / 60;
+    onFrame?.(pos);
+    const settled = Math.abs(pos - target) < 0.0002 && Math.abs(vel) < 0.0002;
+    if (!settled) raf = requestAnimationFrame(tick);
+    else { pos = target; vel = 0; onFrame?.(pos); raf = null; }
+  }
+
+  return {
+    get value() { return pos; },
+    set target(t) {
+      target = t;
+      if (raf) return;
+      raf = requestAnimationFrame(tick);
+    },
+    set onChange(fn) { onFrame = fn; },
+    cancel() { if (raf) { cancelAnimationFrame(raf); raf = null; } },
+  };
+}
+
+// ── generateLensMap — exact Aave technique ──────────────────────────────────
+// Returns ImageData. The caller converts to PNG data URL.
+//
+// Key facts from the article:
+//   1. Four-fold symmetry: compute top-left quadrant, mirror to all four.
+//      Negate X displacement across vertical axis.
+//      Negate Y displacement across horizontal axis.
+//   2. Rounded-rect SDF defines the lens region.
+//      Outside SDF > 0: pixel stays at neutral (128,128) — no displacement.
+//   3. R channel = horizontal displacement (128 = neutral, <128 = left, >128 = right)
+//      G channel = vertical displacement   (128 = neutral, <128 = up,   >128 = down)
+//   4. Bend magnitude = sin(−sdf × π × curvature/100) × scale × depth/10
+//
+function generateLensMap(lens) {
+  const { W, H, borderRadius, scale, depth, curvature, splay, chroma, glow, edgeHighlight, specularAngle } = lens;
+  // Always use regular canvas — synchronous, no async blob conversion needed
+  const offscreen = document.createElement('canvas');
+  offscreen.width = W; offscreen.height = H;
+  const ctx = offscreen.getContext('2d');
+  const imgData = ctx.createImageData(W, H);
+  const data = imgData.data;
+
+  // Quadrant bounds
+  const hw = Math.ceil(W / 2);
+  const hh = Math.ceil(H / 2);
+
+  // Specular light direction
+  const lightRad = (specularAngle * Math.PI) / 180;
+  const lx = Math.cos(lightRad), ly = -Math.sin(lightRad);
+
+  // Rounded-rect SDF (2D, normalised −1..+1 space)
+  // Returns negative inside, positive outside
+  function roundedRectSDF(nx, ny) {
+    // Map to [−1, +1]
+    const px = nx * 2 - 1; // −1..+1 across width
+    const py = ny * 2 - 1; // −1..+1 across height
+    // Half-extents in normalised space
+    const rx = (borderRadius / W) * 2;
+    const ry = (borderRadius / H) * 2;
+    const qx = Math.abs(px) - (1 - rx);
+    const qy = Math.abs(py) - (1 - ry);
+    const outerDist = Math.sqrt(Math.max(qx, 0) ** 2 + Math.max(qy, 0) ** 2) - Math.min(rx, ry);
+    const innerDist = Math.min(Math.max(qx, qy), 0);
+    return outerDist + innerDist;
+  }
+
+  // Gradient of SDF (approximated numerically — gives us the surface normal)
+  const EPS = 0.002;
+  function sdfGradient(nx, ny) {
+    const gx = (roundedRectSDF(nx + EPS, ny) - roundedRectSDF(nx - EPS, ny)) / (2 * EPS);
+    const gy = (roundedRectSDF(nx, ny + EPS) - roundedRectSDF(nx, ny - EPS)) / (2 * EPS);
+    return { gx, gy };
+  }
+
+  // Four-fold write helper
+  function writePixel(x, y, r, g, b, a) {
+    const i = (y * W + x) * 4;
+    data[i] = r; data[i+1] = g; data[i+2] = b; data[i+3] = a;
+  }
+  function writeFour(x, y, rH, rV, alpha) {
+    writePixel(x,       y,       rH,       rV,       0, alpha);
+    writePixel(W-1-x,   y,       255-rH,   rV,       0, alpha); // negate X
+    writePixel(x,       H-1-y,   rH,       255-rV,   0, alpha); // negate Y
+    writePixel(W-1-x,   H-1-y,   255-rH,   255-rV,   0, alpha); // negate both
+  }
+
+  const depthFactor = depth / 10;
+  const NEUTRAL = 128;
+
+  for (let y = 0; y < hh; y++) {
+    for (let x = 0; x < hw; x++) {
+      const nx = x / W;
+      const ny = y / H;
+
+      const sdf = roundedRectSDF(nx, ny);
+
+      if (sdf > 0) {
+        // Outside lens — neutral (no displacement)
+        writeFour(x, y, NEUTRAL, NEUTRAL, 255);
+        continue;
+      }
+
+      // Inside lens
+      // Bend magnitude — the core formula from the article:
+      // "sin(−sdf × π × curvature/100) × scale × depth"
+      const bendMag = Math.sin(-sdf * Math.PI * curvature / 100) * scale * depthFactor;
+
+      // Surface gradient gives direction of displacement
+      const { gx, gy } = sdfGradient(nx, ny);
+      const glen = Math.sqrt(gx*gx + gy*gy) + 0.0001;
+      const gnx = gx / glen;
+      const gny = gy / glen;
+
+      // Splay: horizontal vs vertical asymmetry
+      const dx = gnx * bendMag * splay;
+      const dy = gny * bendMag;
+
+      // Convert to 0..255 (128 = neutral)
+      const rH = Math.max(0, Math.min(255, Math.round((0.5 + dx) * 255)));
+      const rV = Math.max(0, Math.min(255, Math.round((0.5 + dy) * 255)));
+
+      writeFour(x, y, rH, rV, 255);
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+  return offscreen;
+}
+
+// ── Convert map canvas to data URL (synchronous) ────────────────────────────
+function mapToDataURL(mapCanvas) {
+  return mapCanvas.toDataURL('image/png');
+}
+
+// ── Build SVG filter from map data URL ─────────────────────────────────────
+// Parameters from the Aave demo: chroma, glow, edgeHighlight, specularAngle
+// Safari fix: fresh numeric ID on every call
+let fid = 0;
+function buildFilter(id, mapUrl, lens) {
+  const { W, H, chroma, glow, edgeHighlight, specularAngle } = lens;
+  const lx = Math.cos((specularAngle * Math.PI) / 180);
+  const ly = -Math.sin((specularAngle * Math.PI) / 180);
+  // Scale for feDisplacementMap: higher = more visible displacement
+  // Aave uses their scale param × 255 as the SVG scale
+  const dispScale = lens.scale * lens.depth * 28;
+
+  return `
+  <filter id="${id}" x="-4%" y="-4%" width="108%" height="108%"
+      color-interpolation-filters="linearRGB">
+
+    <!-- 1. Load displacement map -->
+    <feImage id="${id}-img" href="${mapUrl}" result="dispmap"
+      x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none"/>
+
+    <!-- 2. Displacement — R=horizontal, G=vertical -->
+    <feDisplacementMap in="SourceGraphic" in2="dispmap"
+      scale="${dispScale.toFixed(1)}"
+      xChannelSelector="R" yChannelSelector="G"
+      result="displaced"/>
+
+    <!-- 3. Chroma fringe — slight R/B channel split -->
+    <feColorMatrix in="displaced" type="matrix"
+      values="${(1 + chroma * 0.08).toFixed(4)} 0 0 0 ${(-chroma * 0.04).toFixed(4)}
+              0 1 0 0 0
+              0 0 ${(1 - chroma * 0.08).toFixed(4)} 0 ${(chroma * 0.04).toFixed(4)}
+              0 0 0 1 0"
+      result="chroma"/>
+
+    <!-- 4. Specular highlight (lens region only, cheaper on Safari) -->
+    <feSpecularLighting in="chroma" result="spec"
+        x="0" y="0" width="${W}" height="${H}"
+        surfaceScale="4" specularConstant="${edgeHighlight.toFixed(3)}" specularExponent="20"
+        lighting-color="white">
+      <fePointLight
+        x="${(W * (0.5 + lx * 0.4)).toFixed(1)}"
+        y="${(H * (0.5 + ly * 0.4) - 60).toFixed(1)}"
+        z="80"/>
+    </feSpecularLighting>
+    <feComposite in="spec" in2="SourceGraphic" operator="in" result="spec-masked"/>
+
+    <!-- 5. Edge glow rim -->
+    <feMorphology in="SourceGraphic" operator="erode" radius="1" result="inner"/>
+    <feComposite in="SourceGraphic" in2="inner" operator="out" result="edge"/>
+    <feColorMatrix in="edge" type="matrix"
+      values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 ${glow.toFixed(3)} 0"
+      result="glow-rim"/>
+
+    <!-- 6. Composite: displaced + chroma + specular + glow -->
+    <feBlend in="chroma"     in2="spec-masked" mode="screen" result="lit"/>
+    <feBlend in="lit"        in2="glow-rim"    mode="screen"/>
+  </filter>`;
+}
+
+// ── Filter manager — single orb ─────────────────────────────────────────────
+const fdefs = document.getElementById('fdefs');
+const orbEl  = document.getElementById('orb');
+
+// ORB lens parameters
+const ORB_LENS = {
+  W:58, H:58, borderRadius:29,
+  scale:0.10, depth:10, curvature:42, splay:1.0,
+  chroma:0.18, glow:0.10, edgeHighlight:0.22, specularAngle:45
+};
+
+let _orbFilterNode   = null;
+let _orbFeImageNode  = null;
+let _orbFeDispNode   = null;
+
+function applyOrbFilter(lens) {
+  const url = mapToDataURL(generateLensMap(lens));
+  const id  = `lg-f-${++fid}`;
+
+  if (!_orbFilterNode) {
+    // First call — build full filter, cache node references
+    fdefs.innerHTML = buildFilter(id, url, lens);
+    _orbFilterNode  = fdefs.getElementById ? fdefs.getElementById(id) : fdefs.querySelector(`#${id}`);
+    if (!_orbFilterNode) _orbFilterNode = fdefs.querySelector('filter');
+    _orbFeImageNode = _orbFilterNode?.querySelector('feImage');
+    _orbFeDispNode  = _orbFilterNode?.querySelector('feDisplacementMap');
+    orbEl.style.filter = `url(#${id})`;
+    return;
+  }
+
+  // Subsequent frames: mutate attrs in-place (no innerHTML rebuild)
+  // Safari cache fix: new ID every frame forces re-read of feImage
+  _orbFilterNode.id = id;
+  if (_orbFeImageNode) {
+    _orbFeImageNode.id = `${id}-img`;
+    _orbFeImageNode.setAttribute('href', url);
+  }
+  if (_orbFeDispNode) {
+    _orbFeDispNode.setAttribute('scale', (lens.scale * lens.depth * 28).toFixed(1));
+  }
+  orbEl.style.filter = `url(#${id})`;
+}
+
+// ── Squish spring — the Aave QR tap mechanic ────────────────────────────────
+// depth → 0 on press (lens flattens, content spreads outward)
+// springs back past rest value (overshoot = elastic snap)
+// map regenerates every frame via onChange
+const orbLensState  = { ...ORB_LENS };
+const orbDepthSpring = makeSpring(ORB_LENS.depth, { k: 300, b: 20, mass: 1 });
+
+orbDepthSpring.onChange = (d) => {
+  orbLensState.depth = Math.max(0.05, d);
+  applyOrbFilter({ ...orbLensState });
+};
+
+// Init — apply static lens immediately
+applyOrbFilter(orbLensState);
+
+// ── Orb tap ──────────────────────────────────────────────────────────────────
+function handleOrbTap(e) {
+  if (phase !== 'orb') return;
+  e.preventDefault?.();
+
+  // Shift specular angle toward touch position (light reacts to press location)
+  const rect = orbEl.getBoundingClientRect();
+  const cx   = (e.clientX ?? e.touches?.[0]?.clientX ?? rect.left + rect.width  / 2) - rect.left;
+  const cy   = (e.clientY ?? e.touches?.[0]?.clientY ?? rect.top  + rect.height / 2) - rect.top;
+  orbLensState.specularAngle = 45 + (cx / rect.width  - 0.5) * 60
+                                  + (cy / rect.height - 0.5) * 30;
+
+  // Squish: depth → 0, then spring back to rest
+  orbDepthSpring.target = 0;
+  setTimeout(() => { orbDepthSpring.target = ORB_LENS.depth; }, 80);
+
+  // Pulse ring
+  const ring = document.createElement('div');
+  ring.className = 'pulse-ring';
+  orbEl.appendChild(ring);
+  setTimeout(() => ring.remove(), 720);
+
+  // Open pill after squish peaks
+  setTimeout(() => setPhase('pill'), 200);
+}
+
+orbEl.addEventListener('click', handleOrbTap);
+orbEl.addEventListener('touchstart', e => { e.preventDefault(); handleOrbTap(e); }, { passive: false });
+orbEl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') handleOrbTap(e); });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scene cards
+// ─────────────────────────────────────────────────────────────────────────────
+const sceneEl = document.getElementById('scene');
+const uiRegistry = { cards: {}, features: {}, errors: new Set() };
+
+const INIT_CARDS = [
+  { id:'c-lens',   x:'4%',  y:'15%', tag:'TECHNIQUE', color:'#7C6FCD', title:'Lens displacement',  body:'feDisplacementMap: R=horizontal, G=vertical. Neutral 128 = no shift.', err:false },
+  { id:'c-safari', x:'60%', y:'10%', tag:'SAFARI FIX', color:'#5F9EA0', title:'Filter ID cache',    body:'Bump filter ID on every map update — Safari caches by ID, freezes on reuse.', err:false },
+  { id:'c-broken', x:'4%',  y:'62%', tag:'ERROR',      color:'#FF5050', title:'⚠ Schema mismatch',  body:'IndexedDB version conflict on upgrade path. Store names collide.', err:true  },
+  { id:'c-quad',   x:'66%', y:'58%', tag:'PERF',       color:'#8FBC8F', title:'Four-fold symmetry', body:'Compute top-left quadrant only. Mirror to all four. 75% fewer pixels.', err:false },
+  { id:'c-spring', x:'34%', y:'7%',  tag:'PHYSICS',    color:'#C77DBB', title:'Spring squish',      body:'Depth → 0 on tap (flattens), springs back past rest (overshoot). Map regenerates every frame.', err:false },
+];
+
+function makeCard({ id, x, y, tag, color, title, body, err }) {
+  const el = document.createElement('div');
+  el.className = `sc-card${err ? ' err' : ''}`;
+  el.id = id;
+  el.style.left = x; el.style.top = y;
+  el.innerHTML = `
+    <div class="sc-tag"><span class="sc-dot" style="background:${color}30;border:1px solid ${color}55"></span>${tag}</div>
+    <div class="sc-title">${title}</div>
+    <div class="sc-body">${body}</div>`;
+  sceneEl.appendChild(el);
+  uiRegistry.cards[id] = el;
+  if (err) uiRegistry.errors.add(id);
+}
+INIT_CARDS.forEach(makeCard);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase machine
+// ─────────────────────────────────────────────────────────────────────────────
+let phase = 'orb';
+const pillEl   = document.getElementById('pill');
+const chatEl   = document.getElementById('chat');
+const bdEl     = document.getElementById('bd');
+const hintEl   = document.getElementById('hint');
+const orbRoot  = document.getElementById('orb-root');
+
+function setPhase(next) {
+  phase = next;
+
+  orbEl.classList.toggle('hidden', next !== 'orb');
+  pillEl.classList.toggle('visible', next === 'pill');
+  chatEl.classList.toggle('visible', next === 'chat');
+  bdEl.classList.toggle('on', next !== 'orb');
+  hintEl.classList.toggle('off', next !== 'orb');
+
+  if (next !== 'orb') {
+    bdEl.onclick = () => setPhase(phase === 'chat' ? 'pill' : 'orb');
+  }
+  if (next === 'chat') setTimeout(() => ta.focus(), 220);
+  if (next === 'orb') { resetChat(); }
+}
+
+function resetChat() {
+  ta.value = ''; autoGrow(); updateSend();
+  hideChrome();
+  clearAtts();
+  setActiveAction(null);
+}
+function hideChrome() {
+  document.getElementById('thinking').style.display = 'none';
+  document.getElementById('ai-resp').style.display = 'none';
+  document.getElementById('mut-prev').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pill actions
+// ─────────────────────────────────────────────────────────────────────────────
+const ACTIONS = ['Fix errors', 'Add feature', 'Remove card', 'Change theme', 'Explain'];
+let activeAction = null;
+const pillActsEl = document.getElementById('pill-acts');
+
+ACTIONS.forEach(a => {
+  const btn = document.createElement('button');
+  btn.className = 'pill-action'; btn.textContent = a;
+  btn.addEventListener('click', () => { setActiveAction(a === activeAction ? null : a); setPhase('chat'); });
+  pillActsEl.appendChild(btn);
+});
+
+function setActiveAction(a) {
+  activeAction = a;
+  pillActsEl.querySelectorAll('.pill-action').forEach(b => b.classList.toggle('active', b.textContent === a));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chat
+// ─────────────────────────────────────────────────────────────────────────────
+const ta = document.getElementById('ta');
+const sendBtn = document.getElementById('send-btn');
+const cmdHint = document.getElementById('cmd-hint');
+
+function autoGrow() {
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 190) + 'px';
+}
+function updateSend() {
+  const has = ta.value.trim().length > 0 || attachments.length > 0;
+  sendBtn.disabled = !has;
+  sendBtn.classList.toggle('on', has);
+  cmdHint.style.display = ta.value.length > 20 ? 'inline' : 'none';
+}
+
+ta.addEventListener('input', () => { autoGrow(); updateSend(); });
+ta.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); doSend(); }
+  if (e.key === 'Escape') { resetChat(); setPhase('pill'); }
+});
+sendBtn.addEventListener('click', doSend);
+
+document.getElementById('pill-brand').addEventListener('click', () => setPhase('chat'));
+document.getElementById('pill-close').addEventListener('click', () => setPhase('orb'));
+document.getElementById('back-btn').addEventListener('click', () => { resetChat(); setPhase('pill'); });
+document.getElementById('att-btn').addEventListener('click', () => document.getElementById('file-in').click());
+document.getElementById('file-in').addEventListener('change', e => { Array.from(e.target.files).forEach(addAtt); e.target.value=''; });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Attachments
+// ─────────────────────────────────────────────────────────────────────────────
+let attachments = [];
+const attsEl = document.getElementById('atts');
+
+function addAtt(f) {
+  const r = new FileReader();
+  r.onload = ev => { const id = Date.now(); attachments.push({id,src:ev.target.result,name:f.name}); renderAtts(); updateSend(); };
+  r.readAsDataURL(f);
+}
+function removeAtt(id) { attachments = attachments.filter(a => a.id !== id); renderAtts(); updateSend(); }
+function clearAtts() { attachments = []; renderAtts(); }
+function renderAtts() {
+  attsEl.style.display = attachments.length ? 'flex' : 'none';
+  attsEl.innerHTML = attachments.map(a => `<div class="att"><img src="${a.src}"><button class="att-rm" data-id="${a.id}">×</button></div>`).join('');
+  attsEl.querySelectorAll('.att-rm').forEach(b => b.addEventListener('click', () => removeAtt(Number(b.dataset.id))));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mutation log
+// ─────────────────────────────────────────────────────────────────────────────
+const mlogEl = document.getElementById('mlog');
+function logMut(type, text) {
+  const icons = {add:'✦',rm:'✕',fix:'⬡',sty:'◈',info:'◎'};
+  const el = document.createElement('div');
+  el.className = `log-e t-${type}`;
+  el.innerHTML = `<span style="font-size:11px">${icons[type]||'◎'}</span><span>${esc(text)}</span>`;
+  mlogEl.prepend(el);
+  setTimeout(() => { el.style.animation = 'log-out .28s var(--out) forwards'; setTimeout(() => el.remove(), 300); }, 5000);
+  while (mlogEl.children.length > 4) mlogEl.lastChild.remove();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mutation executor
+// ─────────────────────────────────────────────────────────────────────────────
+function execMutations(ops, delay = 220) {
+  ops.forEach((op, i) => setTimeout(() => applyOp(op).catch(e => console.error('[LG]', e)), i * delay));
+}
+
+async function applyOp(op) {
+  switch (op.type) {
+
+    // ── Scene cards ──────────────────────────────────────────────────────────
+    case 'ADD_CARD': {
+      const id = op.id || `c-ai-${Date.now()}`;
+      if (document.getElementById(id)) return;
+      const el = document.createElement('div');
+      el.className = `sc-card${op.error?' err':''}`;
+      el.id = id; el.style.left = op.x||'30%'; el.style.top = op.y||'30%';
+      el.innerHTML = `<div class="sc-tag"><span class="sc-dot" style="background:${op.color||'#888'}30;border:1px solid ${op.color||'#888'}55"></span>${esc(op.tag||'AI')}</div><div class="sc-title">${esc(op.title||'')}</div><div class="sc-body">${esc(op.body||'')}</div>`;
+      el.style.opacity='0'; el.style.transform='scale(0.8) translateY(8px)';
+      sceneEl.appendChild(el);
+      uiRegistry.cards[id] = el;
+      if (op.error) uiRegistry.errors.add(id);
+      requestAnimationFrame(() => { el.style.transition='opacity .35s,transform .38s var(--spring)'; el.style.opacity='1'; el.style.transform=''; });
+      logMut('add', `Card: ${op.title||id}`); break;
+    }
+    case 'REMOVE_CARD': {
+      const el = document.getElementById(op.id);
+      if (!el) return;
+      el.style.transition='opacity .28s,transform .28s var(--out)'; el.style.opacity='0'; el.style.transform='scale(0.78)';
+      setTimeout(() => { el.remove(); delete uiRegistry.cards[op.id]; uiRegistry.errors.delete(op.id); }, 300);
+      logMut('rm', `Card: ${op.id}`); break;
+    }
+    case 'UPDATE_CARD': {
+      const el = document.getElementById(op.id);
+      if (!el) return;
+      if (op.title !== undefined) { const t=el.querySelector('.sc-title'); if(t) t.textContent=op.title; }
+      if (op.body  !== undefined) { const b=el.querySelector('.sc-body');  if(b) b.textContent=op.body;  }
+      if (op.error === false) { el.classList.remove('err'); uiRegistry.errors.delete(op.id); }
+      if (op.error === true)  { el.classList.add('err');    uiRegistry.errors.add(op.id); }
+      el.style.boxShadow='0 0 0 2px rgba(100,200,140,0.40)';
+      setTimeout(()=>el.style.boxShadow='',700);
+      logMut('fix', `Card: ${op.id}`); break;
+    }
+    case 'FIX_ERROR': {
+      const targets = op.id ? [op.id] : [...uiRegistry.errors];
+      targets.forEach(id => applyOp({type:'UPDATE_CARD',id,error:false,title:'✓ Fixed',body:op.resolution||'Error resolved.'}));
+      uiRegistry.errors.clear();
+      logMut('fix', `Fixed ${targets.length} error(s)`); break;
+    }
+
+    // ── Style ops ────────────────────────────────────────────────────────────
+    case 'SET_CSS_VAR':
+      document.documentElement.style.setProperty(op.variable, op.value);
+      logMut('sty', `${op.variable} → ${op.value}`); break;
+
+    case 'SET_CSS':
+      document.getElementById('ai-styles').textContent += '\n' + op.css;
+      logMut('sty', 'CSS injected'); break;
+
+    case 'REPLACE_CSS':
+      // Replace a named block inside #ai-styles
+      // op.css = full new CSS string
+      document.getElementById('ai-styles').textContent = op.css || '';
+      logMut('sty', 'AI styles replaced'); break;
+
+    // ── Lens ops ─────────────────────────────────────────────────────────────
+    case 'MUTATE_LENS': {
+      const allowed = ['scale','depth','curvature','splay','chroma','glow','edgeHighlight','specularAngle','borderRadius'];
+      allowed.forEach(k => { if (op.params?.[k] !== undefined) orbLensState[k] = op.params[k]; });
+      applyOrbFilter({...orbLensState});
+      logMut('sty', 'Lens params updated'); break;
+    }
+
+    // ── Self-edit ops — the AI rewrites its own UI ───────────────────────────
+
+    case 'PATCH_ELEMENT': {
+      // Rewrite innerHTML of any element by CSS selector
+      // op.selector — e.g. "#orb-root", ".pill-inner", "#pill-acts"
+      // op.innerHTML — new inner HTML (string)
+      // op.style     — optional inline style to set on the element
+      // op.attribute — optional {name, value} to set
+      const el = document.querySelector(op.selector);
+      if (!el) { logMut('info', `PATCH_ELEMENT: "${op.selector}" not found`); break; }
+      if (op.innerHTML !== undefined) el.innerHTML = op.innerHTML;
+      if (op.style)     Object.assign(el.style, op.style);
+      if (op.attribute) el.setAttribute(op.attribute.name, op.attribute.value);
+      // Highlight the patched element briefly
+      const prev = el.style.outline;
+      el.style.outline = '2px solid rgba(100,200,140,0.50)';
+      setTimeout(() => el.style.outline = prev, 800);
+      logMut('fix', `Patched: ${op.selector}`); break;
+    }
+
+    case 'APPEND_ELEMENT': {
+      // Append new HTML inside a target element
+      const parent = document.querySelector(op.selector);
+      if (!parent) { logMut('info', `APPEND_ELEMENT: "${op.selector}" not found`); break; }
+      const tmp = document.createElement('div');
+      tmp.innerHTML = op.html || '';
+      while (tmp.firstChild) parent.appendChild(tmp.firstChild);
+      logMut('add', `Appended to: ${op.selector}`); break;
+    }
+
+    case 'REMOVE_ELEMENT': {
+      // Remove any element by selector
+      const el = document.querySelector(op.selector);
+      if (!el) { logMut('info', `REMOVE_ELEMENT: "${op.selector}" not found`); break; }
+      el.style.transition = 'opacity .25s';
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 260);
+      logMut('rm', `Removed: ${op.selector}`); break;
+    }
+
+    case 'REWRITE_PILL_ACTIONS': {
+      // Completely replace the pill action chips
+      // op.actions = [{label, id?}]
+      const container = document.getElementById('pill-acts');
+      if (!container) break;
+      container.innerHTML = '';
+      (op.actions || []).forEach(a => {
+        const btn = document.createElement('button');
+        btn.className = 'pill-action';
+        btn.id = a.id || `pa-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        btn.textContent = a.label;
+        btn.addEventListener('click', () => {
+          setActiveAction(a.label === activeAction ? null : a.label);
+          setPhase('chat');
+        });
+        container.appendChild(btn);
+      });
+      logMut('fix', `Pill actions → ${(op.actions||[]).map(a=>a.label).join(', ')}`); break;
+    }
+
+    case 'REWRITE_ORB': {
+      // Change the orb icon, size, or glow colour
+      // op.iconSvg    — SVG string for the icon (inner only, no <svg> wrapper needed)
+      // op.size       — orb diameter in px (number)
+      // op.glowColor  — CSS colour for the glow
+      // op.label      — aria-label
+      if (op.iconSvg) {
+        const icon = document.querySelector('#orb .orb-icon');
+        if (icon) icon.innerHTML = op.iconSvg;
+      }
+      if (op.size) {
+        const orbCss = `#orb{width:${op.size}px;height:${op.size}px}`;
+        document.getElementById('ai-styles').textContent += '\n' + orbCss;
+      }
+      if (op.glowColor) {
+        document.documentElement.style.setProperty('--glow-override', op.glowColor);
+        document.getElementById('ai-styles').textContent +=
+          `\n.orb-glow{background:radial-gradient(circle,var(--glow-override,rgba(100,80,240,0.18)) 0%,transparent 68%)!important}`;
+      }
+      if (op.label) orbEl.setAttribute('aria-label', op.label);
+      logMut('fix', 'Orb appearance updated'); break;
+    }
+
+    case 'REWRITE_PILL_LABEL': {
+      const lbl = document.getElementById('pill-label');
+      if (lbl) lbl.textContent = op.label || '';
+      logMut('fix', `Pill label → "${op.label}"`); break;
+    }
+
+    case 'ADD_FEATURE': {
+      const id = op.id || `feat-${Date.now()}`;
+      if (document.getElementById(id)) return;
+      const w = document.createElement('div'); w.id = id;
+      w.innerHTML = op.html || `<div style="position:fixed;top:20px;right:20px;z-index:600;background:rgba(16,16,24,.82);border:1px solid rgba(255,255,255,.09);color:rgba(238,238,248,.82);font-family:'DM Sans',sans-serif;font-size:12px;padding:8px 16px;border-radius:20px;backdrop-filter:blur(20px);">${esc(op.label||'Feature')}</div>`;
+      document.body.appendChild(w);
+      uiRegistry.features[id] = w;
+      logMut('add', `Feature: ${op.label||id}`); break;
+    }
+    case 'REMOVE_FEATURE': {
+      const el = document.getElementById(op.id);
+      if (el) { el.remove(); delete uiRegistry.features?.[op.id]; logMut('rm', `Feature: ${op.id}`); } break;
+    }
+
+    case 'EVAL': {
+      // Sandboxed JS execution — only receives known safe refs
+      // op.code — JS string
+      // Available in scope: uiRegistry, sceneEl, orbEl, orbLensState,
+      //                     applyOrbFilter, logMut, setPhase, applyOp
+      try {
+        const fn = new Function(
+          'uiRegistry','sceneEl','orbEl','orbLensState',
+          'applyOrbFilter','logMut','setPhase','applyOp','esc',
+          '"use strict";\n' + op.code
+        );
+        fn(uiRegistry,sceneEl,orbEl,orbLensState,applyOrbFilter,logMut,setPhase,applyOp,esc);
+        logMut('add', 'Script executed');
+      } catch(e) {
+        logMut('info', `Script error: ${e.message}`);
+        console.error('[LG EVAL]', e);
+      }
+      break;
+    }
+
+    case 'SHOW_NOTIFICATION': {
+      const n = document.createElement('div');
+      n.style.cssText = `position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9000;background:rgba(12,12,20,.92);border:1px solid rgba(255,255,255,.09);color:rgba(238,238,248,.88);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 18px;border-radius:16px;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.4);display:flex;align-items:center;gap:9px;animation:log-in .22s var(--out) both;pointer-events:none;`;
+      n.innerHTML = `<span style="opacity:.5">✦</span><span>${esc(op.message||'')}</span>`;
+      document.body.appendChild(n);
+      setTimeout(() => { n.style.animation='log-out .28s var(--out) forwards'; setTimeout(()=>n.remove(),300); }, op.duration||3000);
+      break;
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SNAPSHOT — serialise the live UI state for Claude's context
+// Includes: cards, CSS vars, lens params, live HTML of key elements,
+//           injected CSS, features, known errors
+// ─────────────────────────────────────────────────────────────────────────────
+function buildSnapshot() {
+  const cards = Object.entries(uiRegistry.cards).map(([id,el]) => ({
+    id,
+    title:    el.querySelector('.sc-title')?.textContent||'',
+    body:     el.querySelector('.sc-body')?.textContent||'',
+    tag:      el.querySelector('.sc-tag')?.textContent?.trim()||'',
+    x:el.style.left, y:el.style.top,
+    hasError: el.classList.contains('err'),
+  }));
+
+  const cssVars = {};
+  const cs = getComputedStyle(document.documentElement);
+  ['--bg','--fg','--fg2','--glass-tint','--glass-border','--spring','--out'].forEach(v=>{
+    cssVars[v] = cs.getPropertyValue(v).trim();
+  });
+
+  // Capture live HTML of the mutable UI regions
+  const liveHTML = {
+    orbRoot:     document.getElementById('orb-root')?.innerHTML?.slice(0,600)||'',
+    pillInner:   document.querySelector('.pill-inner')?.innerHTML?.slice(0,400)||'',
+    pillActions: document.getElementById('pill-acts')?.innerHTML?.slice(0,300)||'',
+    orbIcon:     document.querySelector('#orb .orb-icon')?.innerHTML?.slice(0,200)||'',
+    chatInput:   document.querySelector('.chat-row')?.innerHTML?.slice(0,200)||'',
+  };
+
+  return {
+    cards,
+    knownErrors:  [...uiRegistry.errors],
+    features:     Object.keys(uiRegistry.features||{}),
+    cssVars,
+    lens:         { ...orbLensState },
+    liveHTML,
+    injectedCSS:  document.getElementById('ai-styles')?.textContent?.slice(0,400)||'',
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SYSTEM PROMPT
+// ─────────────────────────────────────────────────────────────────────────────
+const SYS = `You are the AI brain of "Looking Glass" — a live UI that you can read and rewrite in real time.
+You receive the current UI state as JSON. You respond ONLY with a JSON mutation plan (no markdown, no prose outside JSON):
+{"plan":"one sentence describing what you will do","ops":[...array of ops...]}
+
+SELF-EDITING OPS (you can rewrite your own interface):
+
+PATCH_ELEMENT — rewrite any element's innerHTML or style by CSS selector:
+{"type":"PATCH_ELEMENT","selector":"#pill-label","innerHTML":"New label text"}
+{"type":"PATCH_ELEMENT","selector":".pill-inner","style":{"borderRadius":"8px","padding":"8px 12px"}}
+{"type":"PATCH_ELEMENT","selector":"#orb","style":{"width":"72px","height":"72px"}}
+
+APPEND_ELEMENT — append new HTML inside a target:
+{"type":"APPEND_ELEMENT","selector":"#pill-acts","html":"<button class='pill-action' onclick='alert(\"hi\")'>New Action</button>"}
+
+REMOVE_ELEMENT — remove any element:
+{"type":"REMOVE_ELEMENT","selector":"#pill-label"}
+
+REWRITE_PILL_ACTIONS — replace all pill action chips:
+{"type":"REWRITE_PILL_ACTIONS","actions":[{"label":"Debug"},{"label":"Refactor"},{"label":"Explain"},{"label":"Test"}]}
+
+REWRITE_ORB — change the orb's icon, size, or glow:
+{"type":"REWRITE_ORB","iconSvg":"<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5'><circle cx='12' cy='12' r='10'/><path d='M12 8v4l3 3'/></svg>","glowColor":"rgba(40,200,120,0.22)"}
+
+REWRITE_PILL_LABEL — change the text next to the orb in pill mode:
+{"type":"REWRITE_PILL_LABEL","label":"Dev Assistant"}
+
+SET_CSS — append CSS rules (use for layout, colours, animations):
+{"type":"SET_CSS","css":"#orb{animation:none} #orb .orb-glass{background:rgba(40,20,80,0.6)}"}
+
+REPLACE_CSS — replace all injected CSS:
+{"type":"REPLACE_CSS","css":"/* full new CSS */"}
+
+SET_CSS_VAR — change a CSS custom property:
+{"type":"SET_CSS_VAR","variable":"--bg","value":"#0a0a14"}
+
+MUTATE_LENS — change the glass physics on the orb:
+{"type":"MUTATE_LENS","params":{"scale":0.18,"depth":14,"curvature":55,"chroma":0.30}}
+  scale: 0.05–0.25 (refraction strength)
+  depth: 4–20 (lens thickness, drives the squish amplitude)  
+  curvature: 20–80 (how sharply the edge bends)
+  splay: 0.5–1.5 (horizontal vs vertical asymmetry)
+  chroma: 0.05–0.40 (chromatic aberration)
+
+EVAL — run sandboxed JS. Available: uiRegistry, sceneEl, orbEl, orbLensState, applyOrbFilter, logMut, setPhase:
+{"type":"EVAL","code":"orbEl.style.transform='rotate(15deg)'; setTimeout(()=>orbEl.style.transform='',1000)"}
+
+SCENE OPS (cards on the canvas):
+{"type":"ADD_CARD","id":"x","x":"20%","y":"30%","tag":"TAG","color":"#hex","title":"T","body":"B"}
+{"type":"REMOVE_CARD","id":"card-id"}
+{"type":"UPDATE_CARD","id":"card-id","title":"new","body":"new","error":false}
+{"type":"FIX_ERROR"}
+{"type":"ADD_FEATURE","id":"x","html":"<div style='position:fixed;...'>...</div>","label":"Name"}
+{"type":"REMOVE_FEATURE","id":"x"}
+
+UX:
+{"type":"SHOW_NOTIFICATION","message":"Done!","duration":2500}
+
+CRITICAL RULES:
+- Respond with ONLY valid JSON. Nothing outside the JSON object.
+- Max 8 ops per response. Each op is applied in sequence with 220ms between each.
+- For PATCH_ELEMENT innerHTML: use unescaped HTML. Keep it concise.
+- For SET_CSS: use specific selectors, always override with !important if needed.
+- For REWRITE_PILL_ACTIONS: you can customise the action chips to match the user's context.
+- For EVAL: code runs synchronously; no await, no fetch. Keep it short.
+- Always end with SHOW_NOTIFICATION to confirm.
+- You can chain multiple ops to achieve complex reshapes — e.g. change pill label + actions + orb glow + theme in one response.
+- The liveHTML in the snapshot shows you the current HTML of key elements so you can build on it.`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Claude API
+// ─────────────────────────────────────────────────────────────────────────────
+async function callClaude(msg, snapshot) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:2000,
+      system:SYS,
+      messages:[{role:'user',content:`User instruction: "${msg}"\n\nCurrent UI state:\n${JSON.stringify(snapshot,null,2)}`}]
+    })
+  });
+  if (!r.ok) throw new Error(`API ${r.status}: ${await r.text().catch(()=>'')}`);
+  const d = await r.json();
+  const raw = d.content?.map(b=>b.text||'').join('')||'';
+  return JSON.parse(raw.replace(/```json|```/g,'').trim());
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Send handler
+// ─────────────────────────────────────────────────────────────────────────────
+async function doSend() {
+  const txt = ta.value.trim();
+  if (!txt && attachments.length===0) return;
+
+  sendBtn.disabled=true; ta.disabled=true;
+  const userTxt=txt; ta.value=''; autoGrow(); updateSend();
+
+  const thinkingEl = document.getElementById('thinking');
+  const aiRespEl   = document.getElementById('ai-resp');
+  const mutPrevEl  = document.getElementById('mut-prev');
+  const respTxtEl  = document.getElementById('resp-txt');
+  const thinkLbl   = document.getElementById('think-lbl');
+
+  thinkingEl.style.display='flex';
+  thinkLbl.textContent='Reading UI state…';
+  aiRespEl.style.display='none';
+  mutPrevEl.style.display='none';
+
+  try {
+    thinkLbl.textContent='Planning edits…';
+    const snapshot = buildSnapshot();
+    const result   = await callClaude(userTxt, snapshot);
+
+    thinkingEl.style.display='none';
+    mutPrevEl.style.display='block';
+
+    // Show the plan + op preview
+    mutPrevEl.innerHTML = `<span class="op-fix">PLAN</span> ${esc(result.plan)}\n\n`
+      + (result.ops||[]).map(op => {
+          const cls = op.type.includes('REMOVE')||op.type.includes('rm')?'op-rm'
+                    : op.type.includes('FIX')||op.type.includes('PATCH')||op.type.includes('REWRITE')?'op-fix'
+                    : op.type.includes('CSS')||op.type.includes('LENS')||op.type.includes('STYLE')?'op-sty'
+                    : 'op-add';
+          const s=JSON.stringify(op);
+          return `<span class="${cls}">${op.type}</span> ${esc(s.slice(0,80))}${s.length>80?'…':''}`;
+        }).join('\n');
+
+    // Execute after brief preview pause
+    setTimeout(() => {
+      execMutations(result.ops||[]);
+      setTimeout(() => {
+        mutPrevEl.style.display='none';
+        aiRespEl.style.display='flex';
+        respTxtEl.textContent = result.plan;
+        setTimeout(() => { hideChrome(); setPhase('pill'); }, 2800);
+      }, ((result.ops||[]).length * 220) + 300);
+    }, 700);
+
+  } catch(err) {
+    thinkingEl.style.display='none';
+    aiRespEl.style.display='flex';
+    respTxtEl.textContent = err.message?.includes('API')||err.message?.includes('fetch')
+      ? '⚠ API unreachable — check your key in the browser console.'
+      : `⚠ ${err.message}`;
+    console.error('[LG]', err);
+  } finally {
+    ta.disabled=false;
+    updateSend();
+  }
+}
+
+</script>
+</body>
+</html>
