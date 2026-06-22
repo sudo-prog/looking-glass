@@ -21,12 +21,20 @@
 <!-- Glass tier detection — must run before theme init -->
 <script>
   (function () {
+    // Tier 3: CSS-only (reduced motion or no backdrop-filter)
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.documentElement.dataset.glassTier = '3';
       return;
     }
     if (typeof CSS !== 'undefined' && CSS.supports('backdrop-filter', 'blur(1px)')) {
+      // Tier 2: SVG fallback (backdrop-filter supported but WebGPU unknown)
       document.documentElement.dataset.glassTier = '2';
+      // Tier 1: WebGPU — detected async in main.jsx, upgrades from 2→1 if available
+      if (navigator.gpu) {
+        navigator.gpu.requestAdapter().then(function (adapter) {
+          if (adapter) document.documentElement.dataset.glassTier = '1';
+        }).catch(function () {});
+      }
     } else {
       document.documentElement.dataset.glassTier = '3';
     }
@@ -54,8 +62,8 @@ body { font-family: 'Space Grotesk', system-ui, sans-serif; }
 .lg-glass { visibility: hidden; }
 .lg-glass[data-glass-ready] { visibility: visible; }
 </style>
-  <script type="module" crossorigin src="/looking-glass/assets/index-DPx5pjB3.js"></script>
-  <link rel="stylesheet" crossorigin href="/looking-glass/assets/index-BWh0ZXBv.css">
+  <script type="module" crossorigin src="/looking-glass/assets/index-Cscz2knd.js"></script>
+  <link rel="stylesheet" crossorigin href="/looking-glass/assets/index-Dk3X2A5f.css">
 </head>
 <body>
 <div id="app">
