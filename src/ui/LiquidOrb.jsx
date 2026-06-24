@@ -8,7 +8,7 @@
  * + custom model IDs for any provider.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { PROVIDERS, loadAIConfig, saveAIConfig, getProviderDef, addCustomProvider, removeCustomProvider, refreshProviders } from '../utils/aiConfig.js';
+import { getProviders, loadAIConfig, saveAIConfig, getProviderDef, addCustomProvider, removeCustomProvider, refreshProviders } from '../utils/aiConfig.js';
 import './LiquidOrb.css';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -449,7 +449,7 @@ export default function LiquidOrb() {
 
   // ── Remove custom provider handler ──
   const handleRemoveProvider = useCallback((pid) => {
-    if (!confirm(`Remove "${PROVIDERS[pid]?.name}"? This will remove it from the list.`)) return;
+    if (!confirm(`Remove "${getProviders()[pid]?.name}"? This will remove it from the list.`)) return;
     removeCustomProvider(pid);
     // If we removed the active provider, switch to openrouter
     if (cfgProvider === pid) {
@@ -458,7 +458,7 @@ export default function LiquidOrb() {
       setCfgKey('');
       setCustomModel('');
     }
-    logMut('rm', `Removed provider: ${PROVIDERS[pid]?.name || pid}`);
+    logMut('rm', `Removed provider: ${getProviders()[pid]?.name || pid}`);
   }, [cfgProvider, logMut]);
 
   // ── Settings panel (in-orb) ──────────────────────────────
@@ -890,7 +890,7 @@ export default function LiquidOrb() {
               display: 'flex', gap: 4, marginBottom: 16, padding: 3,
               background: 'rgba(255,255,255,0.04)', borderRadius: 12, flexWrap: 'wrap',
             }}>
-              {Object.entries(PROVIDERS).map(([pid, p]) => {
+              {Object.entries(getProviders()).map(([pid, p]) => {
                 const active = pid === cfgProvider;
                 const isCustom = !p.builtin;
                 return (
@@ -903,7 +903,7 @@ export default function LiquidOrb() {
                       transition: 'all 0.15s', whiteSpace: 'nowrap',
                     }} onClick={() => {
                       setCfgProvider(pid);
-                      setCfgModel(PROVIDERS[pid].models[0]);
+                      setCfgModel(getProviders()[pid].models[0]);
                       setCustomModel('');
                     }}>
                       <span style={{ marginRight: 4 }}>{p.icon}</span>{p.name}
@@ -1089,7 +1089,7 @@ export default function LiquidOrb() {
         >
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>AI Provider</div>
           <div style={{ display: 'flex', gap: 4, marginBottom: 16, padding: 3, background: 'rgba(255,255,255,0.04)', borderRadius: 12, flexWrap: 'wrap' }}>
-            {Object.entries(PROVIDERS).map(([pid, p]) => {
+            {Object.entries(getProviders()).map(([pid, p]) => {
               const active = pid === cfgProvider;
               const isCustom = !p.builtin;
               return (
@@ -1102,7 +1102,7 @@ export default function LiquidOrb() {
                     transition: 'all 0.15s', whiteSpace: 'nowrap',
                   }} onClick={() => {
                     setCfgProvider(pid);
-                    setCfgModel(PROVIDERS[pid].models[0]);
+                    setCfgModel(getProviders()[pid].models[0]);
                     setCustomModel('');
                   }}>
                     <div style={{ fontSize: 13, marginBottom: 2 }}>{p.icon}</div>{p.name}

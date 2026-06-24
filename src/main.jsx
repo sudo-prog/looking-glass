@@ -15,6 +15,7 @@ import './styles/stack-folder.css';
 import './styles/glass-fallback.css';
 import './styles/ui-chrome.css';
 import './styles/responsive.css';
+import './styles/a11y.css';
 import './components/mobile/BottomSheet.css';
 
 // Glass tier is detected by the inline script in index.html (runs before hydration).

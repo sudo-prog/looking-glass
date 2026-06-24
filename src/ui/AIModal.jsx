@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Sparkle, Eye, EyeSlash, Warning } from '@phosphor-icons/react';
-import { PROVIDERS, loadAIConfig, saveAIConfig } from '../utils/aiConfig.js';
+import { getProviders, loadAIConfig, saveAIConfig } from '../utils/aiConfig.js';
 import './AIModal.css';
 
 export default function AIModal({ isOpen, onClose }) {
@@ -30,7 +30,7 @@ export default function AIModal({ isOpen, onClose }) {
 
   // Update model default when provider changes
   useEffect(() => {
-    const p = PROVIDERS[provider];
+    const p = getProviders()[provider];
     if (p && p.models.length > 0) {
       setModel(p.models[0]);
       setCustomModel('');
@@ -50,19 +50,19 @@ export default function AIModal({ isOpen, onClose }) {
   }, [isOpen, onClose]);
 
   const handleSave = () => {
-    if (!apiKey.trim() && PROVIDERS[provider]?.needsKey) {
+    if (!apiKey.trim() && getProviders()[provider]?.needsKey) {
       setStatus('error');
       setErrorMsg('[ERROR: API KEY REQUIRED]');
       return;
     }
     const finalModel = model === 'custom' ? customModel : model;
-    saveAIConfig({ provider, model: finalModel || PROVIDERS[provider]?.models[0], key: apiKey.trim() });
+    saveAIConfig({ provider, model: finalModel || getProviders()[provider]?.models[0], key: apiKey.trim() });
     setStatus('ok');
     setTimeout(onClose, 600);
   };
 
   const handleTest = async () => {
-    const p = PROVIDERS[provider];
+    const p = getProviders()[provider];
     if (!apiKey.trim() && p.needsKey) {
       setStatus('error');
       setErrorMsg('[ERROR: ENTER API KEY FIRST]');
@@ -101,7 +101,7 @@ export default function AIModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const currentProvider = PROVIDERS[provider];
+  const currentProvider = getProviders()[provider];
 
   return (
     <div className="lg-ai-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -137,7 +137,7 @@ export default function AIModal({ isOpen, onClose }) {
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
             >
-              {Object.entries(PROVIDERS).map(([pid, p]) => (
+              {Object.entries(getProviders()).map(([pid, p]) => (
                 <option key={pid} value={pid}>{p.name}</option>
               ))}
             </select>
@@ -152,7 +152,7 @@ export default function AIModal({ isOpen, onClose }) {
               value={model}
               onChange={(e) => { setModel(e.target.value); if (e.target.value !== 'custom') setCustomModel(''); }}
             >
-              {(PROVIDERS[provider]?.models || []).map(m => (
+              {(getProviders()[provider]?.models || []).map(m => (
                 <option key={m} value={m}>{m}</option>
               ))}
               <option value="custom">Custom model ID…</option>
@@ -160,7 +160,7 @@ export default function AIModal({ isOpen, onClose }) {
           </div>
 
           {/* Custom model input */}
-          {(model === 'custom' || (!PROVIDERS[provider]?.models || !PROVIDERS[provider].models.includes(model))) && (
+          {(model === 'custom' || (!getProviders()[provider]?.models || !getProviders()[provider].models.includes(model))) && (
             <div className="lg-ai-modal__field">
               <label className="lg-ai-modal__label" htmlFor="ai-custom-model">CUSTOM MODEL ID</label>
               <input

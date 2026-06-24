@@ -155,12 +155,22 @@ initCustomProviders();
 
 /**
  * All providers = built-in + custom.
- * Mutated in-place is fine — consumers re-import this object each time.
+ * Returns a fresh object on each call — safe for React renders.
+ */
+export function getProviders() {
+  return { ...BUILTIN_PROVIDERS, ..._customProviders };
+}
+
+/**
+ * Legacy export — kept for backward compatibility with modules that import it.
+ * Prefer getProviders() for a fresh snapshot each render.
+ * @deprecated Use getProviders() instead.
  */
 export const PROVIDERS = { ...BUILTIN_PROVIDERS, ..._customProviders };
 
 /**
  * Re-sync PROVIDERS from localStorage (for live updates across tabs).
+ * Also mutates the legacy PROVIDERS export for backward compat.
  */
 export function refreshProviders() {
   _customProviders = loadCustomProviders();

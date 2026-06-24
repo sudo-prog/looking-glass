@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, GearSix, Sun, Moon, Trash, Download, Sparkle, Palette, Eye, Image, TextT, Upload } from '@phosphor-icons/react';
 import { toggleTheme, isDark } from '../utils/theme';
-import { PROVIDERS, loadAIConfig, saveAIConfig, getProviderDef } from '../utils/aiConfig.js';
+import { getProviders, loadAIConfig, saveAIConfig, getProviderDef } from '../utils/aiConfig.js';
 import { loadThemeConfig, saveThemeConfig, applyThemeConfig, THEME_DEFAULTS, getThicknessRadius } from '../utils/themeConfig.js';
 
 const ICON_POOL = [
@@ -478,8 +478,8 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
           {activeTab === 'ai' && (
             <SettingsSection title="AI ASSISTANT">
               <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', padding: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', flexWrap: 'wrap' }}>
-                {Object.entries(PROVIDERS).map(([pid, p]) => (
-                  <button key={pid} onClick={() => { setAiProvider(pid); setAiModel(PROVIDERS[pid].models[0]); setCustomModel(''); }}
+                {Object.entries(getProviders()).map(([pid, p]) => (
+                  <button key={pid} onClick={() => { setAiProvider(pid); setAiModel(getProviders()[pid].models[0]); setCustomModel(''); }}
                     style={{ flex: '1 0 auto', background: pid === aiProvider ? 'rgba(255,255,255,0.10)' : 'none', border: 'none', borderRadius: '9px', padding: '5px 6px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: '10px', fontWeight: pid === aiProvider ? 600 : 400, color: pid === aiProvider ? 'rgba(238,238,248,0.90)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     {p.icon}{p.name}
                   </button>
@@ -499,6 +499,9 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
               {providerDef?.needsKey !== false && (
                 <div style={{ marginTop: '10px' }}><span style={sLabel}>{providerDef?.keyLabel || 'API Key'}</span>
                   <input type="password" value={aiKey} onChange={e => setAiKey(e.target.value)} placeholder={providerDef?.keyPlaceholder || 'Enter API key'} style={textInputStyle} />
+                  <div style={{ fontSize: '10px', color: '#888', marginTop: '4px' }}>
+                    Your API key is stored locally and sent directly from your browser to the provider. Never share your browser session or DevTools output with others.
+                  </div>
                 </div>
               )}
               {aiProvider === 'ollama' && (
