@@ -542,6 +542,9 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
         <div style={{ padding: '8px 0' }}>
           {isFolder && <MenuItem icon={FolderOpen} label="Open Folder" onClick={() => act('open-folder')} />}
           {isStack && <MenuItem icon={ArrowsOutCardinal} label="Break Stack" onClick={() => act('unstack')} />}
+          {isFolder && <MenuItem icon={MinusCircle} label="Remove from Folder" onClick={() => act('remove-from-folder')} />}
+          {isStack && <MenuItem icon={MinusCircle} label="Remove from Stack" onClick={() => act('remove-from-stack')} />}
+          {(isFolder || isStack) && <MenuItem icon={Eraser} label={isFolder ? 'Dissolve Folder' : 'Dissolve Stack'} onClick={() => act('dissolve')} />}
           {(isFolder || isStack) && <Divider />}
           {hasUrl && <MenuItem icon={ArrowSquareOut} label="Open URL"   onClick={() => act('open')} />}
           {hasUrl && <MenuItem icon={CopySimple}     label="Copy Link"  onClick={() => act('copy-link')} />}

@@ -103,7 +103,7 @@ export function ExportDialog({ onClose }) {
       onClose();
     } catch (err) {
       console.error('[LG] Export failed:', err);
-      alert('Export failed: ' + err.message);
+      toast.error('Export failed: ' + err.message);
     } finally {
       setExporting(false);
     }
