@@ -65,7 +65,7 @@ export function ExportDialog({ onClose }) {
         if (result.ok && result.blob) {
           downloadPNG(result.blob, `looking-glass-canvas-${Date.now()}.png`);
         } else {
-          alert('PNG export failed: ' + (result.error || 'Unknown error'));
+          toast.error('PNG export failed: ' + (result.error || 'Unknown error'));
         }
         onClose();
         setExporting(false);
@@ -82,7 +82,7 @@ export function ExportDialog({ onClose }) {
         if (result.ok && result.blob) {
           downloadPDF(result.blob, `looking-glass-export-${Date.now()}.pdf`);
         } else {
-          alert('PDF export failed: ' + (result.error || 'Unknown error'));
+          toast.error('PDF export failed: ' + (result.error || 'Unknown error'));
         }
         onClose();
         setExporting(false);
