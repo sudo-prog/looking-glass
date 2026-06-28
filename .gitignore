@@ -11,3 +11,4 @@ package-lock.json
 pnpm-lock.yaml.bak
 VID_REF_MP4/
 *.pdf
+.vercel

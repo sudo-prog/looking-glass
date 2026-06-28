@@ -7,6 +7,7 @@
  * C6: Ported PNG/PDF export buttons from vanilla ExportDialog.js.
  */
 import React, { useState, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 import { useStore } from '../../store/useStore.js';
 import { exportToPNG, downloadPNG } from './pngExport.js';
 import { exportToPDF, downloadPDF } from './pdfExport.js';
@@ -52,7 +53,7 @@ export function ExportDialog({ onClose }) {
       } else if (format === 'png') {
         const worldEl = document.querySelector('[data-glass-surface="canvas-world"]') || document.querySelector('.canvas-world');
         if (!worldEl) {
-          alert('PNG export: canvas element not found');
+          toast.error('PNG export: canvas element not found');
           setExporting(false);
           return;
         }

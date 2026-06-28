@@ -4,6 +4,7 @@
  *       + Selection toolbar + Folder modal + rich Lightbox
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Toaster, toast } from 'react-hot-toast';
 import { useStore } from '../store/useStore.js';
 import { HistoryManager, AddItemCommand, DeleteItemCommand, MoveItemCommand, UpdateItemCommand, StackCommand, FolderCommand } from '../history/HistoryManager.js';
 import LiquidGlassSidebar from '../ui/LiquidGlassSidebar.jsx';
@@ -292,7 +293,7 @@ export function App() {
         const state = useStore.getState();
         await state.importData(data);
       } catch (err) {
-        alert('Import failed: ' + err.message);
+        toast.error('Import failed: ' + err.message);
       }
     };
     input.click();
@@ -392,13 +393,15 @@ export function App() {
         unstackToCanvas(item.id);
         break;
       case 'remove-from-folder':
-        // For folders opened in modal, use openFolderId; otherwise prompt
+        // Used inside FolderViewModal — remove this specific child from its parent folder
         if (openFolderId) {
           removeFromFolder(openFolderId, item.id);
         }
         break;
       case 'remove-from-stack':
-        removeFromStack(item.id, item.id);
+        // Used inside a stack view — remove this specific child from its parent stack
+        // When triggered from the stack card itself (no child context), dissolve
+        dissolveStack(item.id);
         break;
       case 'dissolve':
         if (item.type === 'folder') {
@@ -428,7 +431,7 @@ export function App() {
           updateItem(item.id, { meta: { color: COLORS[parseInt(action.split('-')[1])] } });
         }
     }
-  }, [selectedIds, createStack, createFolder, unstackToCanvas, updateItem, deleteItem]);
+  }, [selectedIds, createStack, createFolder, unstackToCanvas, removeFromFolder, removeFromStack, dissolveStack, dissolveFolder, updateItem, deleteItem, openFolderId]);
 
   // ── Stack/Folder history wrappers ──────────────────────────────────
 
@@ -510,6 +513,20 @@ export function App() {
 
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
+      <Toaster
+        position="bottom-center"
+        toastOptions={{
+          style: {
+            background: 'rgba(20,20,20,0.95)',
+            color: '#fff',
+            borderRadius: '12px',
+            border: '1px solid rgba(255,255,255,0.10)',
+            backdropFilter: 'blur(16px)',
+            fontFamily: 'var(--font-ui)',
+            fontSize: '12px',
+          },
+        }}
+      />
       <LiquidGlassSidebar
         onSpacesOpen={() => setSpacesOpen(true)}
         onTagsOpen={() => setShowTags(true)}

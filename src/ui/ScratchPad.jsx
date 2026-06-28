@@ -1,14 +1,12 @@
 /**
  * LOOKING GLASS — ScratchPad
- * Global floating capture panel. Summon with Alt+Space (Option+Space on Mac).
+ * Global floating capture panel. Summon with Ctrl+Shift+N.
  * Captures a sticky note and drops it onto the active canvas at a smart position.
  * Persists shortcut across the whole app — mount once in App.jsx.
  *
  * Usage:
  *   import { ScratchPad } from './ui/ScratchPad.jsx';
  *   // In App.jsx JSX: <ScratchPad />
- *
- * The shortcut is customizable: pass shortcutKey prop (default 'alt+ ').
  */
 
 import React, {
@@ -54,11 +52,12 @@ export function ScratchPad() {
   const addItem  = useStore((s) => s.addItem);
   const viewport = useStore((s) => s.viewport);
 
-  // ── Keyboard shortcut: Alt+Space ──────────────────────
+  // ── Keyboard shortcut: Alt+Shift+Space ────────────────
   useEffect(() => {
     const handler = (e) => {
       if (
         e.altKey &&
+        e.shiftKey &&
         e.code === 'Space' &&
         !e.ctrlKey &&
         !e.metaKey
@@ -211,7 +210,7 @@ export function ScratchPad() {
               color: 'var(--text-secondary)',
             }}
           >
-            ◎ SCRATCH PAD · ALT+SPACE
+            ◎ SCRATCH PAD · ALT+SHIFT+SPACE
           </div>
 
           {/* Colour picker dots */}
