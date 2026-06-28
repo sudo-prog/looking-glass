@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useStore } from '../store/useStore.js';
-import { HistoryManager, AddItemCommand, DeleteItemCommand, MoveItemCommand, UpdateItemCommand } from '../history/HistoryManager.js';
+import { HistoryManager, AddItemCommand, DeleteItemCommand, MoveItemCommand, UpdateItemCommand, StackCommand, FolderCommand } from '../history/HistoryManager.js';
 import LiquidGlassSidebar from '../ui/LiquidGlassSidebar.jsx';
 import { Canvas } from '../canvas/Canvas.jsx';
 import { ExportDialog } from '../utils/export/ExportDialog.jsx';
@@ -61,6 +61,9 @@ export function App() {
     createFolder,
     addToFolder,
     removeFromFolder,
+    removeFromStack,
+    dissolveStack,
+    dissolveFolder,
     unfolderToCanvas,
     renameFolder,
     updateFolderDescription,
@@ -78,6 +81,7 @@ export function App() {
   const [aiSummarise, setAiSummarise] = useState(null);
   const [spacesOpen, setSpacesOpen] = useState(false);
   const [showTags, setShowTags] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [openFolderId, setOpenFolderId] = useState(null);
 
   // Initialize
@@ -103,8 +107,7 @@ export function App() {
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        const query = prompt('Search...');
-        if (query !== null) search(query);
+        setCommandPaletteOpen((v) => !v);
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
@@ -138,7 +141,7 @@ export function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [selectedIds, search, clearSearch, clearSelection, addNote]);
 
-  const handleUndo = useCallback(() => {
+  const handleUndo = useCallback(async () => {
     const result = history.current.undo();
     if (!result) return;
     const { command, result: data } = result;
@@ -168,11 +171,37 @@ export function App() {
         useStore.setState({ items: newItems });
         break;
       }
+      case 'stack': {
+        // Undo: remove the stack, restore original items
+        const restored = data.restoredItems.map((item, i) => ({
+          ...item,
+          z_index: (command.stackItem.z_index || 0) + i,
+          updated_at: Date.now(),
+        }));
+        for (const item of restored) {
+          await useStore.getState().addItem(item);
+        }
+        await useStore.getState().deleteItem(data.stackToRemove);
+        break;
+      }
+      case 'folder': {
+        // Undo: remove the folder, restore original items
+        const restored = data.restoredItems.map((item, i) => ({
+          ...item,
+          z_index: (command.folderItem.z_index || 0) + i,
+          updated_at: Date.now(),
+        }));
+        for (const item of restored) {
+          await useStore.getState().addItem(item);
+        }
+        await useStore.getState().deleteItem(data.folderToRemove);
+        break;
+      }
     }
     useStore.setState({ undoCounts: history.current.getCounts() });
   }, []);
 
-  const handleRedo = useCallback(() => {
+  const handleRedo = useCallback(async () => {
     const result = history.current.redo();
     if (!result) return;
     const { command } = result;
@@ -200,6 +229,18 @@ export function App() {
           i.id === command.itemId ? { ...i, ...command.newData } : i
         );
         useStore.setState({ items: newItems });
+        break;
+      }
+      case 'stack': {
+        // Redo: re-create the stack from stored source items
+        const sourceItems = command.sourceItems;
+        await useStore.getState().createStack(sourceItems.map(i => i.id));
+        break;
+      }
+      case 'folder': {
+        // Redo: re-create the folder from stored source items
+        const sourceItems = command.sourceItems;
+        await useStore.getState().createFolder(sourceItems.map(i => i.id), command.folderItem.content?.title || 'Folder name', command.folderItem.content?.description || '');
         break;
       }
     }
@@ -316,7 +357,7 @@ export function App() {
   }, [openFolderId, unfolderToCanvas]);
 
   // Context menu action handler
-  const handleContextAction = useCallback((action, item) => {
+  const handleContextAction = useCallback(async (action, item) => {
     switch (action) {
       case 'open':
         window.open(item.content?.url, '_blank');
@@ -324,17 +365,47 @@ export function App() {
       case 'copy-link':
         navigator.clipboard.writeText(item.content?.url || '');
         break;
-      case 'stack':
-        createStack([...selectedIds]);
+      case 'stack': {
+        const state = useStore.getState();
+        const sourceItems = [...selectedIds].map((id) => state.items.find((i) => i.id === id)).filter(Boolean);
+        const stackItem = await createStack([...selectedIds]);
+        if (stackItem) {
+          history.current.push(new StackCommand(stackItem, sourceItems));
+          useStore.setState({ undoCounts: history.current.getCounts() });
+        }
         break;
-      case 'folder':
-        createFolder([...selectedIds], 'Folder name', '');
+      }
+      case 'folder': {
+        const state = useStore.getState();
+        const sourceItems = [...selectedIds].map((id) => state.items.find((i) => i.id === id)).filter(Boolean);
+        const folderItem = await createFolder([...selectedIds], 'Folder name', '');
+        if (folderItem) {
+          history.current.push(new FolderCommand(folderItem, sourceItems));
+          useStore.setState({ undoCounts: history.current.getCounts() });
+        }
         break;
+      }
       case 'open-folder':
         setOpenFolderId(item.id);
         break;
       case 'unstack':
         unstackToCanvas(item.id);
+        break;
+      case 'remove-from-folder':
+        // For folders opened in modal, use openFolderId; otherwise prompt
+        if (openFolderId) {
+          removeFromFolder(openFolderId, item.id);
+        }
+        break;
+      case 'remove-from-stack':
+        removeFromStack(item.id, item.id);
+        break;
+      case 'dissolve':
+        if (item.type === 'folder') {
+          dissolveFolder(item.id);
+        } else if (item.type === 'stack') {
+          dissolveStack(item.id);
+        }
         break;
       case 'summarise':
         setAiSummarise({ mode: 'card', item });
@@ -358,6 +429,36 @@ export function App() {
         }
     }
   }, [selectedIds, createStack, createFolder, unstackToCanvas, updateItem, deleteItem]);
+
+  // ── Stack/Folder history wrappers ──────────────────────────────────
+
+  const handleAddToStack = useCallback(async (newItemId, stackItemId) => {
+    const state = useStore.getState();
+    const newItem = state.items.find((i) => i.id === newItemId);
+    const stackItem = state.items.find((i) => i.id === stackItemId);
+    if (!newItem || !stackItem) return;
+    await addToStack(newItemId, stackItemId);
+    // Push a command that can undo the addition
+    const updatedStack = useStore.getState().items.find((i) => i.id === stackItemId);
+    if (updatedStack) {
+      history.current.push(new StackCommand(updatedStack, [newItem]));
+      useStore.setState({ undoCounts: history.current.getCounts() });
+    }
+  }, [addToStack]);
+
+  const handleAddToFolder = useCallback(async (newItemId, folderItemId) => {
+    const state = useStore.getState();
+    const newItem = state.items.find((i) => i.id === newItemId);
+    const folderItem = state.items.find((i) => i.id === folderItemId);
+    if (!newItem || !folderItem) return;
+    await addToFolder(newItemId, folderItemId);
+    // Push a command that can undo the addition
+    const updatedFolder = useStore.getState().items.find((i) => i.id === folderItemId);
+    if (updatedFolder) {
+      history.current.push(new FolderCommand(updatedFolder, [newItem]));
+      useStore.setState({ undoCounts: history.current.getCounts() });
+    }
+  }, [addToFolder]);
 
   // Drop handler for DropZoneHandler
   const handleDrop = useCallback(async (drops) => {
@@ -436,9 +537,9 @@ export function App() {
             onItemDelete={deleteItem}
             onLightbox={setLightboxItem}
             onCreateStack={createStack}
-            onAddToStack={addToStack}
+            onAddToStack={handleAddToStack}
             onCreateFolder={createFolder}
-            onAddToFolder={addToFolder}
+            onAddToFolder={handleAddToFolder}
             onContextMenu={(item, x, y) => setContextMenu({ item, x, y })}
             onOpenFolder={setOpenFolderId}
             onColorSelected={handleColorSelected}
@@ -500,7 +601,7 @@ export function App() {
 
       {/* Context menu */}
       {contextMenu && (
-        <ContextMenu
+        <SmartContextMenu
           isOpen
           x={contextMenu.x}
           y={contextMenu.y}
@@ -529,6 +630,48 @@ export function App() {
 
       {/* Spaces Manager */}
       <SpacesManager isOpen={spacesOpen} onClose={() => setSpacesOpen(false)} />
+
+      {/* Tags Panel slide-over */}
+      {showTags && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 'calc(var(--z-toolbar) + 1)', display: 'flex' }}>
+          <div onClick={() => setShowTags(false)} style={{ flex: 1, background: 'rgba(0,0,0,0.25)' }} />
+          <aside style={{
+            width: '280px',
+            height: '100%',
+            background: 'var(--glass-frost)',
+            backdropFilter: 'blur(var(--glass-blur-xl)) saturate(120%)',
+            WebkitBackdropFilter: 'blur(var(--glass-blur-xl)) saturate(120%)',
+            borderLeft: '1px solid var(--color-border)',
+            boxShadow: '-4px 0 32px rgba(0,0,0,0.50)',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>TAGS</span>
+              <button onClick={() => setShowTags(false)} style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>✕</button>
+            </div>
+            <TagsPanel
+              items={items}
+              activeTagFilters={activeTagFilters}
+              onToggleTag={toggleTagFilter}
+              onClearTags={clearTagFilters}
+            />
+          </aside>
+        </div>
+      )}
+
+      {/* Command Palette */}
+      {commandPaletteOpen && (
+        <CommandPalette
+          isOpen={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+          onSearch={search}
+          onAddNote={addNote}
+          onAddUrl={addUrl}
+          onClearSearch={clearSearch}
+        />
+      )}
     </div>
   );
 }

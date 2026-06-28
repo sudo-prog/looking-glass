@@ -3,9 +3,13 @@
  *
  * BUG FIX: Markdown export now strips HTML tags from note text before writing
  * to the .md file. Previously, raw Tiptap HTML tags were written into markdown.
+ *
+ * C6: Ported PNG/PDF export buttons from vanilla ExportDialog.js.
  */
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useStore } from '../../store/useStore.js';
+import { exportToPNG, downloadPNG } from './pngExport.js';
+import { exportToPDF, downloadPDF } from './pdfExport.js';
 
 function stripHtml(html) {
   if (!html) return '';
@@ -16,6 +20,9 @@ function stripHtml(html) {
 
 export function ExportDialog({ onClose }) {
   const [exporting, setExporting] = useState(false);
+  const [pngScale, setPngScale] = useState(2);
+  const [pdfOrientation, setPdfOrientation] = useState('landscape');
+  const worldRef = useRef(null);
   const exportData = useStore((s) => s.exportData);
 
   const handleExport = async (format) => {
@@ -42,6 +49,43 @@ export function ExportDialog({ onClose }) {
         content  = lines.join('\n');
         filename = `looking-glass-export-${Date.now()}.md`;
         mimeType = 'text/markdown';
+      } else if (format === 'png') {
+        const worldEl = document.querySelector('[data-glass-surface="canvas-world"]') || document.querySelector('.canvas-world');
+        if (!worldEl) {
+          alert('PNG export: canvas element not found');
+          setExporting(false);
+          return;
+        }
+        const result = await exportToPNG({
+          worldEl,
+          scale: pngScale,
+          filename: `looking-glass-canvas-${Date.now()}.png`,
+        });
+        if (result.ok && result.blob) {
+          downloadPNG(result.blob, `looking-glass-canvas-${Date.now()}.png`);
+        } else {
+          alert('PNG export failed: ' + (result.error || 'Unknown error'));
+        }
+        onClose();
+        setExporting(false);
+        return;
+      } else if (format === 'pdf') {
+        const canvasId = useStore.getState().canvasId;
+        const canvasName = useStore.getState().canvasName || 'Canvas';
+        const canvases = [{ name: canvasName, items: allItems }];
+        const result = await exportToPDF({
+          canvases,
+          orientation: pdfOrientation,
+          filename: `looking-glass-export-${Date.now()}.pdf`,
+        });
+        if (result.ok && result.blob) {
+          downloadPDF(result.blob, `looking-glass-export-${Date.now()}.pdf`);
+        } else {
+          alert('PDF export failed: ' + (result.error || 'Unknown error'));
+        }
+        onClose();
+        setExporting(false);
+        return;
       } else {
         return;
       }
@@ -88,6 +132,51 @@ export function ExportDialog({ onClose }) {
             >
               📝 Markdown (notes)
             </button>
+            <button
+              className="export-btn"
+              onClick={() => handleExport('png')}
+              disabled={exporting}
+            >
+              🖼️ PNG (canvas image)
+            </button>
+            <button
+              className="export-btn"
+              onClick={() => handleExport('pdf')}
+              disabled={exporting}
+            >
+              📕 PDF (document)
+            </button>
+          </div>
+
+          {/* PNG/PDF options */}
+          <div style={{ marginTop: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <label style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+                PNG Scale:
+              </label>
+              <select
+                value={pngScale}
+                onChange={(e) => setPngScale(Number(e.target.value))}
+                style={{ background: 'var(--color-bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '2px 8px', fontSize: '12px' }}
+              >
+                <option value={1}>1×</option>
+                <option value={2}>2×</option>
+                <option value={3}>3×</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+                PDF Orientation:
+              </label>
+              <select
+                value={pdfOrientation}
+                onChange={(e) => setPdfOrientation(e.target.value)}
+                style={{ background: 'var(--color-bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '2px 8px', fontSize: '12px' }}
+              >
+                <option value="landscape">Landscape</option>
+                <option value="portrait">Portrait</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

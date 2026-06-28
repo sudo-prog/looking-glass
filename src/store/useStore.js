@@ -373,6 +373,67 @@ export const useStore = create((set, get) => ({
     return stackItem;
   },
 
+  /** Pull a single child out of a stack and back onto the canvas as a
+   *  standalone item, positioned just to the right of the stack. */
+  removeFromStack: async (stackItemId, childId) => {
+    const state = get();
+    const stackItem = state.items.find((i) => i.id === stackItemId);
+    if (!stackItem || stackItem.type !== ITEM_TYPES.STACK) return;
+
+    const existing = stackItem.meta?.stack_items || [];
+    const child = existing.find((c) => c.id === childId);
+    if (!child) return;
+
+    const remaining = existing.filter((c) => c.id !== childId);
+
+    const restoredChild = {
+      ...child,
+      x: stackItem.x + (stackItem.width || 280) + 32,
+      y: stackItem.y,
+      z_index: (stackItem.z_index || 0) + 1,
+      updated_at: Date.now(),
+    };
+
+    if (remaining.length < 2) {
+      // Not enough items left to remain a stack — dissolve it
+      const allChildren = [...remaining, restoredChild];
+      await idbStore.deleteItem(stackItemId);
+      for (const item of allChildren) {
+        await idbStore.upsertItem(item);
+      }
+      set((s) => ({
+        items: [...s.items.filter((i) => i.id !== stackItemId), ...allChildren],
+        selectedIds: new Set(allChildren.map((r) => r.id)),
+      }));
+    } else {
+      const updatedStack = {
+        ...stackItem,
+        meta: { ...stackItem.meta, stack_items: remaining },
+        updated_at: Date.now(),
+      };
+      await idbStore.upsertItem(restoredChild);
+      await idbStore.upsertItem(updatedStack);
+      set((s) => ({
+        items: [
+          ...s.items.filter((i) => i.id !== stackItemId),
+          updatedStack,
+          restoredChild,
+        ],
+        selectedIds: new Set([restoredChild.id]),
+      }));
+    }
+  },
+
+  /** Dissolve a stack entirely — restore all children to the canvas. */
+  dissolveStack: async (stackItemId) => {
+    return get().unstackToCanvas(stackItemId);
+  },
+
+  /** Dissolve a folder entirely — restore all children to the canvas. */
+  dissolveFolder: async (folderItemId) => {
+    return get().unfolderToCanvas(folderItemId);
+  },
+
   /** Add an existing item into a STACK */
   addToStack: async (newItemId, stackItemId) => {
     const state = get();

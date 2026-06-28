@@ -75,6 +75,38 @@ export class GroupCommand extends Command {
   redo() { return null; }
 }
 
+export class StackCommand extends Command {
+  constructor(stackItem, sourceItems) {
+    super('stack');
+    this.stackItem   = stackItem;
+    this.sourceItems = sourceItems;
+    this.stackId     = stackItem.id;
+  }
+  undo() {
+    return {
+      stackToRemove: this.stackId,
+      restoredItems: this.sourceItems,
+    };
+  }
+  redo() { return null; }
+}
+
+export class FolderCommand extends Command {
+  constructor(folderItem, sourceItems) {
+    super('folder');
+    this.folderItem   = folderItem;
+    this.sourceItems  = sourceItems;
+    this.folderId     = folderItem.id;
+  }
+  undo() {
+    return {
+      folderToRemove: this.folderId,
+      restoredItems:  this.sourceItems,
+    };
+  }
+  redo() { return null; }
+}
+
 export class HistoryManager {
   constructor(maxHistory = 100) {
     this.undoStack  = [];

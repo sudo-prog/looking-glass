@@ -148,6 +148,7 @@ const SECTION_FLYOUTS = {
 
 export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrganise, onAISummarise, onSearch, onAddNote, onAddUrl, onExport }) {
   const [collapsed, setCollapsed] = useState(true);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const [activeItem, setActiveItem] = useState('canvas');
   const [showSettings, setShowSettings] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
@@ -208,6 +209,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
 
   const handleFabClick = useCallback(() => {
     setCollapsed(false);
+    setMobileExpanded(true);
   }, []);
 
   const handleNavClick = useCallback((id) => {
@@ -323,14 +325,17 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     );
   }
 
+  const isExpanded = !collapsed;
+  const expandedClass = isMobile ? (mobileExpanded ? 'lg-sidebar--expanded' : '') : (isExpanded ? 'lg-sidebar--expanded' : '');
+
   return (
     <>
       {/* Click-outside backdrop */}
-      <div className="lg-sidebar-backdrop" onClick={() => setCollapsed(true)} />
+      <div className="lg-sidebar-backdrop" onClick={() => { setCollapsed(true); setMobileExpanded(false); }} />
 
       <aside
         ref={sidebarRef}
-        className="lg-sidebar"
+        className={`lg-sidebar ${expandedClass}`}
         aria-label="Looking Glass navigation"
         data-glass-surface="toolbar"
         style={{

@@ -24,6 +24,7 @@ import { AudioMemoCard } from './AudioMemoCard.jsx';
 import { PDFViewerCard } from './PDFViewerCard.jsx';
 import { WebClipScreenshotCard } from './WebClipScreenshotCard.jsx';
 import { BlockTypeMenu } from '../ui/BlockTypeMenu.jsx';
+import { TagEditor } from '../ui/TagsSystem.jsx';
 
 // ── Utils ──────────────────────────────────────────────────
 
@@ -655,9 +656,16 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
       card = <BookmarkCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />; break;
   }
 
+  // Tags on this item
+  const itemTags = item.meta?.tags || [];
+  const handleTagsChange = useCallback((newTags) => {
+    onSave?.({ meta: { tags: newTags } });
+  }, [onSave]);
+
   return (
     <div onContextMenu={handleContextMenu} style={{ display: 'contents' }}>
       {card}
+      <TagEditor tags={itemTags} onChange={handleTagsChange} compact />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 # Agent Notes — Looking Glass
-**Last updated:** 2026-06-27
-**Status:** Active development on `develop` branch — V2 complete, reference-capture feature update applied, audit fixes pending
+**Last updated:** 2026-06-28
+**Status:** Active development on `develop` branch — V2 complete, critical/high bugs fixed, 20 changes committed
 
 ---
 

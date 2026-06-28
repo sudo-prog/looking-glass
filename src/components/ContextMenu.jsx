@@ -62,6 +62,8 @@ import {
   Archive,
   Trash,
   X,
+  MinusCircle,
+  Eraser,
 } from '@phosphor-icons/react';
 
 // ─────────────────────────────────────────────────────────────
@@ -296,6 +298,25 @@ export function ContextMenu({
                 onClick={() => act('unstack')}
               />
             )}
+            {isFolder && (
+              <MenuItem
+                icon={MinusCircle}
+                label="Remove from Folder"
+                onClick={() => act('remove-from-folder')}
+              />
+            )}
+            {isStack && (
+              <MenuItem
+                icon={MinusCircle}
+                label="Remove from Stack"
+                onClick={() => act('remove-from-stack')}
+              />
+            )}
+            <MenuItem
+              icon={Eraser}
+              label={isFolder ? 'Dissolve Folder' : 'Dissolve Stack'}
+              onClick={() => act('dissolve')}
+            />
           </div>
           <Divider />
         </>
