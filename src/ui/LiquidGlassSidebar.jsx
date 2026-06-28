@@ -41,6 +41,7 @@ const ICON_MAP = {
   note:     NotePencil,
   bookmark: BookmarkSimple,
   url:      Globe,
+  settings: GearSix,
 };
 
 const ICON_LABELS = {
@@ -57,6 +58,7 @@ const ICON_LABELS = {
   note:     'New Note',
   bookmark: 'New Bookmark',
   url:      'Add URL',
+  settings: 'Settings',
 };
 
 const SECTION_FLYOUTS = {
@@ -225,6 +227,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     else if (id === 'url')          onAddUrl?.('https://');
     else if (id === 'export')       onExport?.();
     else if (id === 'home')         onSpacesOpen?.();
+    else if (id === 'settings')     setShowSettings(true);
   }, [onSpacesOpen, onTagsOpen, onSearch, onAddNote, onAddUrl, onExport]);
 
   const handleFlyoutClick = useCallback((id) => {

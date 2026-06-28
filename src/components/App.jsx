@@ -21,6 +21,7 @@ import { TagFilterBar, TagsPanel } from '../ui/TagsSystem.jsx';
 import { CommandPalette } from '../ui/CommandPalette.jsx';
 import { SpacesManager } from '../ui/SpacesManager.jsx';
 import { FolderViewModal } from '../ui/FolderViewModal.jsx';
+import LiquidOrb from '../ui/LiquidOrb.jsx';
 
 export function App() {
   const initialized = useRef(false);
@@ -688,6 +689,8 @@ export function App() {
           onClearSearch={clearSearch}
         />
       )}
+      {/* AI Orb — bottom center */}
+      <LiquidOrb />
     </div>
   );
 }
