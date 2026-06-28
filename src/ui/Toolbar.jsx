@@ -58,9 +58,12 @@ export function Toolbar({
         position: 'absolute',
         top: '12px',
         right: '12px',
+        left: '12px',
         zIndex: 'var(--z-canvas-ui, 100)',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'flex-end',
+        flexWrap: 'wrap',
         gap: '4px',
         padding: '6px 10px',
         borderRadius: '14px',
@@ -84,22 +87,36 @@ export function Toolbar({
           color: var(--text-primary, #e0e0e0);
           cursor: pointer;
           transition: background 0.12s ease;
+          flex-shrink: 0;
         }
         .toolbar-btn:hover { background: rgba(255,255,255,0.08); }
         .toolbar-btn:disabled { opacity: 0.3; cursor: default; }
         .toolbar-btn:disabled:hover { background: transparent; }
-        .toolbar-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.12); margin: 0 2px; }
-        .toolbar-zoom { font-family: var(--font-mono, monospace); font-size: 11px; color: var(--text-secondary, #999); min-width: 40px; text-align: center; }
+        .toolbar-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.12); margin: 0 2px; flex-shrink: 0; }
+        .toolbar-zoom { font-family: var(--font-mono, monospace); font-size: 11px; color: var(--text-secondary, #999); min-width: 40px; text-align: center; flex-shrink: 0; }
+        .toolbar-group { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+
+        /* Mobile: compact toolbar */
+        @media (max-width: 767px) {
+          .toolbar-btn { width: 36px; height: 36px; }
+          .toolbar-zoom { display: none; }
+          .toolbar-sep { display: none; }
+          .toolbar-hide-mobile { display: none !important; }
+          .toolbar-search-input { width: min(120px, 30vw) !important; }
+        }
+        @media (max-width: 374px) {
+          .toolbar-btn { width: 32px; height: 32px; }
+          .toolbar-search-input { width: min(90px, 25vw) !important; }
+        }
       `}</style>
 
-      {/* Add note */}
+      {/* Primary actions (always visible) */}
       <button className="toolbar-btn" title="Add note (N)" aria-label="Add note" onClick={onAddNote}>
         <Plus size={16} weight="regular" />
       </button>
 
-      {/* Delete selected */}
       <button
-        className="toolbar-btn"
+        className="toolbar-btn toolbar-hide-mobile"
         title="Delete selected"
         aria-label="Delete selected"
         onClick={onDelete}
@@ -108,13 +125,13 @@ export function Toolbar({
         <Trash size={16} weight="regular" />
       </button>
 
-      <div className="toolbar-sep" />
+      <div className="toolbar-sep toolbar-hide-mobile" />
 
       {/* Undo / Redo */}
-      <button className="toolbar-btn" title="Undo (Ctrl+Z)" aria-label="Undo" onClick={onUndo} disabled={!canUndo}>
+      <button className="toolbar-btn toolbar-hide-mobile" title="Undo (Ctrl+Z)" aria-label="Undo" onClick={onUndo} disabled={!canUndo}>
         <ArrowUUpLeft size={16} weight="regular" />
       </button>
-      <button className="toolbar-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" onClick={onRedo} disabled={!canRedo}>
+      <button className="toolbar-btn toolbar-hide-mobile" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" onClick={onRedo} disabled={!canRedo}>
         <ArrowUUpRight size={16} weight="regular" />
       </button>
 
@@ -126,19 +143,19 @@ export function Toolbar({
       </button>
       <span className="toolbar-zoom">{Math.round((zoom || 1) * 100)}%</span>
       <button className="toolbar-btn" title="Zoom in" aria-label="Zoom in" onClick={onZoomIn}>
-      <Plus size={14} weight="regular" />
+        <Plus size={14} weight="regular" />
       </button>
-      <button className="toolbar-btn" title="Fit to view" aria-label="Fit to view" onClick={onFit}>
+      <button className="toolbar-btn toolbar-hide-mobile" title="Fit to view" aria-label="Fit to view" onClick={onFit}>
         <ArrowsOut size={14} weight="regular" />
       </button>
 
-      <div className="toolbar-sep" />
+      <div className="toolbar-sep toolbar-hide-mobile" />
 
-      {/* Export / Import */}
-      <button className="toolbar-btn" title="Export" aria-label="Export" onClick={onExport}>
+      {/* Export / Import — hidden on very small, accessible via menu */}
+      <button className="toolbar-btn toolbar-hide-mobile" title="Export" aria-label="Export" onClick={onExport}>
         <Download size={16} weight="regular" />
       </button>
-      <button className="toolbar-btn" title="Import" aria-label="Import" onClick={onImport}>
+      <button className="toolbar-btn toolbar-hide-mobile" title="Import" aria-label="Import" onClick={onImport}>
         <Upload size={16} weight="regular" />
       </button>
 
@@ -153,6 +170,7 @@ export function Toolbar({
             onChange={(e) => setLocalQuery(e.target.value)}
             placeholder="Search..."
             autoFocus
+            className="toolbar-search-input"
             style={{
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.15)',

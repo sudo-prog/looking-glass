@@ -533,8 +533,7 @@ export function App() {
         onAIOrganise={handleAIOrganise}
         onAISummarise={() => setAiSummarise({ mode: 'card' })}
       />
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+      <div data-main-content style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
         <DropZoneHandler viewport={viewport} onDrop={handleDrop}>
           <TagFilterBar
             activeTagFilters={activeTagFilters}
