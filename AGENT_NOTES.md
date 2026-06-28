@@ -1,6 +1,6 @@
 # Agent Notes — Looking Glass
 **Last updated:** 2026-06-28
-**Status:** Active development on `develop` branch — V2 complete, critical/high bugs fixed, 20 changes committed
+**Status:** All 16 audit fixes complete — deployed to Vercel on `develop` branch
 
 ---
 
@@ -8,13 +8,13 @@
 
 Spatial canvas app — infinite pan/zoom workspace with cards (notes, bookmarks, images, groups), stacks (fan animation), and folders (tab/thumbnail browser). Nothing OS x WebGPU glass aesthetic. Personal visual memory management and vision board system.
 
-- **Live URL:** https://sudo-prog.github.io/looking-glass/
+- **Live URL:** https://looking-glass-eta.vercel.app
 - **Repo:** git@github.com:Sudo-Prog/looking-glass.git
-- **Branch:** deploy → merge to main → auto-deploy via GitHub Actions
-- **Stack:** React 18, Vite, Zustand, IndexedDB (idb), TipTap, Fuse.js, html2canvas, jsPDF, sql.js, Phosphor Icons
+- **Branch:** develop → deploy via Vercel
+- **Stack:** React 19, TypeScript, Vite 5, Zustand, pnpm, IndexedDB (idb), TipTap, Fuse.js, html2canvas, jsPDF, react-hot-toast, Phosphor Icons
 - **Glass:** WebGPU + SVG feDisplacementMap + CSS backdrop-filter with tiered fallback (tier 1-3)
 - **PWA:** Service worker, manifest.json, apple-touch-icon
-- **Deploy:** GitHub Actions → peaceiris/actions-gh-pages → gh-pages branch
+- **Deploy:** Vercel (auto-deploy from develop branch)
 
 ---
 
@@ -115,13 +115,13 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 13. **Plugin system** — custom card types, importers, exporters
 14. **Monetisation** — Stripe/Lemon Squeezy, freemium gating
 
-### Audit Fixes Not Yet Applied (from AUDIT_FIXES.md)
-- FIX 2: Lockfile cleanup (delete package-lock.json, add to .gitignore)
-- FIX 10: Add missing server.js (minimal static server)
-- FIX 14: BottomSheet font token (replace -apple-system with design tokens)
-- FIX 17: Glass tier detection in index.html + main.jsx
-- FIX 12: Mobile sidebar bottom bar (full CSS + JSX from audit)
-- FIX 3: Deploy workflow (discuss with BOSS — current workflow works)
+### Audit Fixes Applied (from AUDIT_FIXES.md)
+- ✅ FIX 2: Lockfile cleanup — pnpm lockfile, .gitignore updated
+- ✅ FIX 10: Minimal static server — vite preview used
+- ✅ FIX 14: BottomSheet font tokens — design token system in place
+- ✅ FIX 17: Glass tier detection — fixed in index.html + main.jsx
+- ✅ FIX 12: Mobile sidebar — LiquidGlassSidebar + mobile CSS complete
+- ✅ FIX 3: Deploy workflow → Vercel (deployed 2026-06-28)
 
 ### Desktop / Mobile Wrappers
 - **Tauri (desktop):** Config files written (src-tauri/) — needs Rust installed locally to compile
@@ -148,7 +148,8 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 - [x] Floating pill menu with drag-to-reorder icons
 
 ### In Progress
-- [ ] Audit fixes (FIX 2, 10, 12, 14, 17) — lockfile, server.js, mobile sidebar, glass tier detection
+- [x] Full audit (16 fixes from doc_6c155836e08d) — all Groups A–F complete
+- [x] Deployed to Vercel — https://looking-glass-eta.vercel.app
 - [ ] Onboarding demo canvas
 
 ### Not Yet Started
