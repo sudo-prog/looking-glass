@@ -126,6 +126,23 @@ const BUILTIN_PROVIDERS = {
     showBaseURL: true,
     builtin: true,
   },
+  'gemini-web2api': {
+    name: 'Gemini Web2API',
+    icon: '✧',
+    keyPlaceholder: '(no key needed)',
+    keyLabel: 'API Key (optional)',
+    baseURL: 'http://localhost:8081/v1/chat/completions',
+    models: [
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+    ],
+    needsKey: false,
+    showBaseURL: true,
+    builtin: true,
+  },
 };
 
 // ── Custom providers (stored in localStorage) ─────────────────────────────────
@@ -219,10 +236,10 @@ const deobfuscate = (enc) => { try { return atob(enc).split('').reverse().join('
 export function loadAIConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { provider: 'openrouter', model: '', key: '' };
+    if (!raw) return { provider: 'gemini-web2api', model: 'gemini-2.5-flash', key: '' };
     const parsed = JSON.parse(raw);
     return {
-      provider: parsed.provider || 'openrouter',
+      provider: parsed.provider || 'gemini-web2api',
       model:    parsed.model    || '',
       key:      parsed.key ? deobfuscate(parsed.key) : '',
       endpoint: parsed.endpoint || '',
@@ -242,7 +259,7 @@ export function saveAIConfig({ provider, model, key, endpoint }) {
 }
 
 export function getProviderDef(pid) {
-  return PROVIDERS[pid] || PROVIDERS.openrouter;
+  return PROVIDERS[pid] || PROVIDERS['gemini-web2api'];
 }
 
 /**

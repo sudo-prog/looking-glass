@@ -4,7 +4,7 @@ import { getProviders, loadAIConfig, saveAIConfig } from '../utils/aiConfig.js';
 import './AIModal.css';
 
 export default function AIModal({ isOpen, onClose }) {
-  const [provider, setProvider] = useState('openrouter');
+  const [provider, setProvider] = useState('gemini-web2api');
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState('');
   const [customModel, setCustomModel] = useState('');
