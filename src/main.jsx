@@ -25,6 +25,14 @@ window.addEventListener('load', function () {
   console.info('[Looking Glass] Glass tier: ' + tier);
 });
 
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/looking-glass/sw.js', { scope: '/looking-glass/' })
+      .catch(err => console.warn('[SW] registration failed', err));
+  });
+}
+
 const container = document.getElementById('app');
 const root = createRoot(container);
 root.render(<App />);

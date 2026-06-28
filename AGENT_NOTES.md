@@ -1,6 +1,6 @@
 # Agent Notes — Looking Glass
-**Last updated:** 2026-06-22
-**Status:** Active development on `deploy` branch — V2 complete, audit fixes pending, extensive feature work remaining
+**Last updated:** 2026-06-27
+**Status:** Active development on `develop` branch — V2 complete, reference-capture feature update applied, audit fixes pending
 
 ---
 
@@ -44,6 +44,10 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
     history/
       HistoryManager.js  — undo/redo (add, delete, move, update)
     ui/
+      SelectionToolbar.jsx  — floating bottom pill for multi-card actions (color, copy, arrange, stack, folder, delete)
+      FolderViewModal.jsx   — expanded folder grid with move-to-canvas + empty-all
+      BlockTypeMenu.jsx     — Notion-style "turn into" block switcher (⋮⋮ handle)
+      Lightbox.jsx          — detail view (back arrow, color swatches, metadata panel, glass toolbar)
       BottomSheet.jsx    — mobile bottom sheet (snap points, swipe dismiss)
       Minimap.jsx        — bird's-eye view of canvas
       ModeToggle.jsx     — sun/moon theme toggle
@@ -77,6 +81,7 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 - Custom LLM providers (add/remove from setup dialog)
 
 ### Session History
+- **2026-06-27:** Reference-capture feature update applied — SelectionToolbar, Canvas box-select, StackCard cascade, FolderCard silhouette, FolderViewModal, BlockTypeMenu, Lightbox rewrite, ContextMenu updates, VideoCard autoplay, WebClipScreenshotCard blinking-cursor loading, useStore new actions. All 11 files pass esbuild. Build clean. Dev server running on :5173 for visual verification.
 - **2026-06-05:** V2 rewrite, spec-kit init, design brief, phases 1-9, deploy setup
 - **2026-06-07:** Sidebar 3-state, StackCard, FolderCard, DnD rewrite
 - **2026-06-08:** Bug audit (20 bugs fixed), Claude_updates integration, file cleanup, cross-browser CSS/JS fixes

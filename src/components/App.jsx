@@ -1,6 +1,7 @@
 /**
  * LOOKING GLASS — Main App Component
- * V0.5: React 18 + SQLite + Rich Text + Spaces + Tags + AI + ScratchPad
+ * V0.6: React 18 + SQLite + Rich Text + Spaces + Tags + AI + ScratchPad
+ *       + Selection toolbar + Folder modal + rich Lightbox
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useStore } from '../store/useStore.js';
@@ -11,12 +12,14 @@ import { ExportDialog } from '../utils/export/ExportDialog.jsx';
 import { Lightbox } from '../ui/Lightbox.jsx';
 import { ScratchPad } from '../ui/ScratchPad.jsx';
 import { DropZoneHandler } from '../ui/DropZoneHandler.jsx';
+import { Toolbar } from '../ui/Toolbar.jsx';
 import { AISummarisePanel } from '../ui/AISummarisePanel.jsx';
-import { ContextMenu } from '../ui/ContextMenu.jsx';
-import { CommandPalette } from '../ui/CommandPalette.jsx';
+import { fetchMetadata } from '../utils/meta-fetcher.js';
+import { SmartContextMenu } from '../components/ContextMenu.jsx';
 import { TagFilterBar, TagsPanel } from '../ui/TagsSystem.jsx';
+import { CommandPalette } from '../ui/CommandPalette.jsx';
 import { SpacesManager } from '../ui/SpacesManager.jsx';
-import LiquidOrb from '../ui/LiquidOrb.jsx';
+import { FolderViewModal } from '../ui/FolderViewModal.jsx';
 
 export function App() {
   const initialized = useRef(false);
@@ -31,6 +34,7 @@ export function App() {
     items,
     selectedIds,
     selectItem,
+    setSelection,
     clearSelection,
     activeFilters,
     toggleFilter,
@@ -53,8 +57,14 @@ export function App() {
     undoCounts,
     createStack,
     addToStack,
+    unstackToCanvas,
     createFolder,
     addToFolder,
+    removeFromFolder,
+    unfolderToCanvas,
+    renameFolder,
+    updateFolderDescription,
+    arrangeMasonry,
     activeTagFilters,
     toggleTagFilter,
     clearTagFilters,
@@ -62,12 +72,13 @@ export function App() {
     activeSpaceId,
   } = useStore();
 
+  const [zoom, setZoom] = useState(1);
   const [lightboxItem, setLightboxItem] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [aiSummarise, setAiSummarise] = useState(null);
   const [spacesOpen, setSpacesOpen] = useState(false);
   const [showTags, setShowTags] = useState(false);
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [openFolderId, setOpenFolderId] = useState(null);
 
   // Initialize
   useEffect(() => {
@@ -92,7 +103,8 @@ export function App() {
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        setCommandPaletteOpen(true);
+        const query = prompt('Search...');
+        if (query !== null) search(query);
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
@@ -117,18 +129,14 @@ export function App() {
         return;
       }
       if (e.key === 'Escape') {
-        if (commandPaletteOpen) {
-          setCommandPaletteOpen(false);
-        } else {
-          clearSelection();
-          clearSearch();
-        }
+        clearSelection();
+        clearSearch();
         return;
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedIds, search, clearSearch, clearSelection, addNote, commandPaletteOpen]);
+  }, [selectedIds, search, clearSearch, clearSelection, addNote]);
 
   const handleUndo = useCallback(() => {
     const result = history.current.undo();
@@ -210,22 +218,20 @@ export function App() {
     useStore.setState({ undoCounts: history.current.getCounts() });
   }, [deleteItem]);
 
-  const canvasRef = useRef(null);
-
   const handleZoomIn = useCallback(() => {
-    const vp       = useStore.getState().viewport;
-    const newScale = Math.min(3, vp.scale * 1.2);
-    setViewport({ ...vp, scale: newScale });
-  }, [setViewport]);
+    const newScale = Math.min(3, zoom * 1.2);
+    setZoom(newScale);
+    setViewport({ ...viewport, scale: newScale });
+  }, [zoom, viewport, setViewport]);
 
   const handleZoomOut = useCallback(() => {
-    const vp       = useStore.getState().viewport;
-    const newScale = Math.max(0.1, vp.scale / 1.2);
-    setViewport({ ...vp, scale: newScale });
-  }, [setViewport]);
+    const newScale = Math.max(0.1, zoom / 1.2);
+    setZoom(newScale);
+    setViewport({ ...viewport, scale: newScale });
+  }, [zoom, viewport, setViewport]);
 
   const handleFit = useCallback(() => {
-    canvasRef.current?.fitToContent?.();
+    setZoom(1);
   }, []);
 
   const handleExport = useCallback(() => {
@@ -262,18 +268,52 @@ export function App() {
 
   const handleItemSave = useCallback((id, updates) => {
     const item = useStore.getState().items.find((i) => i.id === id);
-    if (!item) return;
-    const oldSnap = { ...item };
-    const newSnap = {
-      ...item, ...updates,
-      content: { ...item.content, ...(updates.content || {}) },
-      meta:    { ...item.meta,    ...(updates.meta    || {}) },
-      style:   { ...item.style,   ...(updates.style   || {}) },
-    };
-    history.current.push(new UpdateItemCommand(id, oldSnap, newSnap));
-    updateItem(id, updates);
-    useStore.setState({ undoCounts: history.current.getCounts() });
+    if (item) {
+      history.current.push(new UpdateItemCommand(id, { ...item }, { ...item, ...updates }));
+      updateItem(id, updates);
+      useStore.setState({ undoCounts: history.current.getCounts() });
+    }
   }, [updateItem]);
+
+  // ── Selection toolbar handlers ─────────────────────────────────────
+
+  const handleColorSelected = useCallback((hex) => {
+    const state = useStore.getState();
+    state.selectedIds.forEach((id) => {
+      updateItem(id, { meta: { color: hex } });
+    });
+  }, [updateItem]);
+
+  const handleCopyLinkSelected = useCallback(() => {
+    const state = useStore.getState();
+    const links = [...state.selectedIds]
+      .map((id) => state.items.find((i) => i.id === id))
+      .filter((i) => i?.content?.url)
+      .map((i) => i.content.url);
+    if (links.length) {
+      navigator.clipboard?.writeText(links.join('\n'));
+    }
+  }, []);
+
+  // ── Folder modal handlers ──────────────────────────────────────────
+
+  const openFolder = items.find((i) => i.id === openFolderId);
+
+  const handleCloseFolderModal = useCallback(() => setOpenFolderId(null), []);
+
+  const handleRemoveFromFolder = useCallback(
+    (childId) => {
+      if (!openFolderId) return;
+      removeFromFolder(openFolderId, childId);
+    },
+    [openFolderId, removeFromFolder],
+  );
+
+  const handleEmptyFolder = useCallback(() => {
+    if (!openFolderId) return;
+    unfolderToCanvas(openFolderId);
+    setOpenFolderId(null);
+  }, [openFolderId, unfolderToCanvas]);
 
   // Context menu action handler
   const handleContextAction = useCallback((action, item) => {
@@ -288,7 +328,13 @@ export function App() {
         createStack([...selectedIds]);
         break;
       case 'folder':
-        createFolder([...selectedIds]);
+        createFolder([...selectedIds], 'Folder name', '');
+        break;
+      case 'open-folder':
+        setOpenFolderId(item.id);
+        break;
+      case 'unstack':
+        unstackToCanvas(item.id);
         break;
       case 'summarise':
         setAiSummarise({ mode: 'card', item });
@@ -311,7 +357,7 @@ export function App() {
           updateItem(item.id, { meta: { color: COLORS[parseInt(action.split('-')[1])] } });
         }
     }
-  }, [selectedIds, createStack, createFolder, updateItem, deleteItem]);
+  }, [selectedIds, createStack, createFolder, unstackToCanvas, updateItem, deleteItem]);
 
   // Drop handler for DropZoneHandler
   const handleDrop = useCallback(async (drops) => {
@@ -332,7 +378,7 @@ export function App() {
         case 'url': {
           // Fetch metadata and add as web clip screenshot
           try {
-            const meta = { title: drop.url, description: '', image_url: null };
+            const meta = await fetchMetadata(drop.url);
             await addWebClipScreenshot(drop.url, meta);
           } catch {
             await addUrl(drop.url);
@@ -346,12 +392,12 @@ export function App() {
     }
   }, [addImage, addVideo, addPDF, addAudio, addWebClipScreenshot, addUrl, addNote]);
 
+  const filteredItems = getFilteredItems();
+
   // AI organise handler
   const handleAIOrganise = useCallback(() => {
     setAiSummarise({ mode: 'organise' });
   }, []);
-
-  const filteredItems = getFilteredItems();
 
   // AI cluster handler
   const handleAICluster = useCallback(() => {
@@ -368,10 +414,6 @@ export function App() {
         onTagsOpen={() => setShowTags(true)}
         onAIOrganise={handleAIOrganise}
         onAISummarise={() => setAiSummarise({ mode: 'card' })}
-        onSearch={() => setCommandPaletteOpen(true)}
-        onAddNote={() => addNote()}
-        onAddUrl={(url) => addUrl(url)}
-        onExport={handleExport}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -382,12 +424,12 @@ export function App() {
             onClearTags={clearTagFilters}
           />
           <Canvas
-            ref={canvasRef}
             items={filteredItems}
             viewport={viewport}
             selectedIds={selectedIds}
             onViewportChange={setViewport}
             onSelectItem={selectItem}
+            onSetSelection={setSelection}
             onClearSelection={clearSelection}
             onItemMove={handleItemMove}
             onItemSave={handleItemSave}
@@ -398,8 +440,33 @@ export function App() {
             onCreateFolder={createFolder}
             onAddToFolder={addToFolder}
             onContextMenu={(item, x, y) => setContextMenu({ item, x, y })}
+            onOpenFolder={setOpenFolderId}
+            onColorSelected={handleColorSelected}
+            onCopyLinkSelected={handleCopyLinkSelected}
+            onDeleteSelected={handleDeleteSelected}
+            onArrangeSelected={(ids) => arrangeMasonry(ids)}
           />
         </DropZoneHandler>
+
+        {/* Floating Toolbar */}
+        <Toolbar
+          zoom={zoom}
+          searchQuery={searchQuery}
+          onAddNote={addNote}
+          onDelete={handleDeleteSelected}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onFit={handleFit}
+          onSearch={search}
+          onSearchClear={clearSearch}
+          onExport={handleExport}
+          onImport={handleImport}
+          canUndo={undoCounts.undo > 0}
+          canRedo={undoCounts.redo > 0}
+          selectedCount={selectedIds.size}
+        />
       </div>
 
       {exportDialogOpen && (
@@ -412,19 +479,19 @@ export function App() {
         <Lightbox
           item={lightboxItem}
           onClose={() => setLightboxItem(null)}
+          onColor={(hex) => updateItem(lightboxItem.id, { meta: { color: hex } })}
         />
       )}
 
-      {/* Command Palette */}
-      {commandPaletteOpen && (
-        <CommandPalette
-          isOpen={commandPaletteOpen}
-          onClose={() => setCommandPaletteOpen(false)}
-          onSearch={search}
-          onAddNote={() => addNote()}
-          onAddUrl={(url) => addUrl(url)}
-          searchQuery={searchQuery}
-          onClearSearch={clearSearch}
+      {/* Folder expand modal */}
+      {openFolder && (
+        <FolderViewModal
+          folder={openFolder}
+          onClose={handleCloseFolderModal}
+          onRemoveItem={handleRemoveFromFolder}
+          onEmptyAll={handleEmptyFolder}
+          onRename={(name) => renameFolder(openFolder.id, name)}
+          onDescription={(desc) => updateFolderDescription(openFolder.id, desc)}
         />
       )}
 
@@ -462,9 +529,6 @@ export function App() {
 
       {/* Spaces Manager */}
       <SpacesManager isOpen={spacesOpen} onClose={() => setSpacesOpen(false)} />
-
-      {/* Liquid AI Orb — floating glass orb with AI chat */}
-      <LiquidOrb />
     </div>
   );
 }

@@ -51,7 +51,7 @@ export function spacesSlice(set, get) {
 
     // ── Init ─────────────────────────────────────────────
     initSpaces: async () => {
-      const canvases = await idbStore.listCanvases();
+      const canvases = (await idbStore.listCanvases()).filter((c) => !c._deleted);
       const spaces = canvases.map((c) => ({
         id:         c.id,
         name:       c.name || 'Untitled Space',
@@ -171,16 +171,8 @@ export function spacesSlice(set, get) {
         await idbStore.deleteItem(item.id);
       }
 
-      // TODO: idbStore.deleteCanvas(spaceId) — add this to store.js:
-      //   async deleteCanvas(id) {
-      //     const s = await tx('canvases', 'readwrite');
-      //     return reqPromise(s.delete(id));
-      //   }
-      // For now, overwrite with a tombstone flag
-      const canvas = await idbStore.getCanvas(spaceId);
-      if (canvas) {
-        await idbStore.saveCanvas({ ...canvas, _deleted: true, updated_at: Date.now() });
-      }
+      // Actually delete the canvas from IndexedDB
+      await idbStore.deleteCanvas(spaceId);
 
       const newSpaces   = state.spaces.filter((s) => s.id !== spaceId);
       const nextSpaceId = newSpaces[0]?.id || null;

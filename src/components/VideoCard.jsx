@@ -86,21 +86,28 @@ export function VideoCard({
     return () => { if (url) URL.revokeObjectURL(url); };
   }, [blobId, item.content?.object_url]);
 
-  // ── Hover → play ─────────────────────────────────────
+  // ── Autoplay loop on mount ─────────────────────────────
+  // Visuals.mp4 shows every video card playing continuously, muted, as a
+  // living thumbnail — not gated behind hover. Hover now only reveals the
+  // scrub/controls overlay; playback itself runs independently.
+  useEffect(() => {
+    if (loadState !== 'ok' || !videoRef.current) return;
+    const vid = videoRef.current;
+    vid.muted = true;
+    const tryPlay = () => vid.play().catch(() => {});
+    if (vid.readyState >= 2) tryPlay();
+    else vid.addEventListener('loadeddata', tryPlay, { once: true });
+    setPlaying(true);
+    return () => vid.removeEventListener('loadeddata', tryPlay);
+  }, [loadState]);
+
+  // ── Hover → reveal controls only (playback is independent now) ───────
   const handleMouseEnter = useCallback(() => {
     setHovered(true);
-    if (videoRef.current && loadState === 'ok') {
-      videoRef.current.play().catch(() => {});
-      setPlaying(true);
-    }
-  }, [loadState]);
+  }, []);
 
   const handleMouseLeave = useCallback(() => {
     setHovered(false);
-    if (videoRef.current) {
-      videoRef.current.pause();
-      setPlaying(false);
-    }
   }, []);
 
   const togglePlay = useCallback((e) => {

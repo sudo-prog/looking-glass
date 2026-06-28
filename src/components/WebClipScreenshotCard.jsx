@@ -27,7 +27,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Globe, ArrowSquareOut, Camera, WarningCircle, ArrowClockwise } from '@phosphor-icons/react';
+import { Globe, ArrowSquareOut, Camera, WarningCircle, ArrowClockwise, X } from '@phosphor-icons/react';
 import { store as idbStore } from '../data/store.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -259,17 +259,43 @@ export function WebClipScreenshotCard({
           />
         )}
 
-        {/* Loading shimmer */}
+        {/* Pending — minimal blinking-cursor placeholder, matches Web_clip.mp4 */}
         {loadStatus === 'loading' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 100%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 1.4s ease infinite',
+              background: 'var(--color-bg-card)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
-          />
+          >
+            <span className="webclip-pending-cursor" aria-hidden="true" />
+            {onDelete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                title="Cancel"
+                aria-label="Cancel"
+                style={{
+                  position: 'absolute',
+                  bottom: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: 'var(--state-hover)',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={12} weight="bold" />
+              </button>
+            )}
+          </div>
         )}
 
         {/* Capturing progress */}
@@ -402,6 +428,17 @@ export function WebClipScreenshotCard({
           @keyframes shimmer {
             0%   { background-position: 200% 0; }
             100% { background-position: -200% 0; }
+          }
+          .webclip-pending-cursor {
+            display: inline-block;
+            width: 1px;
+            height: 22px;
+            background: var(--text-primary);
+            animation: webclip-blink 1s step-end infinite;
+          }
+          @keyframes webclip-blink {
+            0%, 50%  { opacity: 1; }
+            50.01%, 100% { opacity: 0; }
           }
         `}</style>
       </div>

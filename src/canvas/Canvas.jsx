@@ -1,180 +1,196 @@
 /**
- * LOOKING GLASS — Canvas Component
+ * LOOKING GLASS — Canvas Component (React)
+ * V0.6: Infinite canvas with Stack & Folder drop-on-card support,
+ * drag-to-select box (Visuals.mp4 / Stacks.mp4), and the floating
+ * SelectionToolbar (STACK_BIG_TO_SMALL.mp4).
  *
- * BUG FIXES applied:
- *   1. Canvas uses forwardRef to expose fitToContent() to App.
- *   2. Drag position reads CSS left/top from the DOM at drag-start, not item.x/y
- *      from React props — eliminates the mid-drag store-update divergence.
- *   3. Viewport sync: the wheel/pointer handler calls onViewportChange once on
- *      pointerUp, not on every frame — kills the setViewport→useEffect→setTransform
- *      feedback loop. The transform is applied directly via ref during interaction.
- *   4. Drop-target class cleanup moved to a helper called from BOTH pointermove
- *      end and pointerup (was only in pointerup — left stale classes on fast drops).
- *   5. Variable shadowing: `t` was used for both `transformRef.current` and a
- *      loop variable inside the drag handler. Renamed inner variable to `tgt`.
- *   6. FolderCard handleRename: replaced prompt() with an inline rename flow to
- *      avoid thread-blocking on mobile Safari.
- *   7. StackCard toggleFan: wrapped in stopPropagation at the card wrapper level
- *      so drag doesn't start when tapping the fan/collapse button.
- *   8. NoteCard saveTimeout: cleared on unmount to prevent calling onSave after
- *      the component is gone.
+ * Fixes applied (audit pass):
+ *  - position:fixed on DropModePicker via CSS (not a fragment layout issue)
+ *  - wheel event registered as { passive: false } via useEffect so preventDefault works
+ *  - unused draggedType variable removed
+ *  - panning lastPointer updated outside rAF to avoid stale reads on fast swipes
  */
-import React, {
-  useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle,
-} from 'react';
-import { createPortal }   from 'react-dom';
-import { CanvasCard }     from '../components/CanvasCard.jsx';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { CanvasCard } from '../components/CanvasCard.jsx';
 import { DropModePicker } from '../components/DropModePicker.jsx';
-import { ITEM_TYPES }     from '../data/schema.js';
+import { SelectionToolbar } from '../ui/SelectionToolbar.jsx';
+import { ITEM_TYPES } from '../data/schema.js';
 
-export const Canvas = forwardRef(function Canvas(
-  {
-    items,
-    viewport,
-    selectedIds,
-    onViewportChange,
-    onSelectItem,
-    onClearSelection,
-    onItemMove,
-    onItemSave,
-    onItemDelete,
-    onLightbox,
-    onCreateStack,
-    onAddToStack,
-    onCreateFolder,
-    onAddToFolder,
-    onContextMenu,
-  },
-  ref
-) {
-  const viewportRef  = useRef(null);
-  const worldRef     = useRef(null);
-  const transformRef = useRef(viewport);  // always-current, never stale in rAF closures
+const DRAG_SELECT_THRESHOLD = 4; // px before a click on empty canvas becomes a box-select
+
+export function Canvas({
+  items,
+  viewport,
+  selectedIds,
+  onViewportChange,
+  onSelectItem,
+  onSetSelection,
+  onClearSelection,
+  onItemMove,
+  onItemSave,
+  onItemDelete,
+  onLightbox,
+  onCreateStack,
+  onAddToStack,
+  onCreateFolder,
+  onAddToFolder,
+  onContextMenu,
+  onOpenFolder,
+  onColorSelected,
+  onCopyLinkSelected,
+  onDeleteSelected,
+  onArrangeSelected,
+}) {
+  const viewportRef = useRef(null);
+  const worldRef    = useRef(null);
+  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const isPanning    = useRef(false);
   const lastPointer  = useRef({ x: 0, y: 0 });
   const rafId        = useRef(null);
   const dragItem     = useRef(null);
-  const dragStart    = useRef({ clientX: 0, clientY: 0, domLeft: 0, domTop: 0 });
+  const dragStart    = useRef({ x: 0, y: 0, itemX: 0, itemY: 0 });
   const hasMoved     = useRef(false);
+  const transformRef = useRef(transform); // always-current transform for rAF closures
 
-  const [picker, setPicker] = useState(null);
+  // Drop-mode picker state
+  const [picker, setPicker] = useState(null); // { x, y, draggedId, targetId }
 
-  // ── Expose fitToContent via ref ──────────────────────────
-  useImperativeHandle(ref, () => ({
-    fitToContent() {
-      if (!worldRef.current || !viewportRef.current) return;
-      const cards = worldRef.current.querySelectorAll('.canvas-card');
-      if (!cards.length) return;
+  // Drag-to-select box state
+  const [selectBox, setSelectBox] = useState(null); // { startX, startY, x, y, w, h } in screen coords
+  const isBoxSelecting = useRef(false);
+  const boxAdditive = useRef(false);
 
-      let minX =  Infinity, minY =  Infinity;
-      let maxX = -Infinity, maxY = -Infinity;
-      cards.forEach((el) => {
-        const x = parseFloat(el.style.left) || 0;
-        const y = parseFloat(el.style.top)  || 0;
-        const w = el.offsetWidth  || 320;
-        const h = el.offsetHeight || 200;
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x + w);
-        maxY = Math.max(maxY, y + h);
-      });
+  // Keep transformRef in sync
+  useEffect(() => { transformRef.current = transform; }, [transform]);
 
-      const PADDING = 80;
-      const vw = viewportRef.current.offsetWidth;
-      const vh = viewportRef.current.offsetHeight;
-      const cw = maxX - minX + PADDING * 2;
-      const ch = maxY - minY + PADDING * 2;
-      const scale = Math.min(3, Math.max(0.1, Math.min(vw / cw, vh / ch)));
-      const x = -minX * scale + PADDING * scale + (vw - cw * scale) / 2;
-      const y = -minY * scale + PADDING * scale + (vh - ch * scale) / 2;
+  // Sync viewport from store (only when changed externally, not from local wheel/pan)
+  const lastExternalViewport = useRef(null);
+  const isInternalChange = useRef(false);
+  useEffect(() => {
+    // Skip if this viewport was just set by us (wheel/pan)
+    if (lastExternalViewport.current === viewport) return;
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+    setTransform(viewport);
+  }, [viewport]);
 
-      const t = { x, y, scale };
-      transformRef.current = t;
-      applyTransformDirect(t);
-      onViewportChange(t);
-    },
-  }));
-
-  // ── Apply transform directly to DOM (no re-render) ───────
-  const applyTransformDirect = useCallback((t) => {
+  const applyTransform = useCallback((t) => {
     if (worldRef.current) {
-      worldRef.current.style.transform = `translate(${t.x}px,${t.y}px) scale(${t.scale})`;
+      worldRef.current.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
     }
   }, []);
 
-  // ── Sync incoming viewport (e.g. space switch) ───────────
   useEffect(() => {
-    transformRef.current = viewport;
-    applyTransformDirect(viewport);
-  }, [viewport.x, viewport.y, viewport.scale, applyTransformDirect]);
+    applyTransform(transform);
+  }, [transform, applyTransform]);
 
-  // ── Escape: dismiss picker ────────────────────────────────
+  // Dismiss picker on Escape
   useEffect(() => {
-    const h = (e) => { if (e.key === 'Escape') setPicker(null); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
+    const handler = (e) => { if (e.key === 'Escape') setPicker(null); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // ── Non-passive wheel handler ─────────────────────────────
+  // Non-passive wheel for zoom (React onWheel is passive in React 17+)
   useEffect(() => {
     const el = viewportRef.current;
     if (!el) return;
     const handler = (e) => {
       e.preventDefault();
-      const delta    = e.deltaY > 0 ? 0.9 : 1.1;
-      const t        = transformRef.current;
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      const t = transformRef.current;
       const newScale = Math.min(3, Math.max(0.1, t.scale * delta));
-      const rect     = el.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
-      const next = {
-        x:     cx - (cx - t.x) * (newScale / t.scale),
-        y:     cy - (cy - t.y) * (newScale / t.scale),
+      const newTransform = {
+        x: cx - (cx - t.x) * (newScale / t.scale),
+        y: cy - (cy - t.y) * (newScale / t.scale),
         scale: newScale,
       };
-      transformRef.current = next;
-      applyTransformDirect(next);
-      // Debounce the store write to avoid calling setViewport 60×/sec
-      if (rafId.current) cancelAnimationFrame(rafId.current);
-      rafId.current = requestAnimationFrame(() => onViewportChange(transformRef.current));
+      setTransform(newTransform);
+      isInternalChange.current = true;
+      onViewportChange(newTransform);
+      lastExternalViewport.current = newTransform;
     };
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
-  }, [onViewportChange, applyTransformDirect]);
+  }, [onViewportChange]);
 
-  // ── Helpers ──────────────────────────────────────────────
-  const clearDropHighlights = () => {
-    document.querySelectorAll('.drop-target-stack, .drop-target-folder').forEach((el) => {
-      el.classList.remove('drop-target-stack', 'drop-target-folder');
-    });
-  };
+  // ── Panning + drag-to-select ─────────────────────────────────────────
 
-  // ── Panning ──────────────────────────────────────────────
   const handlePointerDown = useCallback((e) => {
     if (e.target.closest('.canvas-card')) return;
     if (e.target === viewportRef.current || e.target === worldRef.current) {
-      onClearSelection();
       setPicker(null);
+
+      // Start a potential drag-select box. We don't commit to panning vs.
+      // box-select until the pointer actually moves (see handlePointerMove),
+      // so a plain click on empty canvas still clears selection as before.
+      isBoxSelecting.current = true;
+      boxAdditive.current = e.shiftKey || e.ctrlKey || e.metaKey;
+      const rect = viewportRef.current.getBoundingClientRect();
+      setSelectBox({
+        startX: e.clientX - rect.left,
+        startY: e.clientY - rect.top,
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        w: 0,
+        h: 0,
+      });
+
+      isPanning.current = true;
+      lastPointer.current = { x: e.clientX, y: e.clientY };
+      viewportRef.current.setPointerCapture(e.pointerId);
+      viewportRef.current.style.cursor = 'grabbing';
     }
-    isPanning.current = true;
-    lastPointer.current = { x: e.clientX, y: e.clientY };
-    viewportRef.current.setPointerCapture(e.pointerId);
-    viewportRef.current.style.cursor = 'grabbing';
-  }, [onClearSelection]);
+  }, []);
 
   const handlePointerMove = useCallback((e) => {
-    if (isPanning.current) {
+    if (isBoxSelecting.current) {
+      const rect = viewportRef.current.getBoundingClientRect();
+      const curX = e.clientX - rect.left;
+      const curY = e.clientY - rect.top;
+
+      setSelectBox((prev) => {
+        if (!prev) return prev;
+        const dx = curX - prev.startX;
+        const dy = curY - prev.startY;
+        // Once the drag exceeds the threshold, treat this as box-select
+        // rather than a canvas pan.
+        if (Math.abs(dx) > DRAG_SELECT_THRESHOLD || Math.abs(dy) > DRAG_SELECT_THRESHOLD) {
+          isPanning.current = false;
+        }
+        return {
+          ...prev,
+          x: Math.min(prev.startX, curX),
+          y: Math.min(prev.startY, curY),
+          w: Math.abs(dx),
+          h: Math.abs(dy),
+        };
+      });
+    }
+
+    if (isPanning.current && !isBoxSelecting.current) {
+      // Update lastPointer BEFORE rAF so fast movements don't lag
       const dx = e.clientX - lastPointer.current.x;
       const dy = e.clientY - lastPointer.current.y;
       lastPointer.current = { x: e.clientX, y: e.clientY };
 
       if (rafId.current) cancelAnimationFrame(rafId.current);
       rafId.current = requestAnimationFrame(() => {
-        const t    = transformRef.current;
-        const next = { ...t, x: t.x + dx, y: t.y + dy };
-        transformRef.current = next;
-        applyTransformDirect(next);
+        setTransform((prev) => {
+          const updated = { ...prev, x: prev.x + dx, y: prev.y + dy };
+          return updated;
+        });
       });
+    } else if (isPanning.current && isBoxSelecting.current) {
+      // Still ambiguous (under threshold) — track pointer so a real pan
+      // after the threshold doesn't jump.
+      lastPointer.current = { x: e.clientX, y: e.clientY };
     }
 
     if (dragItem.current) {
@@ -184,69 +200,139 @@ export const Canvas = forwardRef(function Canvas(
 
       if (rafId.current) cancelAnimationFrame(rafId.current);
       rafId.current = requestAnimationFrame(() => {
-        const t  = transformRef.current;
-        const dx = (clientX - dragStart.current.clientX) / t.scale;
-        const dy = (clientY - dragStart.current.clientY) / t.scale;
-        dragItem.current.style.left = `${dragStart.current.domLeft + dx}px`;
-        dragItem.current.style.top  = `${dragStart.current.domTop  + dy}px`;
+        const t = transformRef.current;
+        const dx = (clientX - dragStart.current.x) / t.scale;
+        const dy = (clientY - dragStart.current.y) / t.scale;
+        dragItem.current.style.left = `${dragStart.current.itemX + dx}px`;
+        dragItem.current.style.top  = `${dragStart.current.itemY + dy}px`;
 
-        // Drop target highlight
+        // Highlight drop target under dragged card
         dragItem.current.style.pointerEvents = 'none';
         const el = document.elementFromPoint(clientX, clientY);
         dragItem.current.style.pointerEvents = '';
 
-        clearDropHighlights();
-        const tgt = el?.closest('.canvas-card');
-        if (tgt && tgt !== dragItem.current) {
-          const type = tgt.dataset.type;
-          if      (type === ITEM_TYPES.FOLDER) tgt.classList.add('drop-target-folder');
-          else if (type === ITEM_TYPES.STACK)  tgt.classList.add('drop-target-stack');
-          else                                 tgt.classList.add('drop-target-folder');
+        const target = el?.closest('.canvas-card');
+        document.querySelectorAll('.drop-target-stack, .drop-target-folder').forEach((el) => {
+          el.classList.remove('drop-target-stack', 'drop-target-folder');
+        });
+        if (target && target !== dragItem.current) {
+          const t = target.dataset.type;
+          if (t === ITEM_TYPES.FOLDER)      target.classList.add('drop-target-folder');
+          else if (t === ITEM_TYPES.STACK)  target.classList.add('drop-target-stack');
+          else                              target.classList.add('drop-target-folder');
         }
       });
     }
-  }, [applyTransformDirect]);
+  }, []);
+
+  const finishBoxSelect = useCallback(() => {
+    if (!selectBox || !worldRef.current) return;
+    const { x, y, w, h } = selectBox;
+
+    // Only commit a selection if the box actually has area — otherwise
+    // this was just a click, which the existing clear-selection logic below
+    // already handles.
+    if (w > DRAG_SELECT_THRESHOLD || h > DRAG_SELECT_THRESHOLD) {
+      const viewportRect = viewportRef.current.getBoundingClientRect();
+      const boxScreen = {
+        left: viewportRect.left + x,
+        top: viewportRect.top + y,
+        right: viewportRect.left + x + w,
+        bottom: viewportRect.top + y + h,
+      };
+
+      const hitIds = [];
+      worldRef.current.querySelectorAll('.canvas-card').forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const overlaps = !(r.right < boxScreen.left || r.left > boxScreen.right || r.bottom < boxScreen.top || r.top > boxScreen.bottom);
+        if (overlaps && el.dataset.id) hitIds.push(el.dataset.id);
+      });
+
+      if (hitIds.length > 0) {
+        if (boxAdditive.current) {
+          onSetSelection?.(new Set([...selectedIds, ...hitIds]));
+        } else {
+          onSetSelection?.(new Set(hitIds));
+        }
+      } else if (!boxAdditive.current) {
+        onClearSelection();
+      }
+    }
+
+    setSelectBox(null);
+    isBoxSelecting.current = false;
+  }, [selectBox, selectedIds, onSetSelection, onClearSelection]);
 
   const handlePointerUp = useCallback((e) => {
-    clearDropHighlights();
+    // Clear all drop highlights
+    document.querySelectorAll('.drop-target-stack, .drop-target-folder').forEach((el) => {
+      el.classList.remove('drop-target-stack', 'drop-target-folder');
+    });
+
+    const wasBoxSelecting = isBoxSelecting.current;
+    const boxHadArea = selectBox && (selectBox.w > DRAG_SELECT_THRESHOLD || selectBox.h > DRAG_SELECT_THRESHOLD);
+
+    if (wasBoxSelecting) {
+      finishBoxSelect();
+    }
 
     if (isPanning.current) {
       isPanning.current = false;
       if (viewportRef.current) viewportRef.current.style.cursor = 'grab';
-      // Commit final viewport to store once on release
+      // A plain click (no box drag, no pan-with-area) on empty canvas clears
+      // selection, matching the previous click-to-deselect behaviour.
+      if (wasBoxSelecting && !boxHadArea && !boxAdditive.current) {
+        onClearSelection();
+      }
+      isInternalChange.current = true;
+      lastExternalViewport.current = transformRef.current;
       onViewportChange(transformRef.current);
     }
 
     if (dragItem.current && hasMoved.current) {
       const draggedId = dragItem.current.dataset.id;
 
-      dragItem.current.style.zIndex     = dragItem.current.dataset.zIndex || 0;
-      dragItem.current.style.cursor     = 'grab';
+      // Reset visual state
+      dragItem.current.style.zIndex  = dragItem.current.dataset.zIndex || 0;
+      dragItem.current.style.cursor  = 'grab';
       dragItem.current.style.transition = '';
 
+      // Hit-test for drop target
       dragItem.current.style.pointerEvents = 'none';
       const el = document.elementFromPoint(e.clientX, e.clientY);
       dragItem.current.style.pointerEvents = '';
-      const tgt = el?.closest('.canvas-card');
+      const target = el?.closest('.canvas-card');
 
-      if (tgt && tgt !== dragItem.current) {
-        const targetId   = tgt.dataset.id;
-        const targetType = tgt.dataset.type;
+      if (target && target !== dragItem.current) {
+        const targetId   = target.dataset.id;
+        const targetType = target.dataset.type;
 
         if (targetType === ITEM_TYPES.FOLDER) {
           onAddToFolder?.(draggedId, targetId);
+          dragItem.current = null;
+          hasMoved.current = false;
+          return;
         } else if (targetType === ITEM_TYPES.STACK) {
           onAddToStack?.(draggedId, targetId);
+          dragItem.current = null;
+          hasMoved.current = false;
+          return;
         } else {
-          const rect = tgt.getBoundingClientRect();
-          setPicker({ x: rect.left + rect.width / 2, y: rect.top, draggedId, targetId });
+          // Regular card → show Stack / Folder picker
+          const rect = target.getBoundingClientRect();
+          setPicker({
+            x: rect.left + rect.width / 2,
+            y: rect.top,
+            draggedId,
+            targetId,
+          });
+          dragItem.current = null;
+          hasMoved.current = false;
+          return;
         }
-        dragItem.current = null;
-        hasMoved.current = false;
-        return;
       }
 
-      // Normal move — read final position from DOM
+      // Normal drop — save final position
       const finalX = parseFloat(dragItem.current.style.left);
       const finalY = parseFloat(dragItem.current.style.top);
       onItemMove(draggedId, finalX, finalY);
@@ -254,42 +340,37 @@ export const Canvas = forwardRef(function Canvas(
 
     dragItem.current = null;
     hasMoved.current = false;
-  }, [onViewportChange, onItemMove, onAddToStack, onAddToFolder]);
+  }, [selectBox, finishBoxSelect, onViewportChange, onItemMove, onAddToStack, onAddToFolder, onClearSelection]);
 
-  // ── Card drag start ──────────────────────────────────────
-  /**
-   * BUG FIX: read initial position from DOM element's current style.left/top,
-   * NOT from item.x/y prop — avoids divergence if store updates mid-drag.
-   */
+  // ── Card drag start ────────────────────────────────────────────────────
+
   const handleCardDragStart = useCallback((e, itemId) => {
     if (
       e.target.closest('.card-note-editor') ||
-      e.target.closest('a')                 ||
-      e.target.closest('button')            ||
-      e.target.closest('input')             ||
-      e.target.closest('.folder-tab')       ||
+      e.target.closest('a') ||
+      e.target.closest('button') ||
+      e.target.closest('input') ||
+      e.target.closest('.folder-tab') ||
       e.target.closest('.stack-hint')
     ) return;
 
     e.stopPropagation();
     const card = document.querySelector(`[data-id="${itemId}"]`);
-    if (!card) return;
-
-    dragItem.current  = card;
-    hasMoved.current  = false;
-    dragStart.current = {
-      clientX: e.clientX,
-      clientY: e.clientY,
-      // Read from the live DOM, not from React state
-      domLeft: parseFloat(card.style.left) || 0,
-      domTop:  parseFloat(card.style.top)  || 0,
-    };
-    card.style.zIndex     = 9999;
-    card.style.cursor     = 'grabbing';
-    card.style.transition = 'none';
+    if (card) {
+      dragItem.current  = card;
+      hasMoved.current  = false;
+      // Read current position from DOM (may differ from item prop after drag)
+      const currentX = parseFloat(card.style.left) || 0;
+      const currentY = parseFloat(card.style.top) || 0;
+      dragStart.current = { x: e.clientX, y: e.clientY, itemX: currentX, itemY: currentY };
+      card.style.zIndex     = 9999;
+      card.style.cursor     = 'grabbing';
+      card.style.transition = 'none';
+    }
   }, []);
 
-  // ── Picker ───────────────────────────────────────────────
+  // ── Picker handlers ───────────────────────────────────────────────────
+
   const handlePickerStack = useCallback(async () => {
     if (!picker) return;
     await onCreateStack?.([picker.draggedId, picker.targetId]);
@@ -298,35 +379,45 @@ export const Canvas = forwardRef(function Canvas(
 
   const handlePickerFolder = useCallback(async () => {
     if (!picker) return;
-    // BUG FIX: avoid prompt() on mobile. Pass empty name — canvas rename handles it.
-    await onCreateFolder?.([picker.draggedId, picker.targetId], 'Folder');
+    await onCreateFolder?.([picker.draggedId, picker.targetId], 'Folder name', '');
     setPicker(null);
   }, [picker, onCreateFolder]);
+
+  // ── Selection toolbar handlers ────────────────────────────────────────
+
+  const selectedArray = [...selectedIds];
+  const selectedColor = (() => {
+    if (selectedArray.length !== 1) return null;
+    const el = items.find((i) => i.id === selectedArray[0]);
+    return el?.meta?.color || null;
+  })();
 
   return (
     <div
       ref={viewportRef}
       className="canvas-viewport"
       style={{
-        flex:       1,
-        position:   'relative',
-        overflow:   'hidden',
-        cursor:     'grab',
+        flex: 1,
+        position: 'relative',
+        overflow: 'hidden',
+        cursor: 'grab',
         touchAction: 'none',
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      /* onWheel is intentionally omitted — handled via non-passive useEffect above */
     >
       <div
         ref={worldRef}
         id="canvas-world"
         style={{
-          position:        'absolute',
-          width:           '1px',
-          height:          '1px',
+          position: 'absolute',
+          inset: 0,
+          minWidth: '5000px',
+          minHeight: '5000px',
           transformOrigin: '0 0',
-          willChange:      'transform',
+          willChange: 'transform',
         }}
       >
         {items.map((item) => (
@@ -334,16 +425,36 @@ export const Canvas = forwardRef(function Canvas(
             key={item.id}
             item={item}
             isSelected={selectedIds.has(item.id)}
-            scale={transformRef.current.scale}
+            scale={transform.scale}
             onSelect={(multi) => onSelectItem(item.id, multi)}
             onDragStart={(e) => handleCardDragStart(e, item.id)}
             onSave={(updates) => onItemSave(item.id, updates)}
             onDelete={() => onItemDelete(item.id)}
             onLightbox={() => onLightbox(item)}
             onContextMenu={onContextMenu}
+            onOpenFolder={onOpenFolder}
           />
         ))}
       </div>
+
+      {/* Drag-to-select rectangle */}
+      {selectBox && (selectBox.w > 1 || selectBox.h > 1) && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: `${selectBox.x}px`,
+            top: `${selectBox.y}px`,
+            width: `${selectBox.w}px`,
+            height: `${selectBox.h}px`,
+            border: '1px solid rgba(255,255,255,0.45)',
+            background: 'rgba(255,255,255,0.06)',
+            borderRadius: '2px',
+            pointerEvents: 'none',
+            zIndex: 'var(--z-canvas-ui)',
+          }}
+        />
+      )}
 
       {picker && createPortal(
         <DropModePicker
@@ -355,6 +466,21 @@ export const Canvas = forwardRef(function Canvas(
         />,
         document.body
       )}
+
+      <SelectionToolbar
+        count={selectedIds.size}
+        canStack={selectedIds.size > 1}
+        canFolder={selectedIds.size > 1}
+        canArrange={selectedIds.size > 1}
+        activeColor={selectedColor}
+        onColor={(hex) => onColorSelected?.(hex)}
+        onStack={() => onCreateStack?.(selectedArray)}
+        onFolder={() => onCreateFolder?.(selectedArray, 'Folder name', '')}
+        onArrange={() => onArrangeSelected?.(selectedArray)}
+        onCopyLink={() => onCopyLinkSelected?.()}
+        onDelete={() => onDeleteSelected?.()}
+        onClear={() => onClearSelection()}
+      />
     </div>
   );
-});
+}

@@ -1,17 +1,29 @@
 /**
  * LOOKING GLASS — Canvas Card Component (React)
  * Renders different card types. Notes use Tiptap rich text editor.
+ *
+ * V2 additions (recreated from reference captures):
+ *   - StackCard: diagonal big-to-small corner-peek cascade (STACK_BIG_TO_SMALL.mp4),
+ *     fan reveals a clean grid instead of a horizontal row (Stacks.mp4).
+ *   - FolderCard: literal folder-shaped icon with editable Name + Description
+ *     printed on the face (FOLDER_GROUPING_.mp4); opens FolderViewModal via onOpenFolder.
+ *   - NoteCard: BlockTypeMenu ("turn into" handle) + Task list support (Paragraphs.mp4, Notes.mp4).
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
+import Placeholder from '@tiptap/extension-placeholder';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import { FolderOpen } from '@phosphor-icons/react';
 import { ITEM_TYPES } from '../data/schema.js';
 import { VideoCard } from './VideoCard.jsx';
 import { AudioMemoCard } from './AudioMemoCard.jsx';
 import { PDFViewerCard } from './PDFViewerCard.jsx';
 import { WebClipScreenshotCard } from './WebClipScreenshotCard.jsx';
+import { BlockTypeMenu } from '../ui/BlockTypeMenu.jsx';
 
 // ── Utils ──────────────────────────────────────────────────
 
@@ -87,7 +99,7 @@ function ImageCard({ item, isSelected, onSelect, onDragStart, onLightbox }) {
   );
 }
 
-// ── Note Card (Rich Text with Tiptap) ──────────────────────
+// ── Note Card (Rich Text with Tiptap + Block Type Menu) ────
 
 function NoteCard({ item, isSelected, onSelect, onDragStart, onSave }) {
   const [editing, setEditing] = useState(false);
@@ -100,6 +112,9 @@ function NoteCard({ item, isSelected, onSelect, onDragStart, onSave }) {
       }),
       Underline,
       Link.configure({ openOnClick: false }),
+      Placeholder.configure({ placeholder: 'Type your note…' }),
+      TaskList,
+      TaskItem.configure({ nested: true }),
     ],
     content: item.content.text || '',
     editable: editing,
@@ -159,13 +174,15 @@ function NoteCard({ item, isSelected, onSelect, onDragStart, onSave }) {
     };
   }, [editing, editor, onSave]);
 
-  // BUG FIX: destroy editor and clear timeout on unmount
+  // Clear save timeout on unmount
   useEffect(() => {
     return () => {
-      if (saveTimeout.current) clearTimeout(saveTimeout.current);
-      editor?.destroy();
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current);
+        saveTimeout.current = null;
+      }
     };
-  }, [editor]);
+  }, []);
 
   const firstLine = (() => {
     if (!item.content.text) return 'Note';
@@ -189,7 +206,11 @@ function NoteCard({ item, isSelected, onSelect, onDragStart, onSave }) {
         <span className="card-note-icon">📝</span>
         <span className="card-title">{escapeHtml(firstLine)}</span>
       </div>
-      <div className={`card-note-editor ${editing ? 'focused' : ''}`}>
+      <div
+        className={`card-note-editor ${editing ? 'focused' : ''}`}
+        style={{ position: 'relative', paddingLeft: editing ? '14px' : undefined }}
+      >
+        {editing && <BlockTypeMenu editor={editor} />}
         <EditorContent editor={editor} />
       </div>
     </div>
@@ -226,8 +247,7 @@ function WebClipCard({ item, isSelected, onSelect, onDragStart }) {
 
 // ── Group Card ─────────────────────────────────────────────
 
-function GroupCard({ item, isSelected, onSelect, onDragStart }) {
-  const children = item.meta?.child_items || [];
+function GroupCard({ item, isSelected, onSelect, onDragStart, children }) {
   return (
     <div
       className={`canvas-card card-group ${isSelected ? 'selected' : ''}`}
@@ -241,16 +261,22 @@ function GroupCard({ item, isSelected, onSelect, onDragStart }) {
         <span className="card-handle">⠿</span>
         <span className="card-title">{escapeHtml(item.content.title || 'Group')}</span>
       </div>
-      {children.length > 0 && (
-        <div className="group-children" style={{ fontSize: 11, padding: '4px 8px', opacity: 0.6 }}>
-          {children.length} item{children.length !== 1 ? 's' : ''}
-        </div>
-      )}
+      <div className="group-children">
+        {children}
+      </div>
     </div>
   );
 }
 
-// ── Stack Card ─────────────────────────────────────────────
+// ── Stack Card (diagonal big-to-small cascade) ──────────────
+//
+// Closed state: layers offset diagonally up-and-right, each one revealing
+// a sliver of the layer beneath it (corner-peek), largest card on the
+// bottom. Open state ("fanned"): settles into a clean small grid so every
+// card is fully readable, matching Stacks.mp4 / STACK_BIG_TO_SMALL.mp4.
+
+const STACK_PEEK_OFFSET = 14; // px shift per layer, up + right
+const STACK_GRID_GAP = 14;
 
 function StackCard({ item, isSelected, onSelect, onDragStart }) {
   const [fanned, setFanned] = React.useState(item.meta?.fanned || false);
@@ -261,6 +287,16 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
   const topItem = sorted[count - 1] || {};
   const baseW = Math.min(topItem.width || 280, 280);
   const baseH = 180;
+
+  // Closed-stack footprint must accommodate the cascading offset.
+  const closedW = baseW + STACK_PEEK_OFFSET * (count - 1) + 24;
+  const closedH = baseH + STACK_PEEK_OFFSET * (count - 1) + 24;
+
+  // Fanned grid footprint: 2 columns.
+  const fanCols = Math.min(2, count);
+  const fanRows = Math.ceil(count / fanCols);
+  const fanW = fanCols * baseW + (fanCols - 1) * STACK_GRID_GAP;
+  const fanH = fanRows * baseH + (fanRows - 1) * STACK_GRID_GAP;
 
   const toggleFan = (e) => {
     e.stopPropagation();
@@ -275,41 +311,45 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
       style={{
         left: item.x,
         top: item.y,
-        width: baseW + 24,
-        height: baseH + 32,
+        width: fanned ? fanW : closedW,
+        height: fanned ? fanH : closedH,
         position: 'absolute',
         overflow: 'visible',
+        transition: 'width 0.32s cubic-bezier(0.34,1.1,0.64,1), height 0.32s cubic-bezier(0.34,1.1,0.64,1)',
       }}
       onPointerDown={onDragStart}
       onClick={(e) => { onSelect(e.ctrlKey || e.metaKey); }}
     >
       {sorted.map((child, i) => {
         const isTop = i === count - 1;
-        const depthFactor = (count - 1 - i) / Math.max(count - 1, 1);
 
         let layerStyle;
         if (fanned) {
-          const offset = (i - (count - 1)) * 192;
-          const rot = (i - (count - 1)) * 5;
+          const col = i % fanCols;
+          const row = Math.floor(i / fanCols);
+          // Tiny per-card rotation jitter for the "scattered notes" feel
+          // seen when Stacks.mp4 settles into its grid.
+          const jitter = (i % 2 === 0 ? 1 : -1) * (1 + (i % 3));
           layerStyle = {
-            transform: `translateX(${offset}px) rotate(${rot}deg)`,
-            transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            transform: `translate(${col * (baseW + STACK_GRID_GAP)}px, ${row * (baseH + STACK_GRID_GAP)}px) rotate(${jitter}deg)`,
+            transition: 'transform 0.32s cubic-bezier(0.34,1.1,0.64,1)',
             zIndex: i + 1,
             pointerEvents: 'auto',
           };
         } else {
-          const scale = 1 + depthFactor * 0.08;
-          const rot = (i % 2 === 0 ? 1 : -1) * depthFactor * 4;
-          const ox = (i % 2 === 0 ? -1 : 1) * depthFactor * 6;
-          const oy = depthFactor * 4;
-          layerStyle = isTop
-            ? { transform: 'none', zIndex: count, pointerEvents: 'auto', transition: 'transform 0.3s ease' }
-            : {
-                transform: `translate(${ox}px, ${oy}px) rotate(${rot}deg) scale(${scale})`,
-                zIndex: i,
-                pointerEvents: 'none',
-                transition: 'transform 0.3s ease',
-              };
+          // Diagonal corner-peek cascade: the widest card (i=0) anchors at
+          // the bottom-left of the closed-stack footprint; each layer above
+          // it (higher i = narrower card) shifts further up + right, so the
+          // smallest card ends up fully visible at the top-right, peeking
+          // a sliver of every card beneath it — matching STACK_BIG_TO_SMALL.mp4.
+          const ox = i * STACK_PEEK_OFFSET;
+          const oy = (closedH - baseH) - i * STACK_PEEK_OFFSET;
+          layerStyle = {
+            transform: `translate(${ox}px, ${oy}px)`,
+            transition: 'transform 0.32s cubic-bezier(0.34,1.1,0.64,1)',
+            zIndex: i,
+            pointerEvents: isTop ? 'auto' : 'none',
+          };
         }
 
         return (
@@ -322,14 +362,14 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
               left: 0,
               width: baseW,
               height: baseH,
-              ...(child.content?.image_url && isTop
+              ...(child.content?.image_url
                 ? { backgroundImage: `url(${child.content.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
                 : {}),
               ...layerStyle,
             }}
             onClick={fanned ? toggleFan : undefined}
           >
-            {!isTop && (
+            {(!isTop || fanned) && (
               <div
                 className="stack-ghost-thumb"
                 style={child.content?.image_url
@@ -337,52 +377,74 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
                   : {}}
               >
                 {!child.content?.image_url && (
-                  <span style={{ padding: '8px', fontSize: '10px', color: 'rgba(255,255,255,0.35)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ padding: '8px', fontSize: '10px', color: fanned ? 'var(--text-primary)' : 'rgba(255,255,255,0.35)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {(child.content?.title || '').substring(0, 30)}
                   </span>
                 )}
               </div>
             )}
-            {isTop && (
+            {isTop && !fanned && (
               <>
                 <div className="stack-count-badge">{count}</div>
                 <div className="stack-top-title">{topItem.content?.title || 'Stack'}</div>
                 <div className="stack-hint" onClick={toggleFan} onPointerDown={(e) => e.stopPropagation()}>
-                  {fanned ? 'Click to stack' : 'Click to fan'}
+                  Click to fan
                 </div>
               </>
             )}
           </div>
         );
       })}
+
+      {fanned && (
+        <button
+          className="stack-collapse-hint"
+          onClick={toggleFan}
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{
+            position: 'absolute',
+            top: `${fanH + 8}px`,
+            left: 0,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--text-disabled)',
+            fontFamily: 'var(--font-ui)',
+            fontSize: '9px',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          Click any card to re-stack
+        </button>
+      )}
     </div>
   );
 }
 
-// ── Folder Card ────────────────────────────────────────────
+// ── Folder Card (literal folder-shaped icon) ────────────────
+//
+// Recreated from FOLDER_GROUPING_.mp4: a manila-folder silhouette (a
+// rounded rect with a small notch cut from the top-right edge) with the
+// editable Name + Description printed directly on its face. Clicking the
+// face opens FolderViewModal (passed in as onOpen); dragging behaves like
+// any other card.
 
-function FolderCard({ item, isSelected, onSelect, onDragStart, onSave }) {
-  const [open, setOpen] = React.useState(item.meta?.folder_open || false);
+function FolderCard({ item, isSelected, onSelect, onDragStart, onSave, onOpen }) {
   const [renaming, setRenaming] = React.useState(false);
-  const [renameValue, setRenameValue] = React.useState(item.content?.title || 'Folder');
+  const [renameValue, setRenameValue] = React.useState(item.content?.title || 'Folder name');
   const childItems = item.meta?.child_items || [];
   const count = childItems.length;
 
-  const toggleOpen = (e) => {
-    e.stopPropagation();
-    const newOpen = !open;
-    setOpen(newOpen);
-    onSave?.({ meta: { ...item.meta, folder_open: newOpen } });
-  };
-
   const handleRenameStart = (e) => {
     e.stopPropagation();
-    setRenameValue(item.content?.title || 'Folder');
+    setRenameValue(item.content?.title || 'Folder name');
     setRenaming(true);
   };
 
   const handleRenameSubmit = () => {
-    const name = renameValue.trim() || 'Folder';
+    const name = renameValue.trim() || 'Folder name';
     onSave?.({ content: { ...item.content, title: name } });
     setRenaming(false);
   };
@@ -396,101 +458,160 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave }) {
     }
   };
 
-  const typeIcon = (type) => ({
-    bookmark: '🔖', web_clip: '🔗', note: '📝', image: '🖼',
-    group: '⊞', stack: '🗂', folder: '📁',
-  }[type] || '•');
+  const handleOpen = (e) => {
+    e.stopPropagation();
+    onOpen?.(item.id);
+  };
 
-  // Thumbnail stack (up to 4)
-  const thumbs = childItems.slice(0, 4);
+  // Visual "thickness" cue: a couple of stacked sheets peeking out behind
+  // the folder body when it actually contains items (seen in the reference
+  // capture — empty folders render perfectly flat).
+  const thickness = Math.min(count, 3);
 
   return (
     <div
-      className={`canvas-card card-folder ${isSelected ? 'selected' : ''} ${open ? 'folder-open' : ''}`}
+      className={`canvas-card card-folder-v2 ${isSelected ? 'selected' : ''}`}
       data-id={item.id}
       data-type={item.type}
-      style={{ left: item.x, top: item.y, width: item.width || 220, position: 'absolute' }}
+      style={{
+        left: item.x,
+        top: item.y,
+        width: item.width || 190,
+        height: 240,
+        position: 'absolute',
+      }}
       onPointerDown={onDragStart}
-      onClick={(e) => onSelect(e.ctrlKey || e.metaKey)}
+      onClick={(e) => { onSelect(e.ctrlKey || e.metaKey); }}
+      onDoubleClick={handleOpen}
     >
-      <div className="folder-shell">
-        {/* Tab row */}
-        <div className="folder-tab" onClick={toggleOpen}>
-          <span className="folder-icon">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M1 3.5C1 2.67 1.67 2 2.5 2H5.5L7 3.5H11.5C12.33 3.5 13 4.17 13 5V10.5C13 11.33 12.33 12 11.5 12H2.5C1.67 12 1 11.33 1 10.5V3.5Z" fill="currentColor" opacity="0.7"/>
-            </svg>
-          </span>
-          <span className="folder-name" onDoubleClick={handleRenameStart}>
-            {renaming ? (
-              <input
-                className="folder-rename-input"
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onBlur={handleRenameSubmit}
-                onKeyDown={handleRenameKeyDown}
-                autoFocus
-                onClick={(e) => e.stopPropagation()}
-                style={{ fontSize: 'inherit', background: 'transparent', border: '1px solid rgba(128,128,128,0.5)', borderRadius: 3, padding: '0 2px', color: 'inherit', width: '80%', boxSizing: 'border-box' }}
-              />
-            ) : (
-              item.content?.title || 'Folder'
-            )}
-          </span>
-          <span className="folder-count">{count}</span>
-          <span className="folder-chevron">{open ? '▾' : '▸'}</span>
+      {/* Sheets peeking out behind the folder, indicating contents */}
+      {Array.from({ length: thickness }).map((_, i) => (
+        <div
+          key={i}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '14px',
+            background: 'var(--color-bg-raised)',
+            border: '1px solid var(--color-border)',
+            transform: `translate(${(i + 1) * 4}px, -${(i + 1) * 4}px)`,
+            zIndex: -(i + 1),
+          }}
+        />
+      ))}
+
+      {/* Folder body — rounded rect with a notch cut from the top-right,
+          mimicking a manila folder silhouette purely with CSS clip-path. */}
+      <div
+        onClick={handleOpen}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          borderRadius: '14px',
+          background: 'var(--color-bg-card)',
+          border: isSelected ? '1px solid var(--color-border-focus)' : '1px solid var(--color-border)',
+          boxShadow: isSelected
+            ? '0 0 0 2px rgba(215,25,33,0.20), 0 8px 28px rgba(0,0,0,0.45)'
+            : '0 6px 24px rgba(0,0,0,0.40)',
+          clipPath: 'polygon(0 0, 72% 0, 80% 8%, 100% 8%, 100% 100%, 0 100%)',
+          padding: '20px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          cursor: 'pointer',
+          transition: 'box-shadow 0.15s ease',
+        }}
+      >
+        <FolderOpen size={18} weight="regular" style={{ color: 'var(--text-disabled)', flexShrink: 0, marginBottom: '14px' }} />
+
+        {renaming ? (
+          <input
+            className="folder-rename-input"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onBlur={handleRenameSubmit}
+            onKeyDown={handleRenameKeyDown}
+            autoFocus
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '14px',
+              fontWeight: 600,
+              background: 'transparent',
+              border: 'none',
+              borderBottom: '1px solid var(--color-border-active)',
+              outline: 'none',
+              color: 'var(--text-primary)',
+              padding: '0 0 2px',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          />
+        ) : (
+          <div
+            onDoubleClick={handleRenameStart}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: 'var(--text-disabled)',
+              marginBottom: '6px',
+            }}
+          >
+            {item.content?.title || 'Folder name'}
+          </div>
+        )}
+
+        <div
+          style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: '12px',
+            lineHeight: 1.5,
+            color: 'var(--text-secondary)',
+            flex: 1,
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 4,
+            WebkitBoxOrient: 'vertical',
+          }}
+        >
+          {item.content?.description || 'An archive of old notes to get out of view'}
         </div>
 
-        {/* Collapsed: thumbnail stack */}
-        {!open && (
-          <div className="folder-preview">
-            {count === 0 ? (
-              <div className="folder-empty">Drop cards here</div>
-            ) : (
-              thumbs.map((child, i) => {
-                const offset = i * 4;
-                const rot = (i % 2 === 0 ? 1 : -1) * (i * 1.5);
-                return (
-                  <div
-                    key={i}
-                    className="folder-thumb"
-                    style={{
-                      transform: `translate(${-offset}px, ${-offset * 0.5}px) rotate(${rot}deg)`,
-                      zIndex: thumbs.length - i,
-                      ...(child.content?.image_url
-                        ? { backgroundImage: `url(${child.content.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-                        : {}),
-                    }}
-                  >
-                    {!child.content?.image_url && (
-                      <span className="folder-thumb-label">
-                        {(child.content?.title || '').substring(0, 20)}
-                      </span>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
-
-        {/* Expanded: contents list */}
-        {open && (
-          <div className="folder-contents">
-            {count === 0 ? (
-              <p className="folder-empty-msg">Empty folder</p>
-            ) : (
-              <div className="folder-items-list">
-                {childItems.map((child) => (
-                  <div key={child.id} className="folder-item-row">
-                    <span className="folder-item-icon">{typeIcon(child.type)}</span>
-                    <span className="folder-item-title">{child.content?.title || 'Untitled'}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: '12px',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-ui)',
+              fontSize: '9px',
+              letterSpacing: '0.08em',
+              color: 'var(--text-disabled)',
+              textTransform: 'uppercase',
+            }}
+          >
+            Created {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--font-ui)',
+              fontSize: '10px',
+              color: 'var(--text-disabled)',
+              background: 'var(--state-hover)',
+              borderRadius: '8px',
+              padding: '2px 7px',
+              flexShrink: 0,
+            }}
+          >
+            {count}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -498,7 +619,7 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave }) {
 
 // ── Main CanvasCard ────────────────────────────────────────
 
-export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onSave, onDelete, onLightbox, onContextMenu }) {
+export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onSave, onDelete, onLightbox, onContextMenu, onOpenFolder }) {
   const handleContextMenu = useCallback((e) => {
     if (!onContextMenu) return;
     e.preventDefault();
@@ -521,7 +642,7 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
     case ITEM_TYPES.STACK:
       card = <StackCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} />; break;
     case ITEM_TYPES.FOLDER:
-      card = <FolderCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} />; break;
+      card = <FolderCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onOpen={onOpenFolder} />; break;
     case ITEM_TYPES.WEB_CLIP_SCREENSHOT:
       card = <WebClipScreenshotCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} onLightbox={onLightbox} />; break;
     case ITEM_TYPES.AUDIO:
