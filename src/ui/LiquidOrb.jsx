@@ -358,11 +358,20 @@ export default function LiquidOrb() {
 
   // ── Mutation log helper ──────────────────────────────────────────
   const logMut = useCallback((type, text) => {
+    // Suppress "No element" noise from AI trying to patch non-existent selectors
+    if (text.startsWith('No element:')) return;
+
     const icons = { add: '✦', rm: '✕', fix: '⬡', sty: '◈', info: '◎' };
+    const id = Date.now() + Math.random();
     setLogs(prev => {
-      const next = [{ id: Date.now(), type, text, icon: icons[type] || '◎' }, ...prev];
+      const next = [{ id, type, text, icon: icons[type] || '◎' }, ...prev];
       return next.slice(0, 4);
     });
+
+    // Auto-dismiss after 4 seconds
+    setTimeout(() => {
+      setLogs(prev => prev.filter(l => l.id !== id));
+    }, 4000);
   }, []);
 
   // ── Orb tap handler ──────────────────────────────────────────────
