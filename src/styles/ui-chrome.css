@@ -194,6 +194,28 @@
   background: rgba(0, 0, 0, 0.30);
 }
 
+@media (max-width: 767px) {
+  .command-palette-overlay {
+    padding-top: 0;
+    align-items: flex-start;
+  }
+  .command-palette {
+    width: 100%;
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  }
+}
+
+@media (max-width: 320px) {
+  .command-palette-overlay {
+    padding-top: 0;
+  }
+  .command-palette {
+    max-height: 90vh;
+  }
+}
+
 .command-palette {
   width: min(640px, 90vw);
   max-height: 60vh;

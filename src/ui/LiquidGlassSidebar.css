@@ -44,6 +44,7 @@
               box-shadow 200ms var(--ease-out),
               background 200ms var(--ease-out);
   flex-shrink: 0;
+  touch-action: manipulation;
 }
 
 .lg-sidebar-fab:hover {
@@ -482,6 +483,10 @@
     padding-bottom: env(safe-area-inset-bottom);
     z-index: var(--z-toolbar);
     animation: none;
+    transform: translateY(100%);
+  }
+  .lg-sidebar--expanded {
+    transform: translateY(0);
   }
   .lg-sidebar__spacer { display: none; }
   .lg-sidebar__footer { display: none; }

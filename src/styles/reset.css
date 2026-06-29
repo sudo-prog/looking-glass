@@ -78,6 +78,14 @@ button {
   font: inherit;
   cursor: pointer;
   padding: 0;
+  touch-action: manipulation;
+}
+
+/* Prevent double-tap zoom on touch devices */
+@media (pointer: coarse) {
+  button, a, [role="button"] {
+    touch-action: manipulation;
+  }
 }
 
 /* Inputs — reset */

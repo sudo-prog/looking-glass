@@ -23,15 +23,51 @@
 /* Modal container — glass surface */
 .lg-ai-modal {
   width: min(480px, 100%);
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border-active);
-  overflow: hidden;
+  overflow: auto;
   animation: lg-modal-in var(--duration-standard) var(--ease-out);
   /* Tier 2 glass */
   background: var(--glass-frost);
   box-shadow:
     inset 0 1px 0 var(--glass-specular),
     0 24px 64px var(--glass-cast-shadow);
+}
+
+@media (max-width: 767px) {
+  .lg-ai-overlay {
+    padding: 8px;
+    align-items: flex-start;
+  }
+  .lg-ai-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100vh - 16px);
+    border-radius: var(--radius-lg);
+  }
+}
+
+@media (max-width: 320px) {
+  .lg-ai-overlay {
+    padding: 4px;
+  }
+  .lg-ai-modal {
+    border-radius: var(--radius-md);
+  }
+  .lg-ai-modal__body {
+    padding: var(--space-4);
+  }
+  .lg-ai-modal__footer {
+    padding: var(--space-3) var(--space-4);
+    flex-direction: column;
+  }
+  .lg-ai-modal__btn-primary,
+  .lg-ai-modal__btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @supports (backdrop-filter: blur(1px)) {

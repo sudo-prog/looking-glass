@@ -176,14 +176,15 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '40px',
+        padding: '8px',
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
           width: 'min(820px, 100%)',
-          maxHeight: '84vh',
+          height: 'min(84vh, 100%)',
+          maxHeight: 'calc(100vh - 16px)',
           display: 'flex',
           flexDirection: 'column',
           borderRadius: '20px',
@@ -209,8 +210,8 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
-            gap: '16px',
-            padding: '20px 24px',
+            gap: '12px',
+            padding: '14px 16px',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
             flexShrink: 0,
           }}
@@ -326,7 +327,7 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
         </div>
 
         {/* Grid */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
           {children.length === 0 ? (
             <div
               style={{
@@ -345,7 +346,7 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(150px, 100%), 1fr))',
                 gap: '12px',
               }}
             >
@@ -362,9 +363,10 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '14px 24px',
+            padding: '12px 16px',
             borderTop: '1px solid rgba(255,255,255,0.08)',
             flexShrink: 0,
+            gap: '8px',
           }}
         >
           <span

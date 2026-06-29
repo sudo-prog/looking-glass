@@ -88,6 +88,10 @@ export function Lightbox({ item, onClose, onColor }) {
   const description = item.content?.description || '';
   const url = item.content?.url;
 
+  // Detect mobile for layout adjustments
+  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isVerySmall = typeof window !== 'undefined' && window.innerWidth < 375;
+
   return createPortal(
     <div
       className="lightbox-v3"
@@ -103,6 +107,7 @@ export function Lightbox({ item, onClose, onColor }) {
         backdropFilter: 'blur(6px)',
         display: 'flex',
         flexDirection: 'column',
+        overflowY: 'auto',
       }}
     >
       {/* Top bar */}
@@ -142,19 +147,22 @@ export function Lightbox({ item, onClose, onColor }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 'clamp(16px, 4vw, 56px)',
-          padding: '0 24px',
+          gap: isMobileViewport ? '12px' : 'clamp(16px, 4vw, 56px)',
+          padding: isMobileViewport ? '0 12px' : '0 24px',
           overflow: 'hidden',
+          minHeight: 0,
+          flexDirection: isMobileViewport ? 'column' : 'row',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Color swatch rail */}
+        {/* Color swatch rail - horizontal on mobile */}
         <div
           style={{
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: isMobileViewport ? 'row' : 'column',
             gap: '14px',
             flexShrink: 0,
+            order: isMobileViewport ? 2 : 0,
           }}
         >
           {COLOR_SWATCHES.map((hex) => (
@@ -163,8 +171,8 @@ export function Lightbox({ item, onClose, onColor }) {
               onClick={() => handlePickColor(hex)}
               aria-label={`Tag color ${hex}`}
               style={{
-                width: '22px',
-                height: '22px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '50%',
                 border: activeColor === hex
                   ? '2px solid rgba(255,255,255,0.85)'
@@ -174,6 +182,7 @@ export function Lightbox({ item, onClose, onColor }) {
                 padding: 0,
                 boxShadow: hex === '#FFFFFF' ? 'inset 0 0 0 1px rgba(0,0,0,0.10)' : 'none',
                 transition: 'transform 0.12s ease',
+                touchAction: 'manipulation',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.15)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
@@ -232,7 +241,8 @@ export function Lightbox({ item, onClose, onColor }) {
             flexDirection: 'column',
             gap: '16px',
             flexShrink: 0,
-            minWidth: '120px',
+            minWidth: '0',
+            maxWidth: '160px',
           }}
         >
           {[
@@ -335,13 +345,14 @@ const lightboxBtnStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  width: '36px',
-  height: '36px',
+  width: '44px',
+  height: '44px',
   borderRadius: '10px',
   border: 'none',
   background: 'transparent',
   color: 'var(--text-primary)',
   cursor: 'pointer',
+  touchAction: 'manipulation',
 };
 
 export default Lightbox;

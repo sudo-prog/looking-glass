@@ -198,3 +198,36 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* ── 320px EXTRA-SMALL BREAKPOINT ──────────────── */
+@media (max-width: 320px) {
+  :root {
+    --card-width: calc(100vw - 16px);
+    --canvas-default-zoom: 0.6;
+  }
+
+  .toolbar-btn,
+  .lg-sidebar__nav-item {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .canvas-card {
+    max-width: calc(100vw - 12px) !important;
+    width: calc(100vw - 12px) !important;
+  }
+
+  .lightbox-v3 {
+    overflow-y: auto;
+  }
+
+  /* Ensure modals don't overflow */
+  [role="dialog"] {
+    max-width: calc(100vw - 8px);
+  }
+
+  /* Sidebar FAB position above toolbar */
+  .lg-sidebar-fab {
+    bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+  }
+}

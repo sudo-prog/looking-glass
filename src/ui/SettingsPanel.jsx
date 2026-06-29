@@ -248,7 +248,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-dropdown)', background: 'rgba(0,0,0,0.40)' }} />
       <div role="dialog" aria-label="Settings" style={{
         position: 'fixed', top: 0, left: 0, bottom: 0,
-        width: 'min(440px, 92vw)', zIndex: 'var(--z-dropdown)',
+        width: 'min(440px, 100vw)', zIndex: 'var(--z-dropdown)',
         background: 'var(--glass-frost)', backdropFilter: 'blur(32px) saturate(120%)',
         WebkitBackdropFilter: 'blur(32px) saturate(120%)',
         borderRight: '1px solid var(--color-border)',
@@ -275,15 +275,15 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '4px', padding: '10px 16px', borderBottom: '1px solid var(--color-border)', overflowX: 'auto', flexShrink: 0 }}>
-          <button style={tabBtn('theme', 'Theme', Palette)} onClick={() => setActiveTab('theme')}><Palette size={12} /><span>Theme</span></button>
-          <button style={tabBtn('icons', 'Icons', Eye)} onClick={() => setActiveTab('icons')}><Eye size={12} /><span>Icons</span></button>
-          <button style={tabBtn('ai', 'AI', Sparkle)} onClick={() => setActiveTab('ai')}><Sparkle size={12} /><span>AI</span></button>
-          <button style={tabBtn('data', 'Data', Download)} onClick={() => setActiveTab('data')}><Download size={12} /><span>Data</span></button>
+        <div style={{ display: 'flex', gap: '2px', padding: '8px 10px', borderBottom: '1px solid var(--color-border)', overflowX: 'auto', flexShrink: 0, flexWrap: 'nowrap' }}>
+          <button style={{ ...tabBtn('theme', 'Theme', Palette), padding: '6px 8px', fontSize: '10px', whiteSpace: 'nowrap' }} onClick={() => setActiveTab('theme')}><Palette size={10} /><span>Theme</span></button>
+          <button style={{ ...tabBtn('icons', 'Icons', Eye), padding: '6px 8px', fontSize: '10px', whiteSpace: 'nowrap' }} onClick={() => setActiveTab('icons')}><Eye size={10} /><span>Icons</span></button>
+          <button style={{ ...tabBtn('ai', 'AI', Sparkle), padding: '6px 8px', fontSize: '10px', whiteSpace: 'nowrap' }} onClick={() => setActiveTab('ai')}><Sparkle size={10} /><span>AI</span></button>
+          <button style={{ ...tabBtn('data', 'Data', Download), padding: '6px 8px', fontSize: '10px', whiteSpace: 'nowrap' }} onClick={() => setActiveTab('data')}><Download size={10} /><span>Data</span></button>
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px', overflowX: 'hidden' }}>
           {activeTab === 'theme' && (
             <>
               {/* ── MODE ── */}

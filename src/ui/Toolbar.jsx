@@ -88,6 +88,7 @@ export function Toolbar({
           cursor: pointer;
           transition: background 0.12s ease;
           flex-shrink: 0;
+          touch-action: manipulation;
         }
         .toolbar-btn:hover { background: rgba(255,255,255,0.08); }
         .toolbar-btn:disabled { opacity: 0.3; cursor: default; }
@@ -96,17 +97,35 @@ export function Toolbar({
         .toolbar-zoom { font-family: var(--font-mono, monospace); font-size: 11px; color: var(--text-secondary, #999); min-width: 40px; text-align: center; flex-shrink: 0; }
         .toolbar-group { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
 
-        /* Mobile: compact toolbar */
+        /* Mobile: dock toolbar at bottom with adequate touch targets */
         @media (max-width: 767px) {
-          .toolbar-btn { width: 36px; height: 36px; }
+          .toolbar-btn { width: 44px; height: 44px; }
+          .toolbar-btn svg { width: 20px; height: 20px; }
           .toolbar-zoom { display: none; }
           .toolbar-sep { display: none; }
           .toolbar-hide-mobile { display: none !important; }
           .toolbar-search-input { width: min(120px, 30vw) !important; }
+          [role="toolbar"] {
+            position: fixed !important;
+            top: auto !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            padding: 8px 12px calc(8px + env(safe-area-inset-bottom)) !important;
+            border-radius: 16px 16px 0 0 !important;
+            justify-content: space-around !important;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.5) !important;
+            z-index: var(--z-toolbar, 100) !important;
+          }
         }
         @media (max-width: 374px) {
-          .toolbar-btn { width: 32px; height: 32px; }
+          .toolbar-btn { width: 44px; height: 44px; }
           .toolbar-search-input { width: min(90px, 25vw) !important; }
+          [role="toolbar"] { padding: 6px 8px calc(6px + env(safe-area-inset-bottom)) !important; }
+        }
+        @media (max-width: 320px) {
+          .toolbar-btn { width: 40px; height: 40px; }
+          [role="toolbar"] { padding: 4px 4px calc(4px + env(safe-area-inset-bottom)) !important; gap: 2px; }
         }
       `}</style>
 
