@@ -131,7 +131,7 @@ const BUILTIN_PROVIDERS = {
     icon: '✧',
     keyPlaceholder: '(no key needed)',
     keyLabel: 'API Key (optional)',
-    baseURL: 'http://localhost:8081/v1/chat/completions',
+    baseURL: 'https://saint-examine-clearance-growth.trycloudflare.com/v1/chat/completions',
     models: [
       'gemini-2.5-flash',
       'gemini-2.5-pro',
