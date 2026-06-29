@@ -5,7 +5,7 @@
   "framework": "vite",
   "build": {
     "env": {
-      "VERCEL_NODE_VERSION": "20"
+      "VERCEL_NODE_VERSION": "24"
     }
   },
   "rewrites": [
