@@ -70,9 +70,12 @@ const BUILTIN_PROVIDERS = {
     keyLabel: 'Google AI API Key',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
     models: [
-      'gemini-2.5-flash-preview-05-20',
-      'gemini-2.5-pro-preview-06-05',
-      'gemini-2.0-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-thinking',
+      'gemini-3.1-pro',
+      'gemini-auto',
+      'gemini-3.5-flash-thinking-lite',
+      'gemini-flash-lite',
     ],
     needsKey: true,
     showBaseURL: false,
@@ -133,11 +136,12 @@ const BUILTIN_PROVIDERS = {
     keyLabel: 'API Key (optional)',
     baseURL: 'https://saint-examine-clearance-growth.trycloudflare.com/v1/chat/completions',
     models: [
-      'gemini-2.5-flash',
-      'gemini-2.5-pro',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-thinking',
+      'gemini-3.1-pro',
+      'gemini-auto',
+      'gemini-3.5-flash-thinking-lite',
+      'gemini-flash-lite',
     ],
     needsKey: false,
     showBaseURL: true,
@@ -236,7 +240,7 @@ const deobfuscate = (enc) => { try { return atob(enc).split('').reverse().join('
 export function loadAIConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { provider: 'gemini-web2api', model: 'gemini-2.5-flash', key: '' };
+    if (!raw) return { provider: 'gemini-web2api', model: 'gemini-3.5-flash', key: '' };
     const parsed = JSON.parse(raw);
     return {
       provider: parsed.provider || 'gemini-web2api',
