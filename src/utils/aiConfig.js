@@ -147,6 +147,22 @@ const BUILTIN_PROVIDERS = {
     showBaseURL: true,
     builtin: true,
   },
+  nous: {
+    name: 'Hermes',
+    icon: '✦',
+    keyPlaceholder: '(managed)',
+    keyLabel: 'Nous API Key',
+    baseURL: 'https://inference-api.nousresearch.com/v1/chat/completions',
+    models: [
+      'openrouter/owl-alpha',
+      'openrouter/anthropic/claude-3.5-sonnet',
+      'openrouter/openai/gpt-4o',
+      'openrouter/google/gemini-2.0-flash-001',
+    ],
+    needsKey: false,
+    showBaseURL: false,
+    builtin: true,
+  },
 };
 
 // ── Custom providers (stored in localStorage) ─────────────────────────────────
@@ -240,10 +256,10 @@ const deobfuscate = (enc) => { try { return atob(enc).split('').reverse().join('
 export function loadAIConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { provider: 'gemini-web2api', model: 'gemini-3.5-flash', key: '' };
+    if (!raw) return { provider: 'nous', model: 'openrouter/owl-alpha', key: '' };
     const parsed = JSON.parse(raw);
     return {
-      provider: parsed.provider || 'gemini-web2api',
+      provider: parsed.provider || 'nous',
       model:    parsed.model    || '',
       key:      parsed.key ? deobfuscate(parsed.key) : '',
       endpoint: parsed.endpoint || '',
@@ -263,7 +279,19 @@ export function saveAIConfig({ provider, model, key, endpoint }) {
 }
 
 export function getProviderDef(pid) {
-  return PROVIDERS[pid] || PROVIDERS['gemini-web2api'];
+  return PROVIDERS[pid] || PROVIDERS['nous'];
+}
+
+/**
+ * Returns the ordered list of providers to try when the preferred one fails.
+ * Always starts with the preferred provider, then alternates through fallbacks.
+ */
+export function getProviderFallbackOrder(preferred) {
+  const all = ['nous', 'gemini-web2api'];
+  if (!preferred) return all;
+  // Put preferred first, then the rest in order
+  const rest = all.filter(p => p !== preferred);
+  return [preferred, ...rest];
 }
 
 /**
