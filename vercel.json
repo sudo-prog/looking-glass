@@ -1,15 +1,17 @@
 {
+  "framework": "vite",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "framework": "vite",
   "build": {
     "env": {
       "VERCEL_NODE_VERSION": "24"
     }
   },
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" },
+    { "source": "/api/ai/chat", "destination": "/api/ai/chat" },
+    { "source": "/api/(.*)",       "destination": "/api/$1" }
   ],
   "headers": [
     {
