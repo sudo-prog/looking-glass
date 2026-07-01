@@ -1,11 +1,11 @@
 {
   "name": "looking-glass",
   "version": "0.1.0",
-  "description": "Your visual memory — bookmarks, web clips, ideas on an infinite canvas",
+  "description": "Your visual memory \u2014 bookmarks, web clips, ideas on an infinite canvas",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cp -r api dist/",
     "preview": "vite preview",
     "start": "node server.js"
   },
