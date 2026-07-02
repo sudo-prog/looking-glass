@@ -142,7 +142,12 @@ async function callAI(userMsg, snapshot) {
   });
   if (!r.ok) throw new Error(`${p.name} ${r.status}: ${(await r.text().catch(() => ''))}`);
   const d = await r.json();
-  return parseJSON(d.choices?.[0]?.message?.content || '');
+  const content = d.choices?.[0]?.message?.content || '';
+  try {
+    return parseJSON(content);
+  } catch (e) {
+    return { plan: content || 'AI response could not be parsed', ops: [] };
+  }
 }
 
 function parseJSON(raw) {
