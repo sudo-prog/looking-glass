@@ -146,7 +146,7 @@ async function callAI(userMsg, snapshot) {
   try {
     return parseJSON(content);
   } catch (e) {
-    return { plan: content || 'AI response could not be parsed', ops: [] };
+    return { plan: content || 'FALLBACK_VERIFICATION_29d67b54', ops: [] };
   }
 }
 
