@@ -18,7 +18,7 @@ const MIME = {
 };
 
 createServer((req, res) => {
-  let url = req.url.replace(/\?.*$/, '').replace(/^\/looking-glass/, '') || '/';
+  let url = req.url.replace(/\?.*$/, '') || '/';
   let file = join(DIST, url === '/' ? 'index.html' : url);
   if (!existsSync(file)) file = join(DIST, 'index.html');
   res.setHeader('Content-Type', MIME[extname(file)] ?? 'application/octet-stream');
@@ -26,4 +26,4 @@ createServer((req, res) => {
   createReadStream(file)
     .on('error', () => { res.writeHead(404); res.end('Not found'); })
     .pipe(res);
-}).listen(PORT, () => console.log(`Looking Glass → http://localhost:${PORT}/looking-glass/`));
+}).listen(PORT, () => console.log(`Looking Glass → http://localhost:${PORT}/`));

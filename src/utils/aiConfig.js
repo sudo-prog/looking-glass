@@ -256,16 +256,16 @@ const deobfuscate = (enc) => { try { return atob(enc).split('').reverse().join('
 export function loadAIConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { provider: 'nous', model: 'openrouter/owl-alpha', key: '' };
+    if (!raw) return { provider: 'gemini-web2api', model: 'gemini-3.5-flash', key: '' };
     const parsed = JSON.parse(raw);
     return {
-      provider: parsed.provider || 'nous',
-      model:    parsed.model    || '',
+      provider: parsed.provider || 'gemini-web2api',
+      model:    parsed.model    || 'gemini-3.5-flash',
       key:      parsed.key ? deobfuscate(parsed.key) : '',
       endpoint: parsed.endpoint || '',
     };
   } catch {
-    return { provider: 'openrouter', model: '', key: '' };
+    return { provider: 'gemini-web2api', model: 'gemini-3.5-flash', key: '' };
   }
 }
 
@@ -279,7 +279,7 @@ export function saveAIConfig({ provider, model, key, endpoint }) {
 }
 
 export function getProviderDef(pid) {
-  return PROVIDERS[pid] || PROVIDERS['nous'];
+  return PROVIDERS[pid] || PROVIDERS['gemini-web2api'];
 }
 
 /**
@@ -287,7 +287,7 @@ export function getProviderDef(pid) {
  * Always starts with the preferred provider, then alternates through fallbacks.
  */
 export function getProviderFallbackOrder(preferred) {
-  const all = ['nous', 'gemini-web2api'];
+  const all = ['gemini-web2api', 'openrouter', 'nous'];
   if (!preferred) return all;
   // Put preferred first, then the rest in order
   const rest = all.filter(p => p !== preferred);

@@ -77,7 +77,6 @@ export function App() {
     activeSpaceId,
   } = useStore();
 
-  const [zoom, setZoom] = useState(1);
   const [lightboxItem, setLightboxItem] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [aiSummarise, setAiSummarise] = useState(null);
@@ -262,20 +261,43 @@ export function App() {
   }, [deleteItem]);
 
   const handleZoomIn = useCallback(() => {
-    const newScale = Math.min(3, zoom * 1.2);
-    setZoom(newScale);
+    const newScale = Math.min(3, viewport.scale * 1.2);
     setViewport({ ...viewport, scale: newScale });
-  }, [zoom, viewport, setViewport]);
+  }, [viewport, setViewport]);
 
   const handleZoomOut = useCallback(() => {
-    const newScale = Math.max(0.1, zoom / 1.2);
-    setZoom(newScale);
+    const newScale = Math.max(0.1, viewport.scale / 1.2);
     setViewport({ ...viewport, scale: newScale });
-  }, [zoom, viewport, setViewport]);
+  }, [viewport, setViewport]);
 
   const handleFit = useCallback(() => {
-    setZoom(1);
-  }, []);
+    // Fit all visible items into view with padding
+    const items = getFilteredItems();
+    if (items.length === 0) {
+      setViewport({ x: 0, y: 0, scale: 1 });
+      return;
+    }
+    const padding = 80;
+    const xs = items.map((i) => i.x);
+    const ys = items.map((i) => i.y);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const maxX = Math.max(...xs.map((x, i) => x + (items[i].width || 280)));
+    const maxY = Math.max(...ys.map((y, i) => y + (items[i].height || 180)));
+    const contentW = maxX - minX;
+    const contentH = maxY - minY;
+    // Use a sensible default viewport size based on window
+    const vpW = window.innerWidth - 320; // subtract sidebar
+    const vpH = window.innerHeight - 80;
+    const scale = Math.min(2, Math.max(0.1, Math.min(vpW / (contentW + padding * 2), vpH / (contentH + padding * 2))));
+    const cx = minX + contentW / 2;
+    const cy = minY + contentH / 2;
+    setViewport({
+      x: vpW / 2 - cx * scale,
+      y: vpH / 2 - cy * scale,
+      scale,
+    });
+  }, [viewport, setViewport, getFilteredItems]);
 
   const handleExport = useCallback(() => {
     useStore.setState({ exportDialogOpen: true });
@@ -568,7 +590,7 @@ export function App() {
 
         {/* Floating Toolbar */}
         <Toolbar
-          zoom={zoom}
+          zoom={viewport.scale}
           searchQuery={searchQuery}
           onAddNote={addNote}
           onDelete={handleDeleteSelected}

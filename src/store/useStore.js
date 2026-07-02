@@ -5,7 +5,9 @@
 import { create } from 'zustand';
 import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES } from '../data/schema.js';
-import { spacesSlice } from '../ui/SpacesManager.jsx';
+import { spacesSlice } from '../ui/spacesSlice.js';
+
+let viewportSaveTimer = null;
 
 export const useStore = create((set, get) => ({
   // Spread spacesSlice — provides spaces, activeSpaceId, initSpaces, switchSpace, createSpace, renameSpace, deleteSpace, refreshSpaceCount
@@ -70,8 +72,10 @@ export const useStore = create((set, get) => ({
   addNote: async () => {
     const state = get();
     const vp = state.viewport;
-    const x = (-vp.x + 400) / vp.scale;
-    const y = (-vp.y + 300) / vp.scale;
+    // Small random jitter so consecutive notes don't stack exactly on top of each other
+    const jitter = () => (Math.random() - 0.5) * 40;
+    const x = (-vp.x + 400) / vp.scale + jitter();
+    const y = (-vp.y + 300) / vp.scale + jitter();
     return get().addItem({
       type: ITEM_TYPES.NOTE,
       x,
@@ -239,7 +243,11 @@ export const useStore = create((set, get) => ({
     set({ viewport });
     const state = get();
     if (state.canvasId) {
-      idbStore.saveCanvas({ id: state.canvasId, name: state.canvasName, viewport });
+      // Debounce IDB writes — pan/zoom fires at 60fps and we don't need every frame persisted
+      if (viewportSaveTimer) clearTimeout(viewportSaveTimer);
+      viewportSaveTimer = setTimeout(() => {
+        idbStore.saveCanvas({ id: state.canvasId, name: state.canvasName, viewport: get().viewport });
+      }, 400);
     }
   },
 
@@ -297,12 +305,15 @@ export const useStore = create((set, get) => ({
     }
     const q = query.toLowerCase();
     const state = get();
-    const results = state.items.filter((item) =>
-      (item.content?.title || '').toLowerCase().includes(q) ||
-      (item.content?.description || '').toLowerCase().includes(q) ||
-      (item.content?.text || '').toLowerCase().includes(q) ||
-      (item.content?.url || '').toLowerCase().includes(q)
-    );
+    const results = state.items.filter((item) => {
+      const title = (item.content?.title || '').toLowerCase();
+      const desc = (item.content?.description || '').toLowerCase();
+      // Note text is stored as Tiptap HTML — strip tags before matching
+      const rawText = (item.content?.text || '').toLowerCase();
+      const text = rawText.replace(/<[^>]*>/g, '');
+      const url = (item.content?.url || '').toLowerCase();
+      return title.includes(q) || desc.includes(q) || text.includes(q) || url.includes(q);
+    });
     set({ searchQuery: query, searchResults: results });
   },
 

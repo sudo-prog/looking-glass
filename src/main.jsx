@@ -28,7 +28,7 @@ window.addEventListener('load', function () {
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/looking-glass/sw.js', { scope: '/looking-glass/' })
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .catch(err => console.warn('[SW] registration failed', err));
   });
 }
