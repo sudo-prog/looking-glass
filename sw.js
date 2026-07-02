@@ -1,5 +1,5 @@
 const CACHE_NAME = 'looking-glass-v2';
-const SHELL_FILES = ['/looking-glass/', '/looking-glass/index.html'];
+const SHELL_FILES = ['/', '/index.html'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(SHELL_FILES)));

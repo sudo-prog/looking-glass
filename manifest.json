@@ -2,15 +2,15 @@
   "name": "Looking Glass",
   "short_name": "Looking Glass",
   "description": "Your visual memory — bookmarks, web clips, ideas on an infinite canvas",
-  "start_url": "/looking-glass/",
-  "scope": "/looking-glass/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0A0A0A",
   "theme_color": "#0A0A0A",
   "orientation": "any",
   "categories": ["productivity", "utilities"],
   "icons": [
-    { "src": "/looking-glass/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/looking-glass/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
