@@ -144,9 +144,13 @@ async function callAI(userMsg, snapshot) {
   const d = await r.json();
   const content = d.choices?.[0]?.message?.content || '';
   try {
-    return parseJSON(content);
+    const parsed = parseJSON(content);
+    return {
+      plan: parsed.plan || content || 'AI plan missing',
+      ops: Array.isArray(parsed.ops) ? parsed.ops : [],
+    };
   } catch (e) {
-    return { plan: content || 'FALLBACK_VERIFICATION_29d67b54', ops: [] };
+    return { plan: content || 'AI response could not be parsed', ops: [] };
   }
 }
 
