@@ -185,7 +185,7 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 | BUG-B5 | ✅ FIXED | Tags panel rendered in slide-over from `showTags` state |
 | BUG-B6 | ✅ FIXED | `deleteSpace` already calls `idbStore.deleteCanvas()` correctly |
 | BUG-B7 | ✅ FIXED | `refreshSpaceCount` already called after add/delete operations in useStore.js |
-| BUG-B8 | N/A | Mobile zoom via Toolbar buttons (PINCH_TO_ZOOM can be added later) |
+| BUG-B8 | ✅ FIXED | Added pinch-to-zoom gesture support in Canvas.jsx for mobile |
 | BUG-B9 | N/A | Group feature - no GroupManager import but not blocking core UX |
 | BUG-B10 | ✅ FIXED | ExportDialog.jsx already has PNG/PDF/JSON/Markdown export |
 
