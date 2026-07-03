@@ -128,9 +128,19 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 - **Glass tier detection** — inline script in index.html runs before React hydration
 - **Theme init** — inline script in index.html sets data-theme before React to prevent FOUC
 - **pnpm only** — preinstall script blocks npm/yarn
-- **Deploy branch** — `develop` → Vercel auto-deploys (no GitHub Actions needed for Vercel)
+- **Deploy branch** — `main` → Vercel via GitHub Actions (deploy.yml) OR `develop` → Vercel Git Integration
 - **CDN cache** — can lag 30-60s after push
 - **Circular deps** — `useStore.js` ↔ `SpacesManager.jsx` was a build-killer; now separated via `spacesSlice.js`
+
+---
+
+## Vercel Deployment Configuration (2026-07-03)
+
+**GitHub Workflow:** `.github/workflows/deploy.yml`
+- Created Vercel deployment workflow
+- Triggers on push to `main` and pull requests
+- Build: `pnpm run build` (Vite)
+- Requires secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `VERCEL_GITHUB_TOKEN`
 
 ---
 
