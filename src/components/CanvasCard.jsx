@@ -168,6 +168,7 @@ function NoteCard({ item, isSelected, onSelect, onDragStart, onSave }) {
     return () => {
       editor.off('blur', handleBlur);
       editor.off('keydown', handleKeyDown);
+      editor.destroy();
       if (saveTimeout.current) {
         clearTimeout(saveTimeout.current);
         saveTimeout.current = null;

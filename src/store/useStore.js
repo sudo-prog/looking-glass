@@ -5,7 +5,9 @@
 import { create } from 'zustand';
 import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES } from '../data/schema.js';
-import { spacesSlice } from '../ui/SpacesManager.jsx';
+import { spacesSlice } from '../ui/spacesSlice.js';
+
+let viewportSaveTimer = null;
 
 export const useStore = create((set, get) => ({
   // Spread spacesSlice — provides spaces, activeSpaceId, initSpaces, switchSpace, createSpace, renameSpace, deleteSpace, refreshSpaceCount
@@ -64,14 +66,18 @@ export const useStore = create((set, get) => ({
     });
     await idbStore.upsertItem(item);
     set((s) => ({ items: [...s.items, item] }));
+    // Refresh space item count after adding
+    get().refreshSpaceCount(state.canvasId);
     return item;
   },
 
   addNote: async () => {
     const state = get();
     const vp = state.viewport;
-    const x = (-vp.x + 400) / vp.scale;
-    const y = (-vp.y + 300) / vp.scale;
+    // Small random jitter so consecutive notes don't stack exactly on top of each other
+    const jitter = () => (Math.random() - 0.5) * 40;
+    const x = (-vp.x + 400) / vp.scale + jitter();
+    const y = (-vp.y + 300) / vp.scale + jitter();
     return get().addItem({
       type: ITEM_TYPES.NOTE,
       x,
@@ -187,11 +193,14 @@ export const useStore = create((set, get) => ({
   },
 
   deleteItem: async (id) => {
+    const state = get();
     await idbStore.deleteItem(id);
     set((s) => ({
       items: s.items.filter((i) => i.id !== id),
       selectedIds: new Set([...s.selectedIds].filter((sid) => sid !== id)),
     }));
+    // Refresh space item count after deleting
+    get().refreshSpaceCount(state.canvasId);
   },
 
   deleteSelected: async () => {
@@ -203,6 +212,8 @@ export const useStore = create((set, get) => ({
       items: s.items.filter((i) => !s.selectedIds.has(i.id)),
       selectedIds: new Set(),
     }));
+    // Refresh space item count after deleting
+    get().refreshSpaceCount(state.canvasId);
   },
 
   // Selection
@@ -239,7 +250,11 @@ export const useStore = create((set, get) => ({
     set({ viewport });
     const state = get();
     if (state.canvasId) {
-      idbStore.saveCanvas({ id: state.canvasId, name: state.canvasName, viewport });
+      // Debounce IDB writes — pan/zoom fires at 60fps and we don't need every frame persisted
+      if (viewportSaveTimer) clearTimeout(viewportSaveTimer);
+      viewportSaveTimer = setTimeout(() => {
+        idbStore.saveCanvas({ id: state.canvasId, name: state.canvasName, viewport: get().viewport });
+      }, 400);
     }
   },
 
@@ -297,12 +312,15 @@ export const useStore = create((set, get) => ({
     }
     const q = query.toLowerCase();
     const state = get();
-    const results = state.items.filter((item) =>
-      (item.content?.title || '').toLowerCase().includes(q) ||
-      (item.content?.description || '').toLowerCase().includes(q) ||
-      (item.content?.text || '').toLowerCase().includes(q) ||
-      (item.content?.url || '').toLowerCase().includes(q)
-    );
+    const results = state.items.filter((item) => {
+      const title = (item.content?.title || '').toLowerCase();
+      const desc = (item.content?.description || '').toLowerCase();
+      // Note text is stored as Tiptap HTML — strip tags before matching
+      const rawText = (item.content?.text || '').toLowerCase();
+      const text = rawText.replace(/<[^>]*>/g, '');
+      const url = (item.content?.url || '').toLowerCase();
+      return title.includes(q) || desc.includes(q) || text.includes(q) || url.includes(q);
+    });
     set({ searchQuery: query, searchResults: results });
   },
 
@@ -370,6 +388,8 @@ export const useStore = create((set, get) => ({
       ],
       selectedIds: new Set([stackItem.id]),
     }));
+    // Refresh space item count after creating stack
+    get().refreshSpaceCount(state.canvasId);
     return stackItem;
   },
 
@@ -422,49 +442,12 @@ export const useStore = create((set, get) => ({
         selectedIds: new Set([restoredChild.id]),
       }));
     }
+    // Refresh space item count after stack operations
+    get().refreshSpaceCount(state.canvasId);
   },
 
   /** Dissolve a stack entirely — restore all children to the canvas. */
   dissolveStack: async (stackItemId) => {
-    return get().unstackToCanvas(stackItemId);
-  },
-
-  /** Dissolve a folder entirely — restore all children to the canvas. */
-  dissolveFolder: async (folderItemId) => {
-    return get().unfolderToCanvas(folderItemId);
-  },
-
-  /** Add an existing item into a STACK */
-  addToStack: async (newItemId, stackItemId) => {
-    const state = get();
-    const newItem = state.items.find((i) => i.id === newItemId);
-    const stackItem = state.items.find((i) => i.id === stackItemId);
-    if (!newItem || !stackItem) return;
-
-    const existing = stackItem.meta?.stack_items || [];
-    const merged = [...existing, newItem].sort((a, b) => (b.width || 320) - (a.width || 320));
-
-    const updated = {
-      ...stackItem,
-      meta: { ...stackItem.meta, stack_items: merged },
-      updated_at: Date.now(),
-    };
-
-    await idbStore.deleteItem(newItemId);
-    await idbStore.upsertItem(updated);
-
-    set((s) => ({
-      items: [
-        ...s.items.filter((i) => i.id !== newItemId && i.id !== stackItemId),
-        updated,
-      ],
-      selectedIds: new Set([stackItemId]),
-    }));
-  },
-
-  /** Break a stack apart, returning its children to individual canvas items
-   *  arranged in a tidy grid anchored at the stack's position. */
-  unstackToCanvas: async (stackItemId) => {
     const state = get();
     const stackItem = state.items.find((i) => i.id === stackItemId);
     if (!stackItem || stackItem.type !== ITEM_TYPES.STACK) return;
@@ -498,6 +481,90 @@ export const useStore = create((set, get) => ({
       items: [...s.items.filter((i) => i.id !== stackItemId), ...restored],
       selectedIds: new Set(restored.map((r) => r.id)),
     }));
+    // Refresh space item count after dissolving
+    get().refreshSpaceCount(state.canvasId);
+  },
+
+  /** Dissolve a folder entirely — restore all children to the canvas. */
+  dissolveFolder: async (folderItemId) => {
+    const state = get();
+    const folderItem = state.items.find((i) => i.id === folderItemId);
+    if (!folderItem || folderItem.type !== ITEM_TYPES.FOLDER) return;
+
+    const children = folderItem.meta?.child_items || [];
+    if (!children.length) {
+      await idbStore.deleteItem(folderItemId);
+      set((s) => ({ items: s.items.filter((i) => i.id !== folderItemId) }));
+      // Refresh space item count after dissolving
+      get().refreshSpaceCount(state.canvasId);
+      return;
+    }
+
+    const cols = Math.min(3, children.length);
+    const gapX = 24;
+    const gapY = 24;
+
+    const restored = children.map((child, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const w = child.width || 280;
+      return {
+        ...child,
+        x: folderItem.x + col * (w + gapX),
+        y: folderItem.y + row * ((child.height || 200) + gapY),
+        z_index: (folderItem.z_index || 0) + i,
+        updated_at: Date.now(),
+      };
+    });
+
+    await idbStore.deleteItem(folderItemId);
+    for (const item of restored) {
+      await idbStore.upsertItem(item);
+    }
+
+    set((s) => ({
+      items: [...s.items.filter((i) => i.id !== folderItemId), ...restored],
+      selectedIds: new Set(restored.map((r) => r.id)),
+    }));
+    // Refresh space item count after dissolving
+    get().refreshSpaceCount(state.canvasId);
+  },
+
+  /** Add an existing item into a STACK */
+  addToStack: async (newItemId, stackItemId) => {
+    const state = get();
+    const newItem = state.items.find((i) => i.id === newItemId);
+    const stackItem = state.items.find((i) => i.id === stackItemId);
+    if (!newItem || !stackItem) return;
+
+    const existing = stackItem.meta?.stack_items || [];
+    const merged = [...existing, newItem].sort((a, b) => (b.width || 320) - (a.width || 320));
+
+    const updated = {
+      ...stackItem,
+      meta: { ...stackItem.meta, stack_items: merged },
+      updated_at: Date.now(),
+    };
+
+    await idbStore.deleteItem(newItemId);
+    await idbStore.upsertItem(updated);
+
+    set((s) => ({
+      items: [
+        ...s.items.filter((i) => i.id !== newItemId && i.id !== stackItemId),
+        updated,
+      ],
+      selectedIds: new Set([stackItemId]),
+    }));
+    // Refresh space item count after stack operations
+    get().refreshSpaceCount(state.canvasId);
+  },
+
+  /** Break a stack apart, returning its children to individual canvas items
+   *  arranged in a tidy grid anchored at the stack's position. */
+  unstackToCanvas: async (stackItemId) => {
+    // This calls dissolveStack which handles count refresh
+    return get().dissolveStack(stackItemId);
   },
 
   // ── Folder ─────────────────────────────────────────────────────────────
@@ -536,6 +603,8 @@ export const useStore = create((set, get) => ({
       ],
       selectedIds: new Set([folderItem.id]),
     }));
+    // Refresh space item count after creating folder
+    get().refreshSpaceCount(state.canvasId);
     return folderItem;
   },
 
@@ -566,6 +635,8 @@ export const useStore = create((set, get) => ({
       ],
       selectedIds: new Set([folderItemId]),
     }));
+    // Refresh space item count after folder operations
+    get().refreshSpaceCount(state.canvasId);
   },
 
   /** Pull a single child out of a folder and back onto the canvas as a
@@ -606,6 +677,8 @@ export const useStore = create((set, get) => ({
       ],
       selectedIds: new Set([restoredChild.id]),
     }));
+    // Refresh space item count after folder operations
+    get().refreshSpaceCount(state.canvasId);
   },
 
   /** Empty an entire folder back onto the canvas in a tidy grid, removing the folder. */
@@ -618,6 +691,8 @@ export const useStore = create((set, get) => ({
     if (!children.length) {
       await idbStore.deleteItem(folderItemId);
       set((s) => ({ items: s.items.filter((i) => i.id !== folderItemId) }));
+      // Refresh space item count after emptying
+      get().refreshSpaceCount(state.canvasId);
       return;
     }
 
@@ -647,6 +722,8 @@ export const useStore = create((set, get) => ({
       items: [...s.items.filter((i) => i.id !== folderItemId), ...restored],
       selectedIds: new Set(restored.map((r) => r.id)),
     }));
+    // Refresh space item count after emptying
+    get().refreshSpaceCount(state.canvasId);
   },
 
   /** Rename a folder */

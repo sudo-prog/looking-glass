@@ -70,9 +70,12 @@ const BUILTIN_PROVIDERS = {
     keyLabel: 'Google AI API Key',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
     models: [
-      'gemini-2.5-flash-preview-05-20',
-      'gemini-2.5-pro-preview-06-05',
-      'gemini-2.0-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-thinking',
+      'gemini-3.1-pro',
+      'gemini-auto',
+      'gemini-3.5-flash-thinking-lite',
+      'gemini-flash-lite',
     ],
     needsKey: true,
     showBaseURL: false,
@@ -131,16 +134,33 @@ const BUILTIN_PROVIDERS = {
     icon: '✧',
     keyPlaceholder: '(no key needed)',
     keyLabel: 'API Key (optional)',
-    baseURL: 'http://localhost:8081/v1/chat/completions',
+    baseURL: '/api/chat',
     models: [
-      'gemini-2.5-flash',
-      'gemini-2.5-pro',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-thinking',
+      'gemini-3.1-pro',
+      'gemini-auto',
+      'gemini-3.5-flash-thinking-lite',
+      'gemini-flash-lite',
     ],
     needsKey: false,
     showBaseURL: true,
+    builtin: true,
+  },
+  nous: {
+    name: 'Hermes',
+    icon: '✦',
+    keyPlaceholder: '(managed)',
+    keyLabel: 'Nous API Key',
+    baseURL: 'https://inference-api.nousresearch.com/v1/chat/completions',
+    models: [
+      'openrouter/owl-alpha',
+      'openrouter/anthropic/claude-3.5-sonnet',
+      'openrouter/openai/gpt-4o',
+      'openrouter/google/gemini-2.0-flash-001',
+    ],
+    needsKey: false,
+    showBaseURL: false,
     builtin: true,
   },
 };
@@ -236,16 +256,16 @@ const deobfuscate = (enc) => { try { return atob(enc).split('').reverse().join('
 export function loadAIConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { provider: 'gemini-web2api', model: 'gemini-2.5-flash', key: '' };
+    if (!raw) return { provider: 'gemini-web2api', model: 'gemini-3.5-flash', key: '' };
     const parsed = JSON.parse(raw);
     return {
       provider: parsed.provider || 'gemini-web2api',
-      model:    parsed.model    || '',
+      model:    parsed.model    || 'gemini-3.5-flash',
       key:      parsed.key ? deobfuscate(parsed.key) : '',
       endpoint: parsed.endpoint || '',
     };
   } catch {
-    return { provider: 'openrouter', model: '', key: '' };
+    return { provider: 'gemini-web2api', model: 'gemini-3.5-flash', key: '' };
   }
 }
 
@@ -260,6 +280,18 @@ export function saveAIConfig({ provider, model, key, endpoint }) {
 
 export function getProviderDef(pid) {
   return PROVIDERS[pid] || PROVIDERS['gemini-web2api'];
+}
+
+/**
+ * Returns the ordered list of providers to try when the preferred one fails.
+ * Always starts with the preferred provider, then alternates through fallbacks.
+ */
+export function getProviderFallbackOrder(preferred) {
+  const all = ['gemini-web2api', 'openrouter', 'nous'];
+  if (!preferred) return all;
+  // Put preferred first, then the rest in order
+  const rest = all.filter(p => p !== preferred);
+  return [preferred, ...rest];
 }
 
 /**

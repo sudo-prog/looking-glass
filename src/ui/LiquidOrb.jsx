@@ -50,10 +50,25 @@ REWRITE_ORB — change icon, size, glow:
   {"type":"REMOVE_FEATURE","id":"x"}
   {"type":"SHOW_NOTIFICATION","message":"Done!","variant":"success","duration":2500}
 
+━━━ POWER OPS (use when simple edits aren't enough) ━━━
+
+EVAL — execute JavaScript in the page context to fix any issue:
+  {"type":"EVAL","code":"document.querySelectorAll('.stale-toast').forEach(el=>el.remove())"}
+  Use for: removing stuck elements, fixing state, clearing timers, resetting UI.
+
+PATCH_SOURCE — commit a source code fix to GitHub (permanent fix):
+  {"type":"PATCH_SOURCE","file":"src/ui/LiquidOrb.jsx","find":"const [logs, setLogs] = useState([])","replace":"const [logs, setLogs] = useState([]);\n  // Auto-clear logs after 5s\n  useEffect(() => { const t = setInterval(()=>setLogs(p=>p.slice(0,2)), 5000); return ()=>clearInterval(t); }, []);"}
+  repo: "sudo-prog/looking-glass" (default). Supports: LiquidOrb.jsx, aiConfig.js, etc.
+
 ━━━ RULES ━━━
 - ONLY output valid JSON. No prose outside the JSON object.
 - Max 8 ops per response. Ops execute sequentially with 220ms gaps.
-- Always end with SHOW_NOTIFICATION to confirm.`;
+- Always end with SHOW_NOTIFICATION to confirm.
+- The UI snapshot includes domTree (all elements with id/class) — use it to target real elements.
+- NEVER guess selectors — check domTree first.
+- For logic bugs or stuck UI: use EVAL to run JavaScript directly in the page.
+- For permanent source fixes: use PATCH_SOURCE to specify file/find/replace (logged to console for dev review).
+- Prefer EVAL for immediate fixes, PATCH_SOURCE for permanent ones that survive page reload.`
 
 // ═══════════════════════════════════════════════════════════════════
 //  MULTI-PROVIDER AI CALLER
@@ -127,7 +142,16 @@ async function callAI(userMsg, snapshot) {
   });
   if (!r.ok) throw new Error(`${p.name} ${r.status}: ${(await r.text().catch(() => ''))}`);
   const d = await r.json();
-  return parseJSON(d.choices?.[0]?.message?.content || '');
+  const content = d.choices?.[0]?.message?.content || '';
+  try {
+    const parsed = parseJSON(content);
+    return {
+      plan: parsed.plan || content || 'AI plan missing',
+      ops: Array.isArray(parsed.ops) ? parsed.ops : [],
+    };
+  } catch (e) {
+    return { plan: content || 'AI response could not be parsed', ops: [] };
+  }
 }
 
 function parseJSON(raw) {
@@ -358,11 +382,20 @@ export default function LiquidOrb() {
 
   // ── Mutation log helper ──────────────────────────────────────────
   const logMut = useCallback((type, text) => {
+    // Suppress "No element" noise from AI trying to patch non-existent selectors
+    if (text.startsWith('No element:')) return;
+
     const icons = { add: '✦', rm: '✕', fix: '⬡', sty: '◈', info: '◎' };
+    const id = Date.now() + Math.random();
     setLogs(prev => {
-      const next = [{ id: Date.now(), type, text, icon: icons[type] || '◎' }, ...prev];
+      const next = [{ id, type, text, icon: icons[type] || '◎' }, ...prev];
       return next.slice(0, 4);
     });
+
+    // Auto-dismiss after 4 seconds
+    setTimeout(() => {
+      setLogs(prev => prev.filter(l => l.id !== id));
+    }, 4000);
   }, []);
 
   // ── Orb tap handler ──────────────────────────────────────────────
@@ -543,10 +576,36 @@ export default function LiquidOrb() {
     ['--bg', '--fg', '--fg2', '--glass-tint', '--glass-border'].forEach(v => {
       cssVars[v] = cs.getPropertyValue(v).trim();
     });
+
+    // Build DOM tree snapshot — list all elements with id/tag/classes
+    const domTree = [];
+    const walk = (el, depth) => {
+      if (depth > 4) return;
+      if (!el || el.nodeType !== 1) return;
+      const tag = el.tagName?.toLowerCase();
+      if (!tag) return;
+      const entry = {
+        tag,
+        id: el.id || undefined,
+        classes: el.className && typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : undefined,
+        text: el.children?.length === 0 ? (el.textContent || '').slice(0, 60) : undefined,
+      };
+      // Only include if it has an id or classes (useful for targeting)
+      if (entry.id || entry.classes?.length) {
+        domTree.push(entry);
+      }
+      // Walk children
+      for (const child of el.children || []) {
+        walk(child, depth + 1);
+      }
+    };
+    walk(document.body, 0);
+
     return {
       cssVars,
       lens: { ...lensRef.current },
       injectedCSS: uiStylesRef.current?.textContent?.slice(0, 600) || '',
+      domTree,
     };
   }, []);
 
@@ -653,6 +712,28 @@ export default function LiquidOrb() {
           setTimeout(() => el.remove(), 260);
         });
         logMut('rm', `Removed: ${op.selector}`); break;
+      }
+      case 'EVAL': {
+        try {
+          // eslint-disable-next-line no-new-func
+          const result = new Function(op.code)();
+          logMut('fix', `EVAL OK: ${op.code.slice(0, 60)}…`);
+        } catch (e) {
+          logMut('info', `EVAL error: ${e.message}`);
+        }
+        break;
+      }
+      case 'PATCH_SOURCE': {
+        // Log source code fix suggestion + apply EVAL as hotfix immediately
+        logMut('fix', `� SOURCE FIX SUGGESTED: ${op.file || 'unknown file'}`);
+        // Also try to apply the fix immediately via EVAL if 'replace' is provided
+        if (op.eval) {
+          try { new Function(op.eval)(); logMut('fix', `Hotfix applied via EVAL`); }
+          catch (e) { logMut('info', `Hotfix error: ${e.message}`); }
+        }
+        // The actual source code change should be committed by the developer
+        console.log('[LG AI PATCH_SOURCE]', JSON.stringify({ file: op.file, find: op.find, replace: op.replace }));
+        break;
       }
       default:
         logMut('info', `Unknown op: ${op.type}`);

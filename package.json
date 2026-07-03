@@ -1,11 +1,12 @@
 {
   "name": "looking-glass",
   "version": "0.1.0",
-  "description": "Your visual memory — bookmarks, web clips, ideas on an infinite canvas",
+  "packageManager": "pnpm@9.15.9",
+  "description": "Your visual memory \u2014 bookmarks, web clips, ideas on an infinite canvas",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cp -r api dist/",
     "preview": "vite preview",
     "start": "node server.js"
   },
@@ -18,11 +19,12 @@
   "author": "Sudo-Prog",
   "license": "MIT",
   "dependencies": {
+    "@agent-native/core": "^0.80.10",
     "@phosphor-icons/react": "^2.1.10",
     "@tiptap/extension-link": "^2.11.0",
-    "@tiptap/extension-task-list": "^2.11.0",
-    "@tiptap/extension-task-item": "^2.11.0",
     "@tiptap/extension-placeholder": "^2.11.0",
+    "@tiptap/extension-task-item": "^2.11.0",
+    "@tiptap/extension-task-list": "^2.11.0",
     "@tiptap/extension-underline": "^2.11.0",
     "@tiptap/react": "^2.11.0",
     "@tiptap/starter-kit": "^2.11.0",
