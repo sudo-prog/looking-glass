@@ -1,5 +1,6 @@
 const CACHE_NAME = 'looking-glass-v2';
-const SHELL_FILES = ['/', '/index.html'];
+// Shell paths derived from registration scope for correct base path handling
+const SHELL_FILES = [self.registration.scope, self.registration.scope + 'index.html'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(SHELL_FILES)));

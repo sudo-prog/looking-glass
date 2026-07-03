@@ -93,13 +93,6 @@ export function App() {
     }
   }, [init]);
 
-  // Load canvas items after init completes
-  useEffect(() => {
-    if (canvasId) {
-      useStore.getState().loadCanvas(canvasId);
-    }
-  }, [canvasId]);
-
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e) => {
@@ -486,6 +479,10 @@ export function App() {
     }
   }, [addToFolder]);
 
+  // filteredItems must be computed before any useCallback that references it
+  // (temporal dead zone fix - this was causing ReferenceError)
+  const filteredItems = getFilteredItems();
+  
   // Drop handler for DropZoneHandler
   const handleDrop = useCallback(async (drops) => {
     for (const drop of drops) {
@@ -518,8 +515,6 @@ export function App() {
       }
     }
   }, [addImage, addVideo, addPDF, addAudio, addWebClipScreenshot, addUrl, addNote]);
-
-  const filteredItems = getFilteredItems();
 
   // AI organise handler
   const handleAIOrganise = useCallback(() => {
