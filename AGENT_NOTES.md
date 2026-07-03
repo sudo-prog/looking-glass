@@ -1,5 +1,5 @@
 # Agent Notes — Looking Glass
-**Last updated:** 2026-07-02
+**Last updated:** 2026-07-03
 **Status:** Build fixed, critical bugs patched, deployed to Vercel
 
 ---
@@ -51,7 +51,7 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
       BottomSheet.jsx    — mobile bottom sheet
       Minimap.jsx        — bird's-eye view of canvas
       ModeToggle.jsx     — sun/moon theme toggle
-      ExportDialog.jsx   — export (JSON, markdown with HTML strip)
+      ExportDialog.jsx   — export (JSON, PNG, PDF, markdown with HTML strip)
       spacesSlice.js     — Zustand spaces slice (extracted to break circular dep)
     utils/
       aiConfig.js        — AI provider config
@@ -59,9 +59,9 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
       export/            — export utilities
   index.html             — Space Grotesk + Space Mono + Doto fonts, glass tier detection, theme init
   package.json           — pnpm@9, React 18, Vite 5
-  vite.config.js         — base: '/looking-glass/'
+  vite.config.js         — base: '/' (Vercel root path)
   server.js              — minimal static server for production
-  .github/workflows/deploy.yml — GitHub Actions → gh-pages
+  vercel.json            — Vercel deployment config (sw.js headers, rewrites)
 ```
 
 ### What's Live (deployed)
@@ -79,11 +79,12 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 - Dark/light mode with custom theme
 - Cross-browser glass fallbacks
 - Drag-to-reorder menu icons
+- Export dialog with JSON/PNG/PDF/Markdown options
 
 ---
 
 ## Session History
-- **2026-07-03:** Updated default AI provider from `nous` (Hermes) to `gemini-web2api` with model `gemini-3.5-flash`. Added OpenRouter as fallback provider. Added `ai-self-heal.js` — self-healing AI capability for DOM inspection, JS fixes, notification dismissal, and stale element cleanup. Integrated `@agent-native/core` for agent-native AI orchestration.
+- **2026-07-03:** Updated default AI provider from `nous` (Hermes) to `gemini-web2api` with model `gemini-3.5-flash`. Added OpenRouter as fallback provider. Added `ai-self-heal.js` — self-healing AI capability for DOM inspection, JS fixes, notification dismissal, and stale element cleanup. Integrated `@agent-native/core` for agent-native AI orchestration. Fixed AI Summarise sidebar to check for selection before opening. Added `refreshSpaceCount` calls after add/delete operations.
 - **2026-07-02:** Fixed circular dependency (`useStore.js` ↔ `SpacesManager.jsx`) by extracting `spacesSlice.js`. Fixed build hang. Fixed viewport IDB thrashing (debounced 400ms), note spawn jitter, search HTML stripping, zoom state drift, handleFit no-op, NoteCard Tiptap editor destroy leak. Rebuilt and redeployed to Vercel.
 - **2026-06-28:** Reference-capture feature update applied — all 11 files pass esbuild. Build clean. Deployed to Vercel.
 - **2026-06-27:** SelectionToolbar, Canvas box-select, StackCard cascade, FolderCard silhouette, FolderViewModal, BlockTypeMenu, Lightbox rewrite, ContextMenu updates.
@@ -123,11 +124,11 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 ## Common Pitfalls
 - **Drizzle not used** — this project uses IndexedDB (idb) + Zustand, not PostgreSQL/Drizzle
 - **React 18** — not React 19 like the studio projects
-- **Vite base path** — must be `/looking-glass/` for GitHub Pages
+- **Vite base path** — is `/` for Vercel (the app is on Vercel, not GitHub Pages)
 - **Glass tier detection** — inline script in index.html runs before React hydration
 - **Theme init** — inline script in index.html sets data-theme before React to prevent FOUC
 - **pnpm only** — preinstall script blocks npm/yarn
-- **Deploy branch** — `develop` → merge to `main` → GitHub Actions auto-deploys
+- **Deploy branch** — `develop` → Vercel auto-deploys (no GitHub Actions needed for Vercel)
 - **CDN cache** — can lag 30-60s after push
 - **Circular deps** — `useStore.js` ↔ `SpacesManager.jsx` was a build-killer; now separated via `spacesSlice.js`
 
@@ -157,9 +158,9 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 | `src/history/HistoryManager.js` | Undo/redo |
 | `src/ui/BottomSheet.jsx` | Mobile bottom sheet |
 | `index.html` | Fonts, glass tier, theme init |
-| `vite.config.js` | Vite config |
+| `vite.config.js` | Vite config (base: '/' for Vercel) |
 | `server.js` | Static server |
-| `.github/workflows/deploy.yml` | CI/CD |
+| `vercel.json` | Vercel deployment config |
 | `AUDIT_FIXES.md` | Audit fix instructions |
 | `AUDIT_REPORT.md` | Full audit report |
 | `BUG_AUDIT_REPORT.md` | Bug audit |

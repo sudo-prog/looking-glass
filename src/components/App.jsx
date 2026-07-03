@@ -534,6 +534,18 @@ export function App() {
     }
   }, [filteredItems, selectedIds]);
 
+  // AI summarise handler for sidebar - requires a selected card
+  const handleAISummarise = useCallback(() => {
+    const sel = filteredItems.filter(i => selectedIds.has(i.id));
+    if (sel.length === 1) {
+      setAiSummarise({ mode: 'card', item: sel[0] });
+    } else if (sel.length > 1) {
+      setAiSummarise({ mode: 'cluster', selectedItems: sel });
+    } else {
+      toast('Select a card first to summarise, or multiple cards for cluster insights');
+    }
+  }, [filteredItems, selectedIds]);
+
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
       <Toaster
@@ -554,7 +566,7 @@ export function App() {
         onSpacesOpen={() => setSpacesOpen(true)}
         onTagsOpen={() => setShowTags(true)}
         onAIOrganise={handleAIOrganise}
-        onAISummarise={() => setAiSummarise({ mode: 'card' })}
+        onAISummarise={handleAISummarise}
       />
       <div data-main-content style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
         <DropZoneHandler viewport={viewport} onDrop={handleDrop}>
