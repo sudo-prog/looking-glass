@@ -9,6 +9,7 @@
  *  - wheel event registered as { passive: false } via useEffect so preventDefault works
  *  - unused draggedType variable removed
  *  - panning lastPointer updated outside rAF to avoid stale reads on fast swipes
+ *  - PINCH TO ZOOM for mobile devices
  */
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
@@ -52,6 +53,11 @@ export function Canvas({
   const dragStart    = useRef({ x: 0, y: 0, itemX: 0, itemY: 0 });
   const hasMoved     = useRef(false);
   const transformRef = useRef(transform); // always-current transform for rAF closures
+
+  // ── Pinch-to-zoom state (mobile) ─────────────────────────────────────
+  const pointers    = useRef(new Map()); // Track active pointers by ID
+  const initialDist = useRef(0);
+  const initialScale = useRef(1);
 
   // Drop-mode picker state
   const [picker, setPicker] = useState(null); // { x, y, draggedId, targetId }
@@ -120,9 +126,22 @@ export function Canvas({
     return () => el.removeEventListener('wheel', handler);
   }, [onViewportChange]);
 
-  // ── Panning + drag-to-select ─────────────────────────────────────────
+  // ── Pinch-to-zoom handlers (mobile) ────────────────────────────────────
 
   const handlePointerDown = useCallback((e) => {
+    // Track pointers for pinch detection
+    if (e.pointerId) {
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+    if (pointers.current.size === 2) {
+      // Two fingers down - start pinch zoom
+      const pts = [...pointers.current.values()];
+      const dx = pts[0].x - pts[1].x;
+      const dy = pts[0].y - pts[1].y;
+      initialDist.current = Math.sqrt(dx * dx + dy * dy);
+      initialScale.current = transformRef.current.scale;
+    }
+
     if (e.target.closest('.canvas-card')) return;
     if (e.target === viewportRef.current || e.target === worldRef.current) {
       setPicker(null);
@@ -150,6 +169,30 @@ export function Canvas({
   }, []);
 
   const handlePointerMove = useCallback((e) => {
+    // Update pointer positions for pinch detection
+    if (pointers.current.has(e.pointerId)) {
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+
+    // Handle pinch zoom
+    if (pointers.current.size === 2) {
+      const pts = [...pointers.current.values()];
+      const dx = pts[0].x - pts[1].x;
+      const dy = pts[0].y - pts[1].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (initialDist.current > 0) {
+        const scaleFactor = dist / initialDist.current;
+        const newScale = Math.min(3, Math.max(0.1, initialScale.current * scaleFactor));
+        const t = transformRef.current;
+        const newTransform = { ...t, scale: newScale };
+        setTransform(newTransform);
+        isInternalChange.current = true;
+        onViewportChange(newTransform);
+        lastExternalViewport.current = newTransform;
+      }
+      return;
+    }
+
     if (isBoxSelecting.current) {
       const rect = viewportRef.current.getBoundingClientRect();
       const curX = e.clientX - rect.left;
@@ -223,47 +266,13 @@ export function Canvas({
         }
       });
     }
-  }, []);
-
-  const finishBoxSelect = useCallback(() => {
-    if (!selectBox || !worldRef.current) return;
-    const { x, y, w, h } = selectBox;
-
-    // Only commit a selection if the box actually has area — otherwise
-    // this was just a click, which the existing clear-selection logic below
-    // already handles.
-    if (w > DRAG_SELECT_THRESHOLD || h > DRAG_SELECT_THRESHOLD) {
-      const viewportRect = viewportRef.current.getBoundingClientRect();
-      const boxScreen = {
-        left: viewportRect.left + x,
-        top: viewportRect.top + y,
-        right: viewportRect.left + x + w,
-        bottom: viewportRect.top + y + h,
-      };
-
-      const hitIds = [];
-      worldRef.current.querySelectorAll('.canvas-card').forEach((el) => {
-        const r = el.getBoundingClientRect();
-        const overlaps = !(r.right < boxScreen.left || r.left > boxScreen.right || r.bottom < boxScreen.top || r.top > boxScreen.bottom);
-        if (overlaps && el.dataset.id) hitIds.push(el.dataset.id);
-      });
-
-      if (hitIds.length > 0) {
-        if (boxAdditive.current) {
-          onSetSelection?.(new Set([...selectedIds, ...hitIds]));
-        } else {
-          onSetSelection?.(new Set(hitIds));
-        }
-      } else if (!boxAdditive.current) {
-        onClearSelection();
-      }
-    }
-
-    setSelectBox(null);
-    isBoxSelecting.current = false;
-  }, [selectBox, selectedIds, onSetSelection, onClearSelection]);
+  }, [onViewportChange]);
 
   const handlePointerUp = useCallback((e) => {
+    // Clean up pointer tracking
+    pointers.current.delete(e.pointerId);
+    initialDist.current = 0;
+
     // Clear all drop highlights
     document.querySelectorAll('.drop-target-stack, .drop-target-folder').forEach((el) => {
       el.classList.remove('drop-target-stack', 'drop-target-folder');
@@ -341,6 +350,44 @@ export function Canvas({
     dragItem.current = null;
     hasMoved.current = false;
   }, [selectBox, finishBoxSelect, onViewportChange, onItemMove, onAddToStack, onAddToFolder, onClearSelection]);
+
+  const finishBoxSelect = useCallback(() => {
+    if (!selectBox || !worldRef.current) return;
+    const { x, y, w, h } = selectBox;
+
+    // Only commit a selection if the box actually has area — otherwise
+    // this was just a click, which the existing clear-selection logic below
+    // already handles.
+    if (w > DRAG_SELECT_THRESHOLD || h > DRAG_SELECT_THRESHOLD) {
+      const viewportRect = viewportRef.current.getBoundingClientRect();
+      const boxScreen = {
+        left: viewportRect.left + x,
+        top: viewportRect.top + y,
+        right: viewportRect.left + x + w,
+        bottom: viewportRect.top + y + h,
+      };
+
+      const hitIds = [];
+      worldRef.current.querySelectorAll('.canvas-card').forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const overlaps = !(r.right < boxScreen.left || r.left > boxScreen.right || r.bottom < boxScreen.top || r.top > boxScreen.bottom);
+        if (overlaps && el.dataset.id) hitIds.push(el.dataset.id);
+      });
+
+      if (hitIds.length > 0) {
+        if (boxAdditive.current) {
+          onSetSelection?.(new Set([...selectedIds, ...hitIds]));
+        } else {
+          onSetSelection?.(new Set(hitIds));
+        }
+      } else if (!boxAdditive.current) {
+        onClearSelection();
+      }
+    }
+
+    setSelectBox(null);
+    isBoxSelecting.current = false;
+  }, [selectBox, selectedIds, onSetSelection, onClearSelection]);
 
   // ── Card drag start ────────────────────────────────────────────────────
 
