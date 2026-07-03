@@ -562,6 +562,13 @@ export function App() {
         onTagsOpen={() => setShowTags(true)}
         onAIOrganise={handleAIOrganise}
         onAISummarise={handleAISummarise}
+        onAddUrl={async (url) => {
+          if (url) {
+            await addUrl(url);
+          }
+        }}
+        onSearch={() => setCommandPaletteOpen(true)}
+        onExport={handleExport}
       />
       <div data-main-content style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
         <DropZoneHandler viewport={viewport} onDrop={handleDrop}>
