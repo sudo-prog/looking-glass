@@ -2,7 +2,7 @@
 
 > Last updated: 2026-06-27
 > Repo: git@github.com:Sudo-Prog/looking-glass.git
-> Branch: develop → main → gh-pages (auto-deploy)
+> Branch: develop → main → Vercel (auto-deploy)
 
 ---
 
@@ -107,7 +107,7 @@ Applied from video reference analysis (Web_clip.mp4, Visuals.mp4, Stacks.mp4, ST
 
 - **State:** Zustand (useStore.js) — no Redux, no Drizzle
 - **Persistence:** IndexedDB via `idb` library (not PostgreSQL)
-- **Build:** Vite 5, base path `/looking-glass/` for GitHub Pages
+- **Build:** Vite 5, base path `/` for Vercel
 - **Glass:** WebGPU + SVG feDisplacementMap + CSS backdrop-filter with tiered fallback (1→2→3)
 - **Theme:** Inline script in index.html sets data-theme before React hydration to prevent FOUC
 - **Entry:** React 18, main.jsx → App.jsx → Canvas.jsx → CanvasCard.jsx

@@ -509,15 +509,15 @@ export default function LiquidOrb() {
     setSettingsOpen(false);
   }, [cfgProvider, cfgModel, cfgKey, customModel, logMut]);
 
-  // ── Send handler ─────────────────────────────────────────────────
-  const handleSend = useCallback(async () => {
+// ── Send handler ─────────────────────────────────────────────────
+   const handleSend = useCallback(async () => {
     const txt = taRef.current?.value?.trim();
     if (!txt && attachments.length === 0) return;
 
     const cfg = loadAIConfig();
     if (!cfg.key && getProviderDef(cfg.provider).needsKey) {
       setSettingsOpen(true);
-      logMut('info', `Add your ${getProviderDef(cfg.provider).name} API key first (⚙ button)`);
+      logMut('info', `Add your ${getProviderDef(cfg.provider).name} API Key first (⚙ button)`);
       return;
     }
 
@@ -552,13 +552,10 @@ export default function LiquidOrb() {
           setMutPreview('');
           setAiResponse(result.plan);
           setTimeout(() => {
-            setThinking(false);
-            setAiResponse('');
-            setMutPreview('');
-            goToPhase('pill');
-          }, 2800);
+            goToPhase('orb');
+          }, 1200);
         }, totalDelay);
-      }, 700);
+      }, 400);
 
     } catch (err) {
       setThinking(false);
@@ -567,7 +564,7 @@ export default function LiquidOrb() {
         setTimeout(() => setSettingsOpen(true), 400);
       }
     }
-  }, [attachments, logMut, goToPhase]);
+  }, [attachments, logMut, goToPhase, buildSnapshot, execMutations, setThinking, setThinkLabel, setAiResponse, setMutPreview]);
 
   // ── DOM Snapshot builder ─────────────────────────────────────────
   const buildSnapshot = useCallback(() => {

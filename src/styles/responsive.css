@@ -17,6 +17,20 @@
     padding-bottom: calc(64px + env(safe-area-inset-bottom)) !important;
   }
 
+  /* AI Orb positioning above the bottom navigation bar */
+  .lg-orb-root {
+    bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* AI Orb chat position adjusted for mobile */
+  .lg-orb-chat {
+    bottom: calc(160px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .lg-orb-pill {
+    bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+  }
+
   .toolbar {
     position: fixed;
     bottom: 0;

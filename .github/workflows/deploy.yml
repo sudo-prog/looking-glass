@@ -2,9 +2,9 @@ name: Deploy to Vercel
 
 on:
   push:
-    branches: [main]
+    branches: [develop, main]
   pull_request:
-    branches: [main]
+    branches: [develop]
 
 jobs:
   build-and-deploy:
@@ -22,13 +22,13 @@ jobs:
           cache: pnpm
       
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
       
       - name: Build
         run: pnpm run build
       
-      - name: Deploy to Vercel (production)
-        if: github.ref == 'refs/heads/main'
+      - name: Deploy to Vercel
+        if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -41,7 +41,7 @@ jobs:
 
   preview-deploy:
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main'
+    if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop'
     steps:
       - uses: actions/checkout@v4
       
@@ -55,7 +55,7 @@ jobs:
           cache: pnpm
       
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
       
       - name: Build
         run: pnpm run build

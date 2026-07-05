@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "buildCommand": "pnpm build",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "build": {
@@ -9,9 +9,10 @@
     }
   },
   "rewrites": [
-    { "source": "/api/ai/chat",  "destination": "/api/ai/chat" },
-    { "source": "/api/:path*",   "destination": "/api/:path*" },
-    { "source": "/assets/:path*","destination": "/assets/:path*" },
+    { "source": "/api/chat", "destination": "/api/chat.js" },
+    { "source": "/api/health", "destination": "/api/health.js" },
+    { "source": "/api/:path*", "destination": "/api/:path*" },
+    { "source": "/assets/:path*", "destination": "/assets/:path*" },
     { "source": "/((?!api/)(?!assets/).*)", "destination": "/index.html" }
   ],
   "headers": [
