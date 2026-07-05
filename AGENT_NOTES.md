@@ -84,6 +84,7 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 ---
 
 ## Session History
+- **2026-07-05:** Cross-project audit for Vercel projects — verified API client wiring, mobile compatibility, and AI integration across all projects. Looking Glass uses IndexedDB + Zustand (no PostgreSQL), React 18 (not 19), so setBaseUrl pattern differs. AI already configured with gemini-web2api as default.
 - **2026-07-03:** Updated default AI provider from `nous` (Hermes) to `gemini-web2api` with model `gemini-3.5-flash`. Added OpenRouter as fallback provider. Added `ai-self-heal.js` — self-healing AI capability for DOM inspection, JS fixes, notification dismissal, and stale element cleanup. Integrated `@agent-native/core` for agent-native AI orchestration. Fixed AI Summarise sidebar to check for selection before opening. Added `refreshSpaceCount` calls after add/delete operations.
 - **2026-07-02:** Fixed circular dependency (`useStore.js` ↔ `SpacesManager.jsx`) by extracting `spacesSlice.js`. Fixed build hang. Fixed viewport IDB thrashing (debounced 400ms), note spawn jitter, search HTML stripping, zoom state drift, handleFit no-op, NoteCard Tiptap editor destroy leak. Rebuilt and redeployed to Vercel.
 - **2026-06-28:** Reference-capture feature update applied — all 11 files pass esbuild. Build clean. Deployed to Vercel.
