@@ -211,10 +211,9 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
 
   const handleFabClick = useCallback(() => {
     if (isMobile) {
-      // On mobile: do NOT open expanding panel — just trigger nav action directly
-      // The FAB on mobile is a quick-access button, not a menu toggle
+      // On mobile: toggle the bottom nav bar open/closed
+      setMobileExpanded((prev) => !prev);
       setCollapsed(false);
-      setMobileExpanded(false); // keep it as FAB-only on mobile
     } else {
       setCollapsed(false);
       setMobileExpanded(true);
@@ -336,18 +335,10 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
   }
 
   // On mobile: never show the expanding panel — just keep the FAB
+  // (the expanded sidebar is a bottom nav rendered below when mobileExpanded)
   if (isMobile && !mobileExpanded) {
     return (
       <>
-        <button
-          ref={sidebarRef}
-          className="lg-sidebar-fab"
-          onClick={() => setCollapsed(true)}
-          aria-label="Open menu"
-          title="Menu"
-        >
-          <List size={22} weight="regular" />
-        </button>
         <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
         <BookmarksPanel isOpen={showBookmarks} onClose={() => setShowBookmarks(false)} />
       </>

@@ -53,6 +53,11 @@ export function Canvas({
   const hasMoved     = useRef(false);
   const transformRef = useRef(transform); // always-current transform for rAF closures
 
+  // Pinch-to-zoom: tracked two-pointer distances
+  const activePointers = useRef(new Map()); // pointerId → {x, y}
+  const lastPinchDist  = useRef(0);
+  const lastPinchMid   = useRef({ x: 0, y: 0 });
+
   // Drop-mode picker state
   const [picker, setPicker] = useState(null); // { x, y, draggedId, targetId }
 
@@ -123,6 +128,23 @@ export function Canvas({
   // ── Panning + drag-to-select ─────────────────────────────────────────
 
   const handlePointerDown = useCallback((e) => {
+    // Track pointer for pinch-to-zoom
+    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // If two or more pointers are now down, lock into pinch-zoom mode
+    if (activePointers.current.size >= 2) {
+      const pts = [...activePointers.current.values()];
+      lastPinchDist.current = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      lastPinchMid.current = {
+        x: (pts[0].x + pts[1].x) / 2,
+        y: (pts[0].y + pts[1].y) / 2,
+      };
+      isPanning.current = false;
+      isBoxSelecting.current = false;
+      setSelectBox(null);
+      return;
+    }
+
     if (e.target.closest('.canvas-card')) return;
     if (e.target === viewportRef.current || e.target === worldRef.current) {
       setPicker(null);
@@ -150,6 +172,38 @@ export function Canvas({
   }, []);
 
   const handlePointerMove = useCallback((e) => {
+    // ── Pinch-to-zoom: two-finger gesture ──────────────────────────────────
+    if (activePointers.current.size >= 2) {
+      activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const pts = [...activePointers.current.values()];
+      if (pts.length >= 2) {
+        const newDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        const newMid  = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+        if (lastPinchDist.current > 0) {
+          const scaleFactor = newDist / lastPinchDist.current;
+          const t = transformRef.current;
+          const newScale = Math.min(3, Math.max(0.1, t.scale * scaleFactor));
+          const rect = viewportRef.current?.getBoundingClientRect();
+          if (rect) {
+            const cx = lastPinchMid.current.x - rect.left;
+            const cy = lastPinchMid.current.y - rect.top;
+            const newTransform = {
+              x: cx - (cx - t.x) * (newScale / t.scale),
+              y: cy - (cy - t.y) * (newScale / t.scale),
+              scale: newScale,
+            };
+            setTransform(newTransform);
+            isInternalChange.current = true;
+            onViewportChange(newTransform);
+            lastExternalViewport.current = newTransform;
+          }
+        }
+        lastPinchDist.current = newDist;
+        lastPinchMid.current  = newMid;
+      }
+      return; // suppress panning/drag while pinching
+    }
+
     if (isBoxSelecting.current) {
       const rect = viewportRef.current.getBoundingClientRect();
       const curX = e.clientX - rect.left;
@@ -264,6 +318,12 @@ export function Canvas({
   }, [selectBox, selectedIds, onSetSelection, onClearSelection]);
 
   const handlePointerUp = useCallback((e) => {
+    // Clean up pinch-zoom pointer tracking
+    activePointers.current.delete(e.pointerId);
+    if (activePointers.current.size < 2) {
+      lastPinchDist.current = 0;
+    }
+
     // Clear all drop highlights
     document.querySelectorAll('.drop-target-stack, .drop-target-folder').forEach((el) => {
       el.classList.remove('drop-target-stack', 'drop-target-folder');

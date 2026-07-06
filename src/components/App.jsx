@@ -93,13 +93,6 @@ export function App() {
     }
   }, [init]);
 
-  // Load canvas items after init completes
-  useEffect(() => {
-    if (canvasId) {
-      useStore.getState().loadCanvas(canvasId);
-    }
-  }, [canvasId]);
-
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e) => {
