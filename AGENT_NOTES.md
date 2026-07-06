@@ -1,6 +1,6 @@
 # Agent Notes — Looking Glass
 **Last updated:** 2026-07-06
-**Status:** Full audit verified, mobile UI fixed, deployed to Vercel
+**Status:** Full audit verified, mobile UI fixed, AI 502 upstream error fixed, deployed to Vercel
 
 ---
 
@@ -75,6 +75,7 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 - StackCard fan animation, FolderCard with drag-to-create
 - Canvas pan/zoom, drag, history, selection
 - **Pinch-to-zoom on mobile** (two-finger zoom toward midpoint)
+- AI Orb chat fixed — 502 upstream error resolved
 - Card types: note, bookmark, image, group, stack, folder
 - PWA with service worker
 - Dark/light mode with custom theme
