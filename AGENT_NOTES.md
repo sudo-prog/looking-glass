@@ -173,6 +173,12 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 | `AUDIT_REPORT.md` | Full audit report |
 | `BUG_AUDIT_REPORT.md` | Bug audit |
 
+## 2026-07-09 Route Audit (chief-of-staff agent)
+- **Frontend**: repo root (Vercel build target = `pnpm build` → `dist/`, `api/` copied). Single-page canvas app (no react-router/wouter) — `src/components/App.jsx`, `src/main.jsx` renders `<App/>`.
+- **Render check**: `/` serves 200, `/api/health` 200. Headless crawl: **0 console errors, 0 page errors, no Vite error overlay**. Body renders real UI ("Tap the orb", "Looking Glass AI", "Fix errors", "Add feature", "Change theme", "Edit self", "Gemini Web2API · gemini-3.5-flash"). The stale `LOOKING_GLASS_FULL_AUDIT.md` described an old broken state (TDZ in `src/App.jsx`, base `/looking-glass/`) that is already resolved — current code is healthy.
+- **Build**: `pnpm build` passes (vite 5.4.21, 13.08s, `dist/index.html` + assets + `api/` copied).
+- **Verdict**: UI healthy, no code fixes required.
+
 ---
 
 ## Project Overview
@@ -336,3 +342,9 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 | `AUDIT_FIXES.md` | Audit fix instructions |
 | `AUDIT_REPORT.md` | Full audit report |
 | `BUG_AUDIT_REPORT.md` | Bug audit |
+
+## 2026-07-09 Route Audit (chief-of-staff agent)
+- **Frontend**: repo root (Vercel build target = `pnpm build` → `dist/`, `api/` copied). Single-page canvas app (no react-router/wouter) — `src/components/App.jsx`, `src/main.jsx` renders `<App/>`.
+- **Render check**: `/` serves 200, `/api/health` 200. Headless crawl: **0 console errors, 0 page errors, no Vite error overlay**. Body renders real UI ("Tap the orb", "Looking Glass AI", "Fix errors", "Add feature", "Change theme", "Edit self", "Gemini Web2API · gemini-3.5-flash"). The stale `LOOKING_GLASS_FULL_AUDIT.md` described an old broken state (TDZ in `src/App.jsx`, base `/looking-glass/`) that is already resolved — current code is healthy.
+- **Build**: `pnpm build` passes (vite 5.4.21, 13.08s, `dist/index.html` + assets + `api/` copied).
+- **Verdict**: UI healthy, no code fixes required.
