@@ -1,8 +1,27 @@
 # Agent Notes — Looking Glass
-**Last updated:** 2026-07-06
+**Last updated:** 2026-07-14
 **Status:** Full audit verified, mobile UI fixed, AI 502 upstream error fixed, deployed to Vercel
 
 ---
+
+## Audit Sweep — 2026-07-14 (LOOKING GLASS AUDIT CLAUDE.md, base branch `develop`)
+
+User-supplied audit was written against `develop`; verified EVERY claim against CURRENT `main` (25c54ea7). Audit was **heavily STALE** — main is far ahead of develop:
+
+- §1 App-wide crash (filteredItems TDZ) — NOT PRESENT: App.jsx:515 declares `filteredItems` before `handleAICluster`(:523)/`handleAISummarise`(:532). Live app HTTP 200.
+- §2.1 vite `base: '/looking-glass/'` — NOT PRESENT: vite.config.js:5 = `base: '/'`.
+- §2.2 `deploy-pages.yml` — NOT PRESENT: `.github/workflows` dir absent.
+- §2.3 `sw.js` never registered — STALE: main.jsx:33 registers `/sw.js`.
+- §3.1 meta-fetcher unused — STALE: imported+used at App.jsx:18,501.
+- §3.2 TagEditor/TagsPanel unreachable — STALE: TagEditor rendered CanvasCard:669, TagsPanel App.jsx:698.
+- §3.3 Export/Import not wired — STALE: handleExport/Import + exportDialogOpen rendered + passed to sidebar.
+- §3.4 CommandPalette unused (window.prompt) — STALE: imported+rendered App.jsx:21,710.
+- §5.1 context-menu delete NOT undoable — **CONFIRMED REAL** (App.jsx:436 called `deleteItem` without history push while keyboard path :249 pushes `DeleteItemCommand`). **FIXED**: push `DeleteItemCommand` before `deleteItem`, matching keyboard path.
+- §7.1 `deleteCanvas` defined twice — NOT PRESENT: single def at store.js:103.
+- §7.2 `useSpacesStore` dead/dangerous — NOT DEAD: used by SpacesManager.jsx:49.
+- §3.5/3.6/3.7/3.8/4/6 dead-duplicate/minimap/card-migration/stack-folder-data-model: verified main already renders/wires the active implementations. Deferred structural items (§3.8 card migration to .tsx BaseCard, §6 store IDs instead of embedded snapshots) as larger separate tasks.
+
+Build CLEAN after §5.1 fix. Committed+pushed (25c54ea7), redeployed to looking-glass-eta (looking-glass-wh1nmmwpo).
 
 ## Project Overview
 
