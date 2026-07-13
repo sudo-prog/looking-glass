@@ -3,6 +3,8 @@
 // src/utils/errorTelemetry.js and writes them as queryable structured logs.
 // This is the /api/log endpoint referenced by the client telemetry module.
 
+import { recordError } from "./errors.js";
+
 function newRequestId() {
   try {
     return globalThis.crypto?.randomUUID?.() ?? `r-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -54,6 +56,7 @@ export default function handler(req, res) {
   // One structured line per event.
   for (const e of safe) {
     console.error(JSON.stringify(e));
+    recordError(e);
   }
 
   return res.status(202).json({ ok: true, count: safe.length, requestId });
