@@ -65,28 +65,40 @@ export default function handler(req, res) {
       headers.Authorization = `Bearer ${apiKey}`;
     }
 
-    return fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model,
-        max_tokens: body.max_tokens || 2000,
-        temperature: body.temperature ?? 0.3,
-        messages,
-      }),
-    })
-      .then(async (r) => {
+    const callUpstream = (retriesLeft) => {
+      return fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model,
+          max_tokens: body.max_tokens || 2000,
+          temperature: body.temperature ?? 0.3,
+          messages,
+          stream: false,
+        }),
+      }).then(async (r) => {
         if (!r.ok) {
-          let detail = '';
-          try { detail = await r.text(); } catch { /* ignore */ }
+          const detail = await r.text().catch(() => '');
+          // 429 (rate-limit) / 5xx are often transient on the free Gemini web endpoint.
+          if ((r.status === 429 || r.status >= 500) && retriesLeft > 0) {
+            await new Promise((res) => setTimeout(res, 1200));
+            return callUpstream(retriesLeft - 1);
+          }
           logError('ai_chat_upstream_error', requestId, new Error('upstream non-2xx'), {
             status: r.status,
             detailLength: detail?.length ?? 0,
+            model,
           });
-          return res.status(r.status).json({ error: 'Gemini Web2API error', status: r.status });
+          return res.status(r.status === 429 ? 502 : r.status).json({
+            error: r.status === 429 ? 'AI provider rate-limited (retry shortly)' : 'Gemini Web2API error',
+            status: r.status,
+          });
         }
         return r.json();
-      })
+      });
+    };
+
+    return callUpstream(2)
       .then((data) => {
         const text = data?.choices?.[0]?.message?.content || '';
         return res.status(200).json({
