@@ -51,6 +51,10 @@ export default function handler(req, res) {
     }
 
     const targetBase = (process.env.GEMINI_WEB2API_URL || 'http://localhost:8081').replace(/\/$/, '');
+    if (!process.env.GEMINI_WEB2API_URL) {
+      logError('ai_chat_no_upstream', requestId, new Error('GEMINI_WEB2API_URL not configured'), {});
+      return res.status(503).json({ error: 'AI proxy not configured (GEMINI_WEB2API_URL missing)' });
+    }
     const endpoint = `${targetBase}/v1/chat/completions`;
 
     const headers = {

@@ -339,6 +339,15 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
   if (isMobile && !mobileExpanded) {
     return (
       <>
+        <button
+          ref={sidebarRef}
+          className="lg-sidebar-fab"
+          onClick={handleFabClick}
+          aria-label="Open menu"
+          title="Menu"
+        >
+          <List size={22} weight="regular" />
+        </button>
         <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
         <BookmarksPanel isOpen={showBookmarks} onClose={() => setShowBookmarks(false)} />
       </>
