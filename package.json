@@ -2,7 +2,7 @@
   "name": "looking-glass",
   "version": "0.1.0",
   "packageManager": "pnpm@9.15.9",
-  "description": "Your visual memory \u2014 bookmarks, web clips, ideas on an infinite canvas",
+  "description": "Your visual memory — bookmarks, web clips, ideas on an infinite canvas",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -43,6 +43,7 @@
     "eslint": "^10.4.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "playwright": "^1.61.1",
     "typescript": "^6.0.3",
     "vite": "^5.4.0"
   }

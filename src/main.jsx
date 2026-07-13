@@ -7,6 +7,8 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './components/App.jsx';
+import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+import { initErrorTelemetry } from './utils/errorTelemetry.js';
 import './styles/tokens.css';
 import './styles/reset.css';
 import './styles/canvas.css';
@@ -33,6 +35,14 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Install global client-side error telemetry (window.onerror +
+// window.onunhandledrejection → /api/log). Best-effort, fire-and-forget.
+initErrorTelemetry();
+
 const container = document.getElementById('app');
 const root = createRoot(container);
-root.render(<App />);
+root.render(
+  <ErrorBoundary name="root">
+    <App />
+  </ErrorBoundary>
+);

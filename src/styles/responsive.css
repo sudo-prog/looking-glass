@@ -186,6 +186,31 @@
     min-height: 44px;
     min-width: 44px;
   }
+
+  /* AI Orb widget — bump compact controls to touch-friendly sizes.
+     Keeps the pill layout intact while meeting the 36px tap-target floor. */
+  .lg-orb-tool,
+  .lg-orb-send {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .lg-orb-pill-close {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .lg-orb-pill-action {
+    min-height: 36px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+}
+
+/* ── HORIZONTAL OVERFLOW SAFETY NET ──────────────── */
+html, body {
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 /* ── SAFE AREA (iPhone notch/home indicator) ─────── */

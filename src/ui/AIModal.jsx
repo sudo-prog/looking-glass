@@ -105,6 +105,10 @@ export default function AIModal({ isOpen, onClose }) {
 
   return (
     <div className="lg-ai-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      {/* Mobile bottom-sheet drag grip (hidden on desktop via CSS) */}
+      <div className="lg-ai-modal__grip" aria-hidden="true">
+        <span className="lg-ai-modal__grip-bar" />
+      </div>
       <div
         className="lg-ai-modal"
         ref={modalRef}

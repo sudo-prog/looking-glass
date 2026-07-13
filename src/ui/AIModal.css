@@ -38,23 +38,47 @@
 
 @media (max-width: 767px) {
   .lg-ai-overlay {
-    padding: 8px;
-    align-items: flex-start;
+    padding: 0;
+    align-items: stretch;
+    justify-content: center;
   }
+  /* AI assistant becomes a bottom sheet on mobile:
+     docked to the bottom, full-width, rounded top corners,
+     clears the iOS home indicator, and resizes with the viewport. */
   .lg-ai-modal {
     width: 100%;
     max-width: 100%;
-    max-height: calc(100vh - 16px);
-    border-radius: var(--radius-lg);
+    align-self: flex-end;
+    max-height: 88vh;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation: lg-sheet-in var(--duration-standard) var(--ease-out);
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
   }
+  /* Drag handle (only shown on mobile bottom-sheet) */
+  .lg-ai-modal__grip {
+    display: flex;
+  }
+  /* Enlarge the close button to meet the 36px tap-target floor */
+  .lg-ai-modal__close {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@keyframes lg-sheet-in {
+  from { opacity: 1; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 320px) {
   .lg-ai-overlay {
-    padding: 4px;
+    padding: 0;
   }
   .lg-ai-modal {
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
   .lg-ai-modal__body {
     padding: var(--space-4);
@@ -81,6 +105,31 @@
 @keyframes lg-modal-in {
   from { opacity: 0; transform: scale(0.97) translateY(8px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Mobile bottom-sheet drag grip — hidden on desktop, shown <=767px */
+.lg-ai-modal__grip {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0 6px;
+  flex-shrink: 0;
+}
+
+.lg-ai-modal__grip-bar {
+  width: 38px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--color-border-active);
+}
+
+@media (max-width: 767px) {
+  .lg-ai-modal__grip {
+    display: flex;
+  }
+  .lg-ai-modal__header {
+    padding-top: var(--space-3);
+  }
 }
 
 /* Header */

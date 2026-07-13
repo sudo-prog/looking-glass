@@ -348,3 +348,21 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 - **Render check**: `/` serves 200, `/api/health` 200. Headless crawl: **0 console errors, 0 page errors, no Vite error overlay**. Body renders real UI ("Tap the orb", "Looking Glass AI", "Fix errors", "Add feature", "Change theme", "Edit self", "Gemini Web2API · gemini-3.5-flash"). The stale `LOOKING_GLASS_FULL_AUDIT.md` described an old broken state (TDZ in `src/App.jsx`, base `/looking-glass/`) that is already resolved — current code is healthy.
 - **Build**: `pnpm build` passes (vite 5.4.21, 13.08s, `dist/index.html` + assets + `api/` copied).
 - **Verdict**: UI healthy, no code fixes required.
+
+---
+
+## Fix Sweep — 2026-07-14 (backend error-monitoring + mobile UI)
+
+**Backend error-monitoring:**
+- `api/chat.js` — wrapped the AI chat handler in try/catch; logs structured error (request id, timestamp) and returns sanitized 500.
+- `api/log.js` — NEW endpoint that receives client-side error telemetry (window.onerror + onunhandledrejection via `src/utils/errorTelemetry.js`) and logs it server-side.
+- `src/components/ErrorBoundary.jsx` — NEW React error boundary wrapping `<App/>` so a render crash shows a fallback instead of a white screen.
+- `src/utils/errorTelemetry.js` — window.onerror / onunhandledrejection → POST to `/api/log`.
+
+**Mobile UI:**
+- `src/styles/responsive.css` + `src/ui/AIModal.css` — top toolbar wraps/collapses into overflow menu ≤420px; AI modal becomes a bottom-sheet on mobile; `env(safe-area-inset-bottom)` honored on bottom bar; touch targets ≥36px.
+- `src/main.jsx` — ErrorBoundary wired; safe-area meta tags.
+
+**Objective mobile measurement (iPhone 16 Pro, 402px) before fix:** 10 sub-36px touch targets, 4 horizontal-scroll containers. Target after: <5 small targets, 0 h-scroll.
+
+**Verification pending:** `vercel build` run 2026-07-14 (see OPS_LOG).
