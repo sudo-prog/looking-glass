@@ -432,9 +432,15 @@ export function App() {
       case 'archive':
         updateItem(item.id, { meta: { archived: true } });
         break;
-      case 'delete':
+      case 'delete': {
+        const state = useStore.getState();
+        const item = state.items.find((i) => i.id === item.id);
+        if (item) {
+          history.current.push(new DeleteItemCommand(item, state.items));
+        }
         deleteItem(item.id);
         break;
+      }
       case 'edit-tags':
         // Tag editor is inline on card — no-op at app level
         break;
