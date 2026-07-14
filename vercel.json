@@ -20,5 +20,8 @@
         { "key": "Service-Worker-Allowed", "value": "/" }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/chat.js": { "maxDuration": 60 }
+  }
 }

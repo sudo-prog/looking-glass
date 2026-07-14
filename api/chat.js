@@ -50,19 +50,31 @@ export default function handler(req, res) {
       return res.status(400).json({ error: 'Missing messages' });
     }
 
-    const targetBase = (process.env.GEMINI_WEB2API_URL || 'http://localhost:8081').replace(/\/$/, '');
-    if (!process.env.GEMINI_WEB2API_URL) {
-      logError('ai_chat_no_upstream', requestId, new Error('GEMINI_WEB2API_URL not configured'), {});
-      return res.status(503).json({ error: 'AI proxy not configured (GEMINI_WEB2API_URL missing)' });
+    // Resolve upstream. Preferred: self-contained Google native OpenAI-compat
+    // endpoint (needs only GEMINI_API_KEY, no localhost/tunnel). Fallback: the
+    // legacy cookie-scraper web2api instance at GEMINI_WEB2API_URL.
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const web2apiUrl = process.env.GEMINI_WEB2API_URL;
+    const web2apiKey = process.env.GEMINI_WEB2API_KEY;
+
+    let endpoint;
+    let authHeader = null;
+    if (geminiKey) {
+      endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+      authHeader = `Bearer ${geminiKey}`;
+    } else if (web2apiUrl) {
+      endpoint = `${web2apiUrl.replace(/\/$/, '')}/v1/chat/completions`;
+      if (web2apiKey) authHeader = `Bearer ${web2apiKey}`;
+    } else {
+      logError('ai_chat_no_upstream', requestId, new Error('No AI upstream configured'), {});
+      return res.status(503).json({ error: 'AI not configured (set GEMINI_API_KEY)' });
     }
-    const endpoint = `${targetBase}/v1/chat/completions`;
 
     const headers = {
       'Content-Type': 'application/json',
     };
-    const apiKey = process.env.GEMINI_WEB2API_KEY;
-    if (apiKey) {
-      headers.Authorization = `Bearer ${apiKey}`;
+    if (authHeader) {
+      headers.Authorization = authHeader;
     }
 
     const callUpstream = (retriesLeft) => {
