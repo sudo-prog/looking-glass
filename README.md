@@ -2,6 +2,10 @@
 
 A spatial visual memory system — infinite canvas workspace with cards, stacks, folders, tags, and AI assistance.
 
+## 🚀 Live Demo
+
+**https://looking-glass-eta.vercel.app/**
+
 ## Tech Stack
 
 - **React 19** + **TypeScript** + **Vite 5**
