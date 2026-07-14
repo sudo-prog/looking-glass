@@ -92,7 +92,6 @@
   animation: lg-sidebar-morph-in 220ms var(--ease-out) both;
   transform-origin: top left;
 }
-
 @keyframes lg-sidebar-morph-in {
   from {
     opacity: 0;
@@ -465,7 +464,16 @@
     height: 44px;
   }
 
+  /* Backdrop is hidden by default on mobile (no dimming of the canvas);
+     shown only while the bottom nav is open to catch outside-taps. */
   .lg-sidebar-backdrop { display: none; }
+  .lg-sidebar-backdrop--mobile-visible {
+    display: block;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    z-index: calc(var(--z-toolbar) + 1);
+  }
 
   .lg-sidebar {
     position: fixed;
@@ -481,13 +489,37 @@
     border-top: 1px solid var(--color-border);
     border-radius: 20px 20px 0 0 !important;
     padding-bottom: env(safe-area-inset-bottom);
-    z-index: var(--z-toolbar);
+    /* Sit ABOVE the floating toolbar (both live at bottom:0, same z-index);
+       the toolbar is nested in [data-main-content] and paints on top otherwise. */
+    z-index: calc(var(--z-toolbar) + 2);
     animation: none;
     transform: translateY(100%);
   }
   .lg-sidebar--expanded {
     transform: translateY(0);
   }
+
+  /* Mobile nav items: theme toggle + close affordance */
+  .lg-sidebar__nav-theme,
+  .lg-sidebar__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #999);
+    cursor: pointer;
+    transition: background 120ms var(--ease-out), color 120ms var(--ease-out);
+  }
+  .lg-sidebar__nav-theme:hover,
+  .lg-sidebar__close:hover { background: var(--state-hover); color: var(--text-primary); }
+  .lg-sidebar__close { margin-left: 4px; }
+}
+@media (max-width: 767px) {
   .lg-sidebar__spacer { display: none; }
   .lg-sidebar__footer { display: none; }
   .lg-sidebar__nav {
@@ -520,6 +552,12 @@
     box-shadow: 0 -8px 32px var(--glass-cast-shadow);
   }
   .lg-sidebar__nav-item svg { width: 22px; height: 22px; }
+}
+
+/* While the mobile bottom nav is open, suppress the floating toolbar that
+   shares the same bottom strip, so it can't swallow taps meant for the nav. */
+body.lg-mobile-menu-open [role="toolbar"] {
+  display: none !important;
 }
 
 @media (max-width: 767px) {

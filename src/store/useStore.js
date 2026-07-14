@@ -306,7 +306,7 @@ export const useStore = create((set, get) => ({
 
   // Search
   search: async (query) => {
-    if (!query.trim()) {
+    if (!query || !query.trim()) {
       set({ searchQuery: '', searchResults: null });
       return;
     }

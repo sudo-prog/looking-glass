@@ -179,6 +179,15 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     return () => window.removeEventListener('theme-change', handler);
   }, []);
 
+  // Toggle a body class while the mobile bottom nav is open so the floating
+  // toolbar (which occupies the same bottom strip) can be hidden to stop it
+  // from intercepting taps meant for the nav items.
+  useEffect(() => {
+    const open = isMobile && mobileExpanded;
+    document.body.classList.toggle('lg-mobile-menu-open', open);
+    return () => document.body.classList.remove('lg-mobile-menu-open');
+  }, [isMobile, mobileExpanded]);
+
   // Mobile detection
   useEffect(() => {
     const mq = matchMedia('(max-width: 767px)');
@@ -219,6 +228,11 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
       setMobileExpanded(true);
     }
   }, [isMobile]);
+
+  const closeMobile = useCallback(() => {
+    setMobileExpanded(false);
+    setCollapsed(true);
+  }, []);
 
   const handleNavClick = useCallback((id) => {
     setActiveItem(id);
@@ -359,8 +373,11 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
 
   return (
     <>
-      {/* Click-outside backdrop */}
-      <div className="lg-sidebar-backdrop" onClick={() => { setCollapsed(true); setMobileExpanded(false); }} />
+      {/* Click-outside backdrop (shown on mobile while the bottom nav is open) */}
+      <div
+        className={`lg-sidebar-backdrop${isMobile && mobileExpanded ? ' lg-sidebar-backdrop--mobile-visible' : ''}`}
+        onClick={closeMobile}
+      />
 
       <aside
         ref={sidebarRef}
@@ -423,6 +440,27 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
               <circle cx="15" cy="19" r="1.5" fill="currentColor" />
             </svg>
           </div>
+          {/* Mobile-only: theme toggle + close affordance for the bottom nav */}
+          {isMobile && mobileExpanded && (
+            <>
+              <button
+                className="lg-sidebar__nav-theme"
+                onClick={handleThemeToggle}
+                aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+                title="Toggle theme"
+              >
+                {dark ? <Sun size={20} weight="regular" /> : <Moon size={20} weight="regular" />}
+              </button>
+              <button
+                className="lg-sidebar__close"
+                onClick={closeMobile}
+                aria-label="Close menu"
+                title="Close"
+              >
+                <X size={20} weight="regular" />
+              </button>
+            </>
+          )}
         </nav>
 
         {/* ── Flyout panel ── */}
