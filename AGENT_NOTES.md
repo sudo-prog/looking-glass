@@ -403,3 +403,22 @@ A second audit report (LOOKING_GLASS_AUDIT_MAIN_BRANCH.md) was written against `
 **Deferred (not in this pass):** §3.8 stack/folder data model refactor (larger structural change) — flagged to user.
 
 **Build:** `pnpm build` passes (vite 5, ~12s).
+
+---
+
+## Self-Contained AI — 2026-07-14 (no localhost/tunnel)
+
+**Driver:** User asked to make Looking Glass AI fully self-contained (no localhost for web access) by either embedding a GitHub web2api proxy or routing via OpenRouter/free-tier keys.
+
+**Research outcome:** GitHub "web2api" projects (PublicAffairs/openai-gemini, zuisong/gemini-openai-proxy, etc.) are ALL key-based OpenAI↔Gemini translators — reimplementations of what Google now ships natively (`/v1beta/openai/chat/completions`). Embedding one = maintenance for zero gain. Our local `gemini-web2api` is the cookie-scraper variant (no key, needs live Google web session + headless browser) → cannot run serverless.
+
+**Decision:** Use Google's native OpenAI-compatible endpoint. Needs only a free Gemini API key, runs 100% server-side. Key held in Bitwarden (`POLYGOD - Development / GEMINI_API_KEY`, 53 chars) — verified live against Google native → HTTP 200 "AI_OK".
+
+**Changes (commit 3bc817be, pushed main, deployed):**
+- `api/chat.js` — upstream resolution now prefers `GEMINI_API_KEY` → Google native OpenAI-compat endpoint (no localhost). Falls back to legacy `GEMINI_WEB2API_URL` only if key absent. 503 only if neither configured.
+- `vercel.json` — added `functions.api/chat.js.maxDuration: 60` (Google native takes 15–30s).
+- Vercel env `GEMINI_API_KEY` set as **Sensitive/encrypted** (Production) — stays server-side, never exposed to browser.
+
+**Verification (live):** `POST /api/chat` on looking-glass-eta.vercel.app with `model: gemini-3.5-flash` → **HTTP 200, 37.8s, returned real content "SELF_CONTAINED_OK"**. No 503 / Upstream error. §3 risk fully closed.
+
+**Security:** API key is server-side only (relay injects Bearer header server-side; browser never sees it). This satisfies the user's "keep keys safe" + "self-contained, no localhost" requirements. OpenRouter remains a future option if we want model variety, but is not required.
