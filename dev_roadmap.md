@@ -127,3 +127,38 @@ Committed `d61369ff` on `main`, pushed, deployed to looking-glass-eta. Covers th
 - [x] **LG-7:** Remove dead responsive.css blocks; vercel.json already correct
 
 **Deferred:** stack/folder data-model refactor (structural, larger task).
+
+---
+
+## Main-Branch Mobile Remediation — 2026-07-15 (runtime-verified)
+
+Process change after repeated false "fixed" claims: verification is now **runtime DOM
+assertion on a 390×844 mobile viewport via Playwright**, not code-reading or screenshots
+(see `mobile-ui-verification-standard` skill). `vercel deploy --prod` is mandatory — git
+push alone does NOT update the live site (this was the core reason prior fixes looked
+absent: `looking-glass-eta` still aliased a 6h-old build).
+
+### Commits
+- `b09e012e` — CanvasCard long-press (500ms) + ⋯ button open context menu on touch (§1a).
+- `eda5f161` — New items spawn at **viewport center** (was hardcoded screen (400,300) →
+  off the right edge on a 390px phone). `newItemScreenCenter(vp)` helper in useStore.js,
+  applied to all 9 `add*` functions (addNote/addUrl/addImage/addAudio/addVideo/addPDF/
+  addWebClipScreenshot). `window.innerWidth/innerHeight` used; SSR-safe fallback 1280×800.
+- Live alias `looking-glass-eta.vercel.app` → build `l0zejpjw1` then `3ewjdom82`
+  (re-deployed after each fix).
+
+### Runtime verification (Playwright, 390×844, hasTouch, CDP long-press)
+- `cardOnScreen: true` — new card renders centered (x≈212, y≈413 on a 390px viewport).
+- `roleMenuPresent: true` after long-press; menu items Delete/Stack/Folder/Summarise/
+  Edit Tags/Archive visible.
+- `toolbarSwallows: false` — menu not covered by floating toolbar (the 2026-07-14
+  "menu disappears on tap" root cause).
+- `overflow: false` — no horizontal page overflow.
+- `consoleErrors: []` — zero runtime errors.
+- OVERALL_PASS: true.
+
+### Root-cause note (why prior "clean" audits missed this)
+New-item spawn used a DESKTOP-ASSUMED coordinate (400,300). On mobile the card was
+created off-screen, so it was never tappable/long-pressable — but the app still "built"
+and rendered fine on desktop, so layout-only audits passed. Proven only by reading
+`getBoundingClientRect()` at runtime on a phone viewport.
