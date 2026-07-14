@@ -2,7 +2,7 @@
 
 > Last updated: 2026-06-27
 > Repo: git@github.com:Sudo-Prog/looking-glass.git
-> Branch: develop → main → gh-pages (auto-deploy)
+> Branch: main → Vercel auto-deploy (GitHub Pages / develop are stale)
 
 ---
 
@@ -107,7 +107,23 @@ Applied from video reference analysis (Web_clip.mp4, Visuals.mp4, Stacks.mp4, ST
 
 - **State:** Zustand (useStore.js) — no Redux, no Drizzle
 - **Persistence:** IndexedDB via `idb` library (not PostgreSQL)
-- **Build:** Vite 5, base path `/looking-glass/` for GitHub Pages
+- **Build:** Vite 5, base path `/` for Vercel (deploy branch is `main`)
 - **Glass:** WebGPU + SVG feDisplacementMap + CSS backdrop-filter with tiered fallback (1→2→3)
 - **Theme:** Inline script in index.html sets data-theme before React hydration to prevent FOUC
 - **Entry:** React 18, main.jsx → App.jsx → Canvas.jsx → CanvasCard.jsx
+
+---
+
+## Main-Branch Audit Remediation — 2026-07-14 (LOOKING_GLASS_AUDIT_MAIN_BRANCH.md)
+
+Committed `d61369ff` on `main`, pushed, deployed to looking-glass-eta. Covers the REAL "AI broken" root causes (not the stale develop audit).
+
+- [x] **LG-1:** Fix right-click Delete crash (TDZ/shadowed `item` → `target`)
+- [x] **LG-2:** Mobile — CanvasCard long-press + kebab menu (touch can reach card actions)
+- [x] **LG-3:** AISummarisePanel uses shared `aiConfig.js` (was hardcoded `anthropic`, threw on gemini-web2api)
+- [x] **LG-4:** AISummarisePanel docks as bottom sheet on mobile
+- [x] **LG-5:** Gate unsandboxed `new Function(op.code)()` EVAL behind `window.confirm`
+- [x] **LG-6:** Verified `GEMINI_WEB2API_URL` dependency (503 if unset, no fallback) — ops item, no code change
+- [x] **LG-7:** Remove dead responsive.css blocks; vercel.json already correct
+
+**Deferred:** stack/folder data-model refactor (structural, larger task).

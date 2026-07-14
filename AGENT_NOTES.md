@@ -1,6 +1,6 @@
 # Agent Notes — Looking Glass
 **Last updated:** 2026-07-14
-**Status:** Full audit verified, mobile UI fixed, AI 502 upstream error fixed, deployed to Vercel
+**Status:** Full audit verified, mobile UI fixed, AI 502 upstream error fixed, main-branch audit remediation (LG-1..LG-7) applied 2026-07-14, deployed to Vercel (looking-glass-eta)
 
 ---
 
@@ -385,3 +385,21 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 **Objective mobile measurement (iPhone 16 Pro, 402px) before fix:** 10 sub-36px touch targets, 4 horizontal-scroll containers. Target after: <5 small targets, 0 h-scroll.
 
 **Verification pending:** `vercel build` run 2026-07-14 (see OPS_LOG).
+
+---
+
+## Main-Branch Audit Remediation — 2026-07-14 (LOOKING_GLASS_AUDIT_MAIN_BRANCH.md)
+
+A second audit report (LOOKING_GLASS_AUDIT_MAIN_BRANCH.md) was written against `main` and covered the ACTUAL "AI features are broken" root causes — different from the stale `develop` audit above. Verified every claim against current `main`, then remediated. Committed as `d61369ff` on `main`, pushed, and deployed to looking-glass-eta.
+
+- **LG-1 (CRITICAL): context-menu Delete crash.** `App.jsx` `handleContextAction` `'delete'` case had `const item = state.items.find((i) => i.id === item.id)` — the local `const item` shadowed the outer `item` param, so the RHS `item.id` hit the temporal dead zone → `ReferenceError: Cannot access 'item' before initialization` on EVERY right-click-delete (delete never ran). FIXED: renamed local to `target`; `deleteItem(target?.id ?? item.id)`. (User flagged this live before it was deployed — fix was in the working tree, not yet live; now merged + deployed.)
+- **LG-2 (CRITICAL): mobile card actions unreachable.** CanvasCard only opened its menu via native `onContextMenu` (no touch path). ADDED: long-press handler (`onTouchStart` 500ms timer, single-touch only, vibrate on fire, cleared on move/end/cancel) + a visible "⋯" kebab button (tappable hit area) — both call the existing `onContextMenu(item, x, y)`. Also confirmed `ContextMenu.jsx` uses a `matchMedia('(max-width:767px)')` listener (not just initial `innerWidth`) so the variant doesn't stick after rotation.
+- **LG-3 (CRITICAL): AISummarisePanel ignored shared config.** Its own `callAI` defaulted to `anthropic` and threw "No API key found" for keyless providers (gemini-web2api/ollama/litellm/nous), misrouting others. FIXED: `callAI` now imports `loadAIConfig`/`getProviderDef` from `src/utils/aiConfig.js` (the same module LiquidOrb uses) and builds the request identically. With the default gemini-web2api provider (no key) Summarise/Organise/Cluster now hit the correct endpoint and no longer throw.
+- **LG-4 (HIGH): AISummarisePanel not mobile-responsive.** Panel used inline `position:fixed; bottom:24px; right:24px` overlapping the bottom toolbar on phones. MOVED to a `.ai-summarise-panel` class + `@media (max-width:767px)` dock as bottom sheet (`left/right:12px; bottom: calc(64px + safe-area-inset-bottom)`).
+- **LG-5 (HIGH): unsandboxed EVAL self-heal op.** `LiquidOrb.jsx` ran AI-returned code via `new Function(op.code)()` (and a PATCH_SOURCE hotfix path) — a script-injection vector. FIXED: both paths now `window.confirm(...)` showing the code before executing; cancelled → skip. (Minimum safe fix; a DEV-only gate is the longer-term hardening.)
+- **LG-6 (HIGH/OPS): GEMINI_WEB2API_URL dependency.** VERIFIED in `api/chat.js:53-56`: reads `process.env.GEMINI_WEB2API_URL` (falls back to `http://localhost:8081`), and **returns 503 if unset — there is NO OpenRouter fallback**. Ops implication: the live AI feature depends entirely on a working public tunnel to the local gemini-web2api (:8081). Env var IS set in the Vercel Production project (created 2026-07-14), but its value is a tunnel URL that rotates on restart (see OPS_LOG tunnel note) → AI can 503 if the tunnel dies. No fallback added (verification-only per scope).
+- **LG-7 (LOW): housekeeping.** `src/styles/responsive.css` — removed dead blocks targeting classes that no longer exist in the DOM (`.toolbar`/`.sidebar`/`.context-menu`/`.command-palette`); kept live rules. `vercel.json` was ALREADY correct (the audit's claimed no-op `/api/ai/chat`→`/api/ai/chat` identity rewrite was NOT present); kept the valid SPA fallback `/((?!api/)(?!assets/).*)`→`/index.html`.
+
+**Deferred (not in this pass):** §3.8 stack/folder data model refactor (larger structural change) — flagged to user.
+
+**Build:** `pnpm build` passes (vite 5, ~12s).
