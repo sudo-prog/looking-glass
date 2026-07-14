@@ -631,6 +631,7 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
 
   // ── Long-press to open menu (mobile / touch) ──
   const longPressTimer = useRef(null);
+  const longPressFired = useRef(false);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimer.current) {
@@ -640,13 +641,14 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
   }, []);
 
   const handleTouchStart = useCallback((e) => {
-    if (!onContextMenu || e.touches.length !== 1) return;
+    if (!onContextMenu || e.touches.length !== 1) return; // ignore multi-touch (pinch/pan)
+    longPressFired.current = false;
     const touch = e.touches[0];
     clearLongPress();
     longPressTimer.current = setTimeout(() => {
-      longPressTimer.current = null;
+      longPressFired.current = true;
+      navigator.vibrate?.(10); // subtle haptic if supported
       onContextMenu(item, touch.clientX, touch.clientY);
-      navigator.vibrate?.(10);
     }, 500);
   }, [item, onContextMenu, clearLongPress]);
 
