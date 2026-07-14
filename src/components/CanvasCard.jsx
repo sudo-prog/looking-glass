@@ -629,6 +629,38 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
     onContextMenu(item, e.clientX, e.clientY);
   }, [item, onContextMenu]);
 
+  // ── Long-press to open menu (mobile / touch) ──
+  const longPressTimer = useRef(null);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleTouchStart = useCallback((e) => {
+    if (!onContextMenu || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    clearLongPress();
+    longPressTimer.current = setTimeout(() => {
+      longPressTimer.current = null;
+      onContextMenu(item, touch.clientX, touch.clientY);
+      navigator.vibrate?.(10);
+    }, 500);
+  }, [item, onContextMenu, clearLongPress]);
+
+  const handleKebab = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onContextMenu) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    onContextMenu(item, r.left + r.width / 2, r.top + r.height / 2);
+  }, [item, onContextMenu]);
+
+  // Clean up timer on unmount
+  useEffect(() => clearLongPress, [clearLongPress]);
+
   let card;
   switch (item.type) {
     case ITEM_TYPES.BOOKMARK:
@@ -664,9 +696,51 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
   }, [onSave]);
 
   return (
-    <div onContextMenu={handleContextMenu} style={{ display: 'contents' }}>
+    <div
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchMove={clearLongPress}
+      onTouchEnd={clearLongPress}
+      onTouchCancel={clearLongPress}
+      style={{ display: 'contents' }}
+    >
       {card}
       <TagEditor tags={itemTags} onChange={handleTagsChange} compact />
+
+      {/* Kebab: opens the card menu on touch / always-visible-but-small.
+          Positioned in the canvas coordinate space (the wrapper uses
+          display:contents, so absolute children resolve against the
+          canvas container — same space as the cards themselves). */}
+      <button
+        type="button"
+        aria-label="Card actions"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={handleKebab}
+        style={{
+          position: 'absolute',
+          left: (item.x + (item.width || 280)) - 34,
+          top: item.y + 6,
+          width: 44,
+          height: 44,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: 'none',
+          borderRadius: '50%',
+          background: 'rgba(0,0,0,0.45)',
+          color: '#fff',
+          fontSize: '20px',
+          lineHeight: 1,
+          cursor: 'pointer',
+          zIndex: 50,
+          opacity: 0.55,
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          transition: 'opacity 0.15s ease',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.55'; }}
+      >⋯</button>
     </div>
   );
 }

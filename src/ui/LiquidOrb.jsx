@@ -714,10 +714,20 @@ export default function LiquidOrb() {
         logMut('rm', `Removed: ${op.selector}`); break;
       }
       case 'EVAL': {
+        // Gate AI-returned code behind explicit user confirmation — running
+        // model output via `new Function` is a script-injection vector.
+        const code = op.code || '';
+        const ok = window.confirm(
+          `Allow the AI to run this code on the page?\n\n${code.length > 400 ? code.slice(0, 400) + '…' : code}\n\nOnly confirm if you trust this action.`
+        );
+        if (!ok) {
+          logMut('info', `EVAL cancelled by user`);
+          break;
+        }
         try {
           // eslint-disable-next-line no-new-func
-          const result = new Function(op.code)();
-          logMut('fix', `EVAL OK: ${op.code.slice(0, 60)}…`);
+          const result = new Function(code)();
+          logMut('fix', `EVAL OK: ${code.slice(0, 60)}…`);
         } catch (e) {
           logMut('info', `EVAL error: ${e.message}`);
         }
@@ -725,11 +735,19 @@ export default function LiquidOrb() {
       }
       case 'PATCH_SOURCE': {
         // Log source code fix suggestion + apply EVAL as hotfix immediately
-        logMut('fix', `� SOURCE FIX SUGGESTED: ${op.file || 'unknown file'}`);
-        // Also try to apply the fix immediately via EVAL if 'replace' is provided
+        logMut('fix', `🛠 SOURCE FIX SUGGESTED: ${op.file || 'unknown file'}`);
+        // Also try to apply the fix immediately via EVAL if 'eval' is provided.
+        // Gate behind explicit user confirmation (script-injection risk).
         if (op.eval) {
-          try { new Function(op.eval)(); logMut('fix', `Hotfix applied via EVAL`); }
-          catch (e) { logMut('info', `Hotfix error: ${e.message}`); }
+          const ok = window.confirm(
+            `Allow the AI to apply this hotfix code on the page?\n\n${op.eval.length > 400 ? op.eval.slice(0, 400) + '…' : op.eval}\n\nOnly confirm if you trust this action.`
+          );
+          if (!ok) {
+            logMut('info', `PATCH_SOURCE hotfix cancelled by user`);
+          } else {
+            try { new Function(op.eval)(); logMut('fix', `Hotfix applied via EVAL`); }
+            catch (e) { logMut('info', `Hotfix error: ${e.message}`); }
+          }
         }
         // The actual source code change should be committed by the developer
         console.log('[LG AI PATCH_SOURCE]', JSON.stringify({ file: op.file, find: op.find, replace: op.replace }));

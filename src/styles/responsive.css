@@ -1,6 +1,8 @@
 /* ════════════════════════════════════════════════
    LOOKING GLASS — RESPONSIVE LAYOUT
    Three layout modes: mobile / tablet / desktop
+   NOTE: per-component CSS now lives alongside each
+   component (e.g. .lg-sidebar, .lg-orb*, etc.).
    ════════════════════════════════════════════════ */
 
 /* ── MOBILE (0 – 767px) ─────────────────────────── */
@@ -16,62 +18,6 @@
   [data-main-content] {
     padding-bottom: calc(64px + env(safe-area-inset-bottom)) !important;
   }
-
-  .toolbar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: calc(var(--toolbar-size) + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-    flex-direction: row;
-    justify-content: space-around;
-    border-top: 1px solid var(--color-border);
-    border-left: none;
-  }
-
-  .toolbar__label {
-    display: none;
-  }
-
-  .sidebar {
-    /* Bottom sheet on mobile */
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    height: auto;
-    max-height: 90vh;
-    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-    transform: translateY(100%);
-    transition: transform var(--duration-standard) var(--ease-out);
-  }
-
-  .sidebar--open {
-    transform: translateY(0);
-  }
-
-  .minimap {
-    display: none;
-  }
-
-  .command-palette {
-    width: 100%;
-    max-width: 100%;
-    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-    max-height: 90vh;
-  }
-
-  .context-menu {
-    /* Bottom sheet on mobile */
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-  }
 }
 
 /* ── TABLET (768 – 1023px) ──────────────────────── */
@@ -82,45 +28,6 @@
     --toolbar-size: 48px;
     --rail-size: 48px;
   }
-
-  .toolbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: var(--rail-size);
-    flex-direction: column;
-    border-right: 1px solid var(--color-border);
-    border-top: none;
-  }
-
-  .toolbar__label {
-    display: none;
-  }
-
-  .sidebar {
-    /* Overlay on tablet */
-    position: fixed;
-    top: 0;
-    left: var(--rail-size);
-    bottom: 0;
-    width: 240px;
-    transform: translateX(-100%);
-    transition: transform var(--duration-standard) var(--ease-out);
-  }
-
-  .sidebar--open {
-    transform: translateX(0);
-  }
-
-  .minimap {
-    /* Optional on tablet */
-    opacity: 0.6;
-  }
-
-  .command-palette {
-    width: min(640px, 90vw);
-  }
 }
 
 /* ── DESKTOP (1024px+) ──────────────────────────── */
@@ -130,43 +37,6 @@
     --canvas-default-zoom: 1.0;
     --toolbar-size: 64px;
     --rail-size: 64px;
-  }
-
-  .toolbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: var(--rail-size);
-    flex-direction: column;
-    border-right: 1px solid var(--color-border);
-    border-top: none;
-  }
-
-  .toolbar__label {
-    display: block;
-  }
-
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: var(--rail-size);
-    bottom: 0;
-    width: 240px;
-    transform: translateX(-100%);
-    transition: transform var(--duration-standard) var(--ease-out);
-  }
-
-  .sidebar--open {
-    transform: translateX(0);
-  }
-
-  .minimap {
-    display: block;
-  }
-
-  .command-palette {
-    width: min(640px, 90vw);
   }
 }
 

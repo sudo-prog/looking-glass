@@ -53,45 +53,82 @@ import {
 // AI API CALL
 // ─────────────────────────────────────────────────────────────
 
+import { loadAIConfig, getProviderDef } from '../utils/aiConfig.js';
+
+// ─────────────────────────────────────────────────────────────
+// AI API CALL
+// ─────────────────────────────────────────────────────────────
+
 async function callAI(messages, { signal } = {}) {
-  let config;
-  try {
-    const raw = localStorage.getItem('lg-ai-config') || '{}';
-    const parsed = JSON.parse(raw);
-    // Deobfuscate (matches AIModal's obfuscate)
-    const deob = (enc) => atob(enc).split('').reverse().join('');
-    config = {
-      provider: parsed.provider || 'anthropic',
-      model:    parsed.model    || 'claude-sonnet-4-5',
-      key:      parsed.key ? deob(parsed.key) : '',
-    };
-  } catch {
-    throw new Error('No AI provider configured. Open Settings → AI Assistant.');
+  const config = loadAIConfig();
+  const provider = getProviderDef(config.provider);
+  const model = config.model;
+  const key = config.key;
+
+  if (!model) throw new Error(`No model selected. Open Settings → AI Assistant.`);
+  if (provider.needsKey && !key) {
+    throw new Error(`No API key found for ${provider.name}. Open Settings → AI Assistant.`);
   }
 
-  if (!config.key) {
-    throw new Error('No API key found. Open Settings → AI Assistant to configure.');
+  // ── Anthropic Messages API ──────────────────────────────────────
+  if (config.provider === 'anthropic') {
+    const resp = await fetch(provider.baseURL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1024,
+        system: 'You are a concise assistant that summarises and organises saved web items.',
+        messages,
+      }),
+      signal,
+    });
+    if (!resp.ok) {
+      const err = await resp.text().catch(() => resp.statusText);
+      throw new Error(`AI API error ${resp.status}: ${err}`);
+    }
+    const data = await resp.json();
+    return data.content?.[0]?.text || '';
   }
 
-  const endpoints = {
-    openrouter: { url: 'https://openrouter.ai/api/v1/chat/completions',   headers: { 'Authorization': `Bearer ${config.key}` } },
-    openai:     { url: 'https://api.openai.com/v1/chat/completions',       headers: { 'Authorization': `Bearer ${config.key}` } },
-    anthropic:  { url: 'https://api.anthropic.com/v1/messages',            headers: { 'x-api-key': config.key, 'anthropic-version': '2023-06-01' } },
-    litellm:    { url: `${config.key.startsWith('http') ? config.key : 'http://localhost:4000'}/chat/completions`, headers: { 'Authorization': `Bearer ${config.key}` } },
-  };
+  // ── Google Gemini ───────────────────────────────────────────────
+  if (config.provider === 'google') {
+    const url = provider.baseURL.replace('{model}', model) + (key ? `?key=${key}` : '');
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: 'You are a concise assistant that summarises and organises saved web items.' }] },
+        contents: messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+        generationConfig: { maxOutputTokens: 1024, temperature: 0.3 },
+      }),
+      signal,
+    });
+    if (!resp.ok) {
+      const err = await resp.text().catch(() => resp.statusText);
+      throw new Error(`AI API error ${resp.status}: ${err}`);
+    }
+    const data = await resp.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
 
-  const ep = endpoints[config.provider] || endpoints.openrouter;
+  // ── OpenAI-compatible (OpenRouter / OpenAI / Ollama / LiteLLM / Nous / gemini-web2api) ──
+  const headers = { 'Content-Type': 'application/json' };
+  if (key) headers['Authorization'] = `Bearer ${key}`;
+  if (config.provider === 'openrouter') {
+    headers['HTTP-Referer'] = 'https://looking-glass.app';
+    headers['X-Title'] = 'Looking Glass';
+  }
 
-  // Anthropic uses a different schema
-  const isAnthropic = config.provider === 'anthropic';
-  const body = isAnthropic
-    ? { model: config.model, max_tokens: 1024, messages }
-    : { model: config.model, max_tokens: 1024, messages };
-
-  const resp = await fetch(ep.url, {
+  const resp = await fetch(provider.baseURL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...ep.headers },
-    body: JSON.stringify(body),
+    headers,
+    body: JSON.stringify({ model, max_tokens: 1024, temperature: 0.3, messages }),
     signal,
   });
 
@@ -101,10 +138,6 @@ async function callAI(messages, { signal } = {}) {
   }
 
   const data = await resp.json();
-  // Normalise response
-  if (isAnthropic) {
-    return data.content?.[0]?.text || '';
-  }
   return data.choices?.[0]?.message?.content || '';
 }
 
@@ -301,16 +334,11 @@ export function AISummarisePanel({
 
       {/* Panel */}
       <div
+        className="ai-summarise-panel"
         role="dialog"
         aria-label={`AI: ${titles[mode]}`}
         aria-modal="true"
         style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          width: 'min(420px, calc(100vw - 48px))',
-          maxHeight: '70vh',
-          zIndex: 'var(--z-modal)',
           borderRadius: '16px',
           background: 'rgba(14,14,14,0.97)',
           backdropFilter: 'blur(40px) saturate(120%)',
@@ -328,6 +356,24 @@ export function AISummarisePanel({
           @keyframes ai-slide {
             from { opacity: 0; transform: translateY(16px) scale(0.97); }
             to   { opacity: 1; transform: translateY(0)    scale(1); }
+          }
+          /* Panel positioning. Per-component CSS lives alongside the component. */
+          .ai-summarise-panel {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: min(420px, calc(100vw - 48px));
+            max-height: 70vh;
+            z-index: var(--z-modal);
+          }
+          @media (max-width: 767px) {
+            .ai-summarise-panel {
+              left: 12px;
+              right: 12px;
+              bottom: calc(64px + env(safe-area-inset-bottom));
+              width: auto;
+              max-height: calc(70vh - 64px - env(safe-area-inset-bottom));
+            }
           }
         `}</style>
 

@@ -434,11 +434,11 @@ export function App() {
         break;
       case 'delete': {
         const state = useStore.getState();
-        const item = state.items.find((i) => i.id === item.id);
-        if (item) {
-          history.current.push(new DeleteItemCommand(item, state.items));
+        const target = state.items.find((i) => i.id === item.id);
+        if (target) {
+          history.current.push(new DeleteItemCommand(target, state.items));
         }
-        deleteItem(item.id);
+        deleteItem(target?.id ?? item.id);
         break;
       }
       case 'edit-tags':

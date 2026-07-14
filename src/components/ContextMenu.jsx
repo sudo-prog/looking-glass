@@ -589,7 +589,17 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
  * ContextMenu on desktop and BottomSheetContextMenu on mobile.
  */
 export function SmartContextMenu(props) {
-  const isMobile = window.innerWidth < 768;
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const onChange = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
   return isMobile
     ? <BottomSheetContextMenu {...props} />
     : <ContextMenu {...props} />;
