@@ -9,6 +9,17 @@ import { spacesSlice } from '../ui/spacesSlice.js';
 
 let viewportSaveTimer = null;
 
+// World-space spawn position centered in the actual browser viewport.
+// Falls back to a 1280x800 desktop size when `window` is undefined (SSR/build).
+function newItemScreenCenter(vp) {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+  return {
+    x: (-vp.x + vw / 2) / vp.scale,
+    y: (-vp.y + vh / 2) / vp.scale,
+  };
+}
+
 export const useStore = create((set, get) => ({
   // Spread spacesSlice — provides spaces, activeSpaceId, initSpaces, switchSpace, createSpace, renameSpace, deleteSpace, refreshSpaceCount
   ...spacesSlice(set, get),
@@ -76,8 +87,9 @@ export const useStore = create((set, get) => ({
     const vp = state.viewport;
     // Small random jitter so consecutive notes don't stack exactly on top of each other
     const jitter = () => (Math.random() - 0.5) * 40;
-    const x = (-vp.x + 400) / vp.scale + jitter();
-    const y = (-vp.y + 300) / vp.scale + jitter();
+    const center = newItemScreenCenter(vp);
+    const x = center.x + jitter();
+    const y = center.y + jitter();
     return get().addItem({
       type: ITEM_TYPES.NOTE,
       x,
@@ -90,8 +102,9 @@ export const useStore = create((set, get) => ({
   addUrl: async (url = '', meta = null) => {
     const state = get();
     const vp = state.viewport;
-    const x = (-vp.x + 400) / vp.scale;
-    const y = (-vp.y + 300) / vp.scale;
+    const center = newItemScreenCenter(vp);
+    const x = center.x;
+    const y = center.y;
     const domain = url ? (() => { try { return new URL(url).hostname; } catch { return null; } })() : null;
     return get().addItem({
       type: ITEM_TYPES.BOOKMARK,
@@ -106,8 +119,9 @@ export const useStore = create((set, get) => ({
   addImage: async (imageUrl = '') => {
     const state = get();
     const vp = state.viewport;
-    const x = (-vp.x + 400) / vp.scale;
-    const y = (-vp.y + 300) / vp.scale;
+    const center = newItemScreenCenter(vp);
+    const x = center.x;
+    const y = center.y;
     return get().addItem({
       type: ITEM_TYPES.IMAGE,
       x,
@@ -120,10 +134,11 @@ export const useStore = create((set, get) => ({
   addAudio: async () => {
     const state = get();
     const vp = state.viewport;
+    const center = newItemScreenCenter(vp);
     return get().addItem({
       type: ITEM_TYPES.AUDIO,
-      x: (-vp.x + 400) / vp.scale,
-      y: (-vp.y + 300) / vp.scale,
+      x: center.x,
+      y: center.y,
       width: 300,
       content: { title: `Memo ${new Date().toLocaleTimeString()}`, audio_blob_id: null, duration_ms: 0 },
     });
@@ -136,8 +151,8 @@ export const useStore = create((set, get) => ({
     await idbStore.saveBlob(blobId, file);
     return get().addItem({
       type: ITEM_TYPES.VIDEO,
-      x: (-vp.x + 400) / vp.scale,
-      y: (-vp.y + 300) / vp.scale,
+      x: newItemScreenCenter(vp).x,
+      y: newItemScreenCenter(vp).y,
       width: 320,
       content: { title: file.name.replace(/\.[^.]+$/, ''), video_blob_id: blobId, object_url: objectUrl },
     });
@@ -150,8 +165,8 @@ export const useStore = create((set, get) => ({
     await idbStore.saveBlob(blobId, file);
     return get().addItem({
       type: ITEM_TYPES.PDF,
-      x: (-vp.x + 300) / vp.scale,
-      y: (-vp.y + 200) / vp.scale,
+      x: newItemScreenCenter(vp).x,
+      y: newItemScreenCenter(vp).y,
       width: 220,
       content: { title: file.name.replace(/\.pdf$/i, ''), pdf_blob_id: blobId, page_count: 0 },
     });
@@ -160,10 +175,11 @@ export const useStore = create((set, get) => ({
   addWebClipScreenshot: async (url, meta = {}) => {
     const state = get();
     const vp = state.viewport;
+    const center = newItemScreenCenter(vp);
     return get().addItem({
       type: ITEM_TYPES.WEB_CLIP_SCREENSHOT,
-      x: (-vp.x + 400) / vp.scale,
-      y: (-vp.y + 300) / vp.scale,
+      x: center.x,
+      y: center.y,
       width: 320,
       content: { title: meta.title || url, description: meta.description || '', url, image_url: meta.image_url || null, screenshot_blob_id: null },
       meta: { domain: (() => { try { return new URL(url).hostname; } catch { return null; } })() },

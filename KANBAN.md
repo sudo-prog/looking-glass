@@ -1,7 +1,10 @@
 # Kanban — Looking Glass (Updated 2026-06-27)
 
 ## 🔴 In Progress (Phase 2 — Audit Fixes)
-- [ ] **DEPLOY-2026-07-15:** Promote `main` → production via `vercel deploy --prod` (resolves stale alias/bundle: old alias `git-fix-mobile-menu→c97htq7pt` + orphaned prod deploys). Audit critical fixes (AI panel §1, api/chat §2/§4) already applied in head `e66d1379`. Remaining: delete-crash rename §0a + mobile long-press §1a delegated to sub-agent; visual verify + docs update pending.
+- [x] **DEPLOY-2026-07-15:** `vercel deploy --prod` DONE — `looking-glass-eta` now aliases fresh build `l0zejpjw1` (was stale `da5q83dv1`). Stale-bundle root cause = git-push never promoted on Vercel.
+- [x] **MOBILE-§1a long-press:** CanvasCard long-press (500ms) + ⋯ button opens context menu on touch. Build passes.
+- [x] **MOBILE-§0a delete crash:** already resolved in HEAD `e66d1379` (`const target` rename) — audit was stale on this point.
+- [ ] **MOBILE-ROOTCAUSE (runtime-proven 2026-07-15):** new cards spawn at hardcoded screen (400,300) → world x≈412, OFF the right edge on a 390px phone (`getBoundingClientRect` proved it). Fix = spawn at viewport center via `newItemScreenCenter(vp)` helper in useStore.js (9 add* fns). Sub-agent fixing + Playwright on-screen gate.
 - [ ] **FIX 2:** Lockfile cleanup (delete package-lock.json, add to .gitignore)
 - [ ] **FIX 10:** Add missing server.js (minimal static server)
 - [ ] **FIX 14:** BottomSheet font token (replace -apple-system with design tokens)
