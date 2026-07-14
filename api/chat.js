@@ -24,17 +24,22 @@ function newRequestId() {
   }
 }
 
-// Map the app's short model names to valid OpenRouter model IDs.
+// Map the app's short model names to VALID OpenRouter FREE-TIER model IDs ONLY.
+// Every value ends in ':free' — no paid model is ever selected. Unknown short
+// names fall through to the DEFAULT_FREE_MODEL below.
 const OPENROUTER_MODEL_MAP = {
-  'gemini-3.5-flash': 'google/gemini-2.5-flash',
-  'gemini-3.5-flash-thinking': 'google/gemini-2.5-flash',
-  'gemini-3.5-flash-thinking-lite': 'google/gemini-2.5-flash',
-  'gemini-3.1-pro': 'google/gemini-2.5-pro',
-  'gemini-auto': 'google/gemini-2.5-flash',
-  'gemini-flash-lite': 'google/gemini-2.0-flash-lite-001',
-  'gpt-4o-mini': 'openai/gpt-4o-mini',
-  'claude-sonnet-4-5': 'anthropic/claude-3.5-sonnet',
+  'gemini-3.5-flash': 'google/gemma-4-26b-a4b-it:free',
+  'gemini-3.5-flash-thinking': 'meta-llama/llama-3.3-70b-instruct:free',
+  'gemini-3.5-flash-thinking-lite': 'meta-llama/llama-3.2-3b-instruct:free',
+  'gemini-3.1-pro': 'nvidia/nemotron-3-super-120b-a12b:free',
+  'gemini-auto': 'google/gemma-4-26b-a4b-it:free',
+  'gemini-flash-lite': 'meta-llama/llama-3.2-3b-instruct:free',
+  'gpt-4o-mini': 'openai/gpt-oss-20b:free',
+  'claude-sonnet-4-5': 'nousresearch/hermes-3-llama-3.1-405b:free',
+  'tencent/hy3': 'tencent/hy3:free',
+  'hy3': 'tencent/hy3:free',
 };
+const DEFAULT_FREE_MODEL = 'tencent/hy3:free';
 
 export default function handler(req, res) {
   const requestId = req.headers?.['x-request-id'] || newRequestId();
@@ -80,7 +85,7 @@ export default function handler(req, res) {
       authHeader = `Bearer ${openrouterKey}`;
       extraHeaders['HTTP-Referer'] = 'https://looking-glass-eta.vercel.app';
       extraHeaders['X-Title'] = 'Looking Glass AI';
-      modelForRequest = OPENROUTER_MODEL_MAP[model] || model;
+      modelForRequest = OPENROUTER_MODEL_MAP[model] || DEFAULT_FREE_MODEL;
     } else if (geminiKey) {
       endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
       authHeader = `Bearer ${geminiKey}`;
