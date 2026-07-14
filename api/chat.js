@@ -24,6 +24,18 @@ function newRequestId() {
   }
 }
 
+// Map the app's short model names to valid OpenRouter model IDs.
+const OPENROUTER_MODEL_MAP = {
+  'gemini-3.5-flash': 'google/gemini-2.5-flash',
+  'gemini-3.5-flash-thinking': 'google/gemini-2.5-flash',
+  'gemini-3.5-flash-thinking-lite': 'google/gemini-2.5-flash',
+  'gemini-3.1-pro': 'google/gemini-2.5-pro',
+  'gemini-auto': 'google/gemini-2.5-flash',
+  'gemini-flash-lite': 'google/gemini-2.0-flash-lite-001',
+  'gpt-4o-mini': 'openai/gpt-4o-mini',
+  'claude-sonnet-4-5': 'anthropic/claude-3.5-sonnet',
+};
+
 export default function handler(req, res) {
   const requestId = req.headers?.['x-request-id'] || newRequestId();
   // Correlation id echoed back so clients can attach it to any client-side telemetry
@@ -50,16 +62,26 @@ export default function handler(req, res) {
       return res.status(400).json({ error: 'Missing messages' });
     }
 
-    // Resolve upstream. Preferred: self-contained Google native OpenAI-compat
-    // endpoint (needs only GEMINI_API_KEY, no localhost/tunnel). Fallback: the
-    // legacy cookie-scraper web2api instance at GEMINI_WEB2API_URL.
+    // Resolve upstream. Priority order (all env-driven, server-side only):
+    //   1. OpenRouter (OPENROUTER_API_KEY) — recommended, non-personal key
+    //   2. Google native OpenAI-compat (GEMINI_API_KEY)
+    //   3. Legacy cookie-scraper web2api (GEMINI_WEB2API_URL)
+    const openrouterKey = process.env.OPENROUTER_API_KEY;
     const geminiKey = process.env.GEMINI_API_KEY;
     const web2apiUrl = process.env.GEMINI_WEB2API_URL;
     const web2apiKey = process.env.GEMINI_WEB2API_KEY;
 
     let endpoint;
     let authHeader = null;
-    if (geminiKey) {
+    const extraHeaders = {};
+    let modelForRequest = model;
+    if (openrouterKey) {
+      endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+      authHeader = `Bearer ${openrouterKey}`;
+      extraHeaders['HTTP-Referer'] = 'https://looking-glass-eta.vercel.app';
+      extraHeaders['X-Title'] = 'Looking Glass AI';
+      modelForRequest = OPENROUTER_MODEL_MAP[model] || model;
+    } else if (geminiKey) {
       endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
       authHeader = `Bearer ${geminiKey}`;
     } else if (web2apiUrl) {
@@ -67,11 +89,12 @@ export default function handler(req, res) {
       if (web2apiKey) authHeader = `Bearer ${web2apiKey}`;
     } else {
       logError('ai_chat_no_upstream', requestId, new Error('No AI upstream configured'), {});
-      return res.status(503).json({ error: 'AI not configured (set GEMINI_API_KEY)' });
+      return res.status(503).json({ error: 'AI not configured (set OPENROUTER_API_KEY)' });
     }
 
     const headers = {
       'Content-Type': 'application/json',
+      ...extraHeaders,
     };
     if (authHeader) {
       headers.Authorization = authHeader;
@@ -82,7 +105,7 @@ export default function handler(req, res) {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model,
+          model: modelForRequest,
           max_tokens: body.max_tokens || 2000,
           temperature: body.temperature ?? 0.3,
           messages,
