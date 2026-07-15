@@ -71,9 +71,9 @@
   }
 
   .lg-orb-pill-action {
-    min-height: 36px;
-    padding-top: 7px;
-    padding-bottom: 7px;
+    min-height: 44px !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
   }
 }
 
