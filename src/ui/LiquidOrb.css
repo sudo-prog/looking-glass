@@ -299,19 +299,18 @@
 }
 
 /* ── TOUCH TARGET FLOOR (coarse pointers / mobile) ──────────────
-   Audit (iPhone 16 Pro, 402px) found 9 sub-36px touch targets in the
-   LiquidOrb widget: pill actions (23px tall), orb tools/send (32px),
-   and the pill close button (34px). Bump every interactine orb control to
-   >=36px so they meet the tap-target floor and clear the home indicator. */
+   Enforce the 44px tap-target floor (MOBILE-UI-STANDARD T-1 / iOS HIG /
+   WCAG 2.5.5) on every interactive orb control so none falls below 44px.
+   (responsive.css owns the authoritative !important overrides.) */
 @media (pointer: coarse) {
   .lg-orb{width:44px;height:44px}
-  .lg-orb-pill-brand{padding:7px 12px 7px 6px;min-height:36px}
-  .lg-orb-pill-orb{width:36px;height:36px}
-  .lg-orb-pill-action{min-height:36px;padding:9px 14px;border-radius:18px}
-  .lg-orb-pill-close{width:36px;height:36px}
-  .lg-orb-tool{width:36px;height:36px}
-  .lg-orb-send{width:36px;height:36px}
-  .lg-orb-att-rm{width:22px;height:22px}
+  .lg-orb-pill-brand{padding:7px 12px 7px 6px;min-height:44px}
+  .lg-orb-pill-orb{width:44px;height:44px}
+  .lg-orb-pill-action{min-height:44px;padding:10px 14px;border-radius:18px}
+  .lg-orb-pill-close{width:44px;height:44px}
+  .lg-orb-tool{width:44px;height:44px}
+  .lg-orb-send{width:44px;height:44px}
+  .lg-orb-att-rm{width:44px;height:44px}
 }
 @media(prefers-reduced-motion:reduce){
   .lg-orb,.lg-orb-pill,.lg-orb-chat{transition:opacity .18s!important}

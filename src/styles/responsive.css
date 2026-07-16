@@ -57,17 +57,28 @@
     min-width: 44px;
   }
 
-  /* AI Orb widget — bump compact controls to touch-friendly sizes.
-     Keeps the pill layout intact while meeting the 36px tap-target floor. */
+  /* AI Orb widget — bump compact controls to the 44px tap-target floor
+     (MOBILE-UI-STANDARD T-1 / iOS HIG / WCAG 2.5.5). Covers EVERY interactive
+     orb control so none falls below 44px. Keeps the pill layout intact. */
+  .lg-orb,
   .lg-orb-tool,
-  .lg-orb-send {
-    width: 40px !important;
-    height: 40px !important;
+  .lg-orb-send,
+  .lg-orb-pill-brand,
+  .lg-orb-pill-orb,
+  .lg-orb-pill-close,
+  .lg-orb-pill-action,
+  .lg-orb-att-rm {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
   }
 
-  .lg-orb-pill-close {
-    width: 38px !important;
-    height: 38px !important;
+  /* Pill brand/action need to keep their padding & pill shape, so only enforce
+     the 44px floor via min-height (width stays intrinsic to content). */
+  .lg-orb-pill-brand,
+  .lg-orb-pill-action {
+    width: auto !important;
   }
 
   .lg-orb-pill-action {
@@ -103,8 +114,8 @@ html, body {
 
   .toolbar-btn,
   .lg-sidebar__nav-item {
-    min-width: 40px;
-    min-height: 40px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .canvas-card {

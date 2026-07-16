@@ -12,3 +12,6 @@ pnpm-lock.yaml.bak
 VID_REF_MP4/
 *.pdf
 .vercel
+
+# local git worktrees (not part of source)
+.worktrees/
