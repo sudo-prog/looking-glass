@@ -33,5 +33,6 @@ pnpm install && pnpm run dev
 - Command Palette (Ctrl+K)
 - Scratch Pad (Ctrl+Shift+N)
 - Spaces (multi-canvas workspaces)
+- **Cloud sync (Supabase)** — sign in to access your canvases across desktop, tablet, and mobile from one source (IndexedDB local-first, mirrored to Supabase with row-level security)
 - Dark/light theme with glass aesthetic
 - PWA with service worker

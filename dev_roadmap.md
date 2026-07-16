@@ -65,12 +65,28 @@
 
 ## Phase 7 — Commercial ⚪
 
-- [ ] Cloud sync (Supabase)
+- [x] **LG-9: Cloud sync (Supabase) — LIVE 2026-07-16** ✅ — dedicated Supabase project
+      `ljlrqqzsowaaimvzbsqp`; tables `canvases` + `items`; RLS locked to `auth.uid()`;
+      IndexedDB↔Supabase LWW sync (`src/lib/sync.js`); email/password auth (`AuthPanel.jsx`).
+      Verified end-to-end (sign-in → insert → read-back → RLS isolation). Deployed to
+      `https://looking-glass-eta.vercel.app`. NOTE: Supabase "Confirm email" still ON — new
+      signups must click confirm email before sync (dashboard toggle to disable).
 - [ ] Real-time collaboration (Yjs CRDT)
 - [ ] Version history / timeline
 - [ ] Browser extension
 - [ ] Plugin system
 - [ ] Monetisation (Stripe / Lemon Squeezy)
+
+---
+
+## Phase 8 — External Integrations ⚪
+
+- [ ] **Immich integration** — self-hosted photo/video backup server (immich.app). Looking Glass is visual-first (image/bookmark cards), so Immich is a natural asset source + backup target.
+  - [ ] Settings panel: Immich server URL + API key (Immich REST v1 `/api/*`, key from Admin → API Keys). Same pattern as the existing AI provider config (stored obfuscated, client-side only — no server).
+  - [ ] **Import:** "Add from Immich" — browse Albums/Assets via `/api/album` + `/api/asset` and drop selected photos as Image cards on the canvas (reuse the existing image-card path). Pagination + thumbnails.
+  - [ ] **Backup (optional):** auto-save captured screenshots / WebClip screenshots to a dedicated Immich album (`POST /api/asset`) so canvas captures survive browser-clearing (today everything lives only in IndexedDB — see Architecture Notes).
+  - [ ] New `src/utils/immich.js` client (token auth, paginated list, asset download/upload). No new backend — talks to the user's own Immich instance directly from the browser (CORS: Immich allows configuring allowed origins).
+  - [ ] NOTE: does NOT replace the local-first IndexedDB store; it's an import/export bridge. (See Phase 7 cloud-sync for the full multi-device sync story.)
 
 ---
 

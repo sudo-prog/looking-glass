@@ -1,8 +1,35 @@
 # AGENT_NOTES — Looking Glass
 
-> Last updated: 2026-07-15
+> Last updated: 2026-07-16
 > Repo: git@github.com:sudo-prog/looking-glass.git (main → Vercel auto/prod)
 > Live: https://looking-glass-eta.vercel.app
+
+## LG-9 Cloud Sync — LIVE (2026-07-16) ✅
+- Supabase project `ljlrqqzsowaaimvzbsqp` (ap-northeast-2). DB tables `canvases` + `items`
+  (schema in `supabase/migrations/0001_init.sql`), RLS owner policies (`canvases_owner` /
+  `items_owner`) lock every row to `auth.uid()`.
+- Client: `src/lib/supabaseClient.js` (reads `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`,
+  build-time only — NEVER the service_role key), `src/lib/sync.js` (IndexedDB↔Supabase LWW),
+  `src/ui/AuthPanel.jsx` (email/password). Local IndexedDB remains source of truth; Supabase is
+  the cross-device mirror.
+- **Verified end-to-end against live DB**: sign-in via anon key (200) → insert canvas (201) +
+  item (201) → read back (200) → anon/no-auth read returns 0 rows (RLS enforced).
+- **REMINDER for user**: Supabase "Confirm email" is ON — a brand-new signup must click the
+  confirm email before sync activates. To make signup instant: Supabase dashboard →
+  Authentication → Providers → Email → OFF "Confirm email".
+- Vercel env holds only `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (encrypted). The anon key
+  is PUBLIC (browser-safe; RLS protects data) — safe to appear in the built bundle.
+
+## SECRET HYGIENE — MANDATORY (see `secret-echo-watchdog.py` + `tmp-secret-scrub.py`)
+1. NEVER type a secret value in chat (passwords / keys / tokens / JWTs / connection strings).
+   Reference by Bitwarden item NAME or ID only.
+2. Pull credentials programmatically: unlock via `bin/bitwarden-unlock.py`, read with
+   `bw get item` (note: `bw get` TRUNCATES long values — use `bw list items --pretty` to get
+   the FULL anon key / JWT). Write to a chmod-600 temp file, use via env, then **shred
+   immediately** (`shred -u -z`). Never leave temp secret files for end-of-task cleanup.
+3. A daily cron (`tmp-secret-scrub-daily`, 04:00) scans /tmp surgically for leftover plaintext
+   secrets and shreds them. The guard only acts when BOTH filename matches a secret pattern AND
+   content holds a real secret value — it will NOT shred code/screenshots.
 
 ## How to verify mobile UI (MANDATORY — see `mobile-ui-verification-standard` skill)
 The agent model is text-only (no native vision). Previous "fixed" claims were wrong
@@ -32,6 +59,11 @@ because they relied on build success + code reading + a screenshot. Correct loop
 - [x] **AI Summarise/Organise** (§1) — AISummarisePanel uses shared aiConfig.js.
 - [x] **AI relay** — api/chat.js: OpenRouter → Google native → web2api fallback,
       free-tier-only models, no personal key.
+- [ ] **LG-8 refinements (2026-07-16, IN PROGRESS):** §9.1 send-twice (LiquidOrb), §9.2
+      ScratchPad flexbox+dvh centering, §9.3 FolderCard tap feedback, §9.4 LiquidOrb
+      fonts/radii→design tokens, §1d sidebar touch reorder, §10.1 shared Modal primitive,
+      §10.2 stylelint. New verification harness: `lg8-verify-mobile.mjs` (Playwright 390×844).
+      Build + deploy + visual verify PENDING (worker editing worktree).
 
 ## Gotchas for future agents
 - The infinite canvas applies a world transform (`translate(x,y) scale(s)`); screen→world
