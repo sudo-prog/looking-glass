@@ -1,0 +1,38 @@
+{
+  "baseline": {
+    "docOverflow": 0,
+    "realOff": 0,
+    "offList": [],
+    "totalTaps": 15,
+    "smallTaps": 9,
+    "consoleErrs": 0,
+    "errSample": []
+  },
+  "command-palette": {
+    "docOverflow": 0,
+    "realOff": 0,
+    "offList": [],
+    "totalTaps": 18,
+    "smallTaps": 10,
+    "consoleErrs": 0,
+    "errSample": []
+  },
+  "scratchpad": {
+    "docOverflow": 0,
+    "realOff": 0,
+    "offList": [],
+    "totalTaps": 22,
+    "smallTaps": 16,
+    "consoleErrs": 0,
+    "errSample": []
+  },
+  "orb-setup": {
+    "docOverflow": 0,
+    "realOff": 0,
+    "offList": [],
+    "totalTaps": 15,
+    "smallTaps": 9,
+    "consoleErrs": 0,
+    "errSample": []
+  }
+}

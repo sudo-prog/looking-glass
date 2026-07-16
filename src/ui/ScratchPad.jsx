@@ -216,7 +216,8 @@ export function ScratchPad() {
             ◎ SCRATCH PAD · ALT+SHIFT+SPACE
           </div>
 
-          {/* Colour picker dots */}
+          {/* Colour picker dots — buttons are 44px tap targets (transparent),
+              visible colored dot is an inner span kept small for design. */}
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {STICKY_COLORS.map((c, i) => (
               <button
@@ -224,19 +225,34 @@ export function ScratchPad() {
                 aria-label={`Color: ${c.label}`}
                 onClick={() => setColorIdx(i)}
                 style={{
-                  width: i === colorIdx ? '10px' : '6px',
-                  height: i === colorIdx ? '10px' : '6px',
+                  width: '44px',
+                  height: '44px',
                   borderRadius: '50%',
-                  background: c.border,
-                  border: i === colorIdx
-                    ? '2px solid rgba(255,255,255,0.50)'
-                    : '1px solid rgba(255,255,255,0.15)',
+                  background: 'transparent',
+                  border: 'none',
                   cursor: 'pointer',
                   padding: 0,
-                  transition: 'all 0.15s ease',
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   flexShrink: 0,
                 }}
-              />
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: i === colorIdx ? '10px' : '6px',
+                    height: i === colorIdx ? '10px' : '6px',
+                    borderRadius: '50%',
+                    background: c.border,
+                    border: i === colorIdx
+                      ? '2px solid rgba(255,255,255,0.50)'
+                      : '1px solid rgba(255,255,255,0.15)',
+                    transition: 'all 0.15s ease',
+                  }}
+                />
+              </button>
             ))}
           </div>
         </div>
@@ -291,7 +307,7 @@ export function ScratchPad() {
             <button
               onClick={() => { setOpen(false); setText(''); }}
               style={{
-                height: '34px',
+                height: '44px',
                 padding: '0 14px',
                 borderRadius: '8px',
                 border: `1px solid ${color.border}`,
@@ -310,7 +326,7 @@ export function ScratchPad() {
               onClick={handleSave}
               disabled={saving || !text.trim()}
               style={{
-                height: '34px',
+                height: '44px',
                 padding: '0 18px',
                 borderRadius: '8px',
                 border: 'none',

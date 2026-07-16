@@ -57,23 +57,31 @@
     min-width: 44px;
   }
 
-  /* AI Orb widget — bump compact controls to touch-friendly sizes.
-     Keeps the pill layout intact while meeting the 36px tap-target floor. */
+  /* AI Orb widget — bump compact controls to the 44px touch floor.
+     Use min-* / !important so these win over component CSS on mobile. */
   .lg-orb-tool,
-  .lg-orb-send {
-    width: 40px !important;
-    height: 40px !important;
-  }
-
+  .lg-orb-send,
   .lg-orb-pill-close {
-    width: 38px !important;
-    height: 38px !important;
+    width: 44px !important;
+    height: 44px !important;
   }
 
   .lg-orb-pill-action {
     min-height: 44px !important;
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    border-radius: 22px !important;
+  }
+
+  .lg-orb-pill-brand {
+    min-height: 44px !important;
+    padding-top: 9px !important;
+    padding-bottom: 9px !important;
+  }
+
+  .lg-orb {
+    width: 48px !important;
+    height: 48px !important;
   }
 }
 
