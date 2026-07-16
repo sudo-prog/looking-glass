@@ -16,7 +16,7 @@
   item (201) → read back (200) → anon/no-auth read returns 0 rows (RLS enforced).
 - **REMINDER for user**: Supabase "Confirm email" is ON — a brand-new signup must click the
   confirm email before sync activates. To make signup instant: Supabase dashboard →
-  Authentication → Providers → Email → OFF "Confirm email".
+  Authentication → Providers → Email → OFF "Confirm email". (User aware; left ON for now for account security.)
 - Vercel env holds only `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (encrypted). The anon key
   is PUBLIC (browser-safe; RLS protects data) — safe to appear in the built bundle.
 

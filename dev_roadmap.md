@@ -69,8 +69,9 @@
       `ljlrqqzsowaaimvzbsqp`; tables `canvases` + `items`; RLS locked to `auth.uid()`;
       IndexedDB↔Supabase LWW sync (`src/lib/sync.js`); email/password auth (`AuthPanel.jsx`).
       Verified end-to-end (sign-in → insert → read-back → RLS isolation). Deployed to
-      `https://looking-glass-eta.vercel.app`. NOTE: Supabase "Confirm email" still ON — new
-      signups must click confirm email before sync (dashboard toggle to disable).
+      `https://looking-glass-eta.vercel.app`. NOTE: Supabase "Confirm email" is ON (user aware,
+      left ON for account security) — new signups click confirm email before first sync; dashboard
+      toggle to disable for instant signup.
 - [ ] Real-time collaboration (Yjs CRDT)
 - [ ] Version history / timeline
 - [ ] Browser extension
