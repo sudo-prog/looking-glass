@@ -799,3 +799,160 @@
 .mode-toggle__track--light .mode-toggle__knob {
   transform: translateX(12px);
 }
+
+/* ═══════════════════════════════════════
+   AUTH PANEL (Supabase cloud sync)
+   ═══════════════════════════════════════ */
+
+.lg-auth {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 280px;
+  max-width: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--glass-frost, rgba(20, 20, 25, 0.55));
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.10));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-ui, system-ui);
+  color: var(--text-primary, #fff);
+}
+
+.lg-auth--disabled {
+  opacity: 0.85;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.lg-auth--logged-in {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.lg-auth__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.9;
+}
+
+.lg-auth__icon--on {
+  color: #22C55E;
+}
+
+.lg-auth__title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.lg-auth__hint {
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.6;
+}
+
+.lg-auth__email {
+  font-size: 12px;
+  opacity: 0.85;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lg-auth__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.lg-auth__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lg-auth__field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.10));
+}
+
+.lg-auth__field input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary, #fff);
+  font-size: 13px;
+  font-family: var(--font-ui, system-ui);
+}
+
+.lg-auth__field input::placeholder {
+  color: rgba(255, 255, 255, 0.40);
+}
+
+.lg-auth__confirm {
+  font-size: 11px;
+  color: #F59E0B;
+  line-height: 1.4;
+}
+
+.lg-auth__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lg-auth__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-ui, system-ui);
+  transition: transform 120ms ease, background 120ms ease, opacity 120ms ease;
+}
+
+.lg-auth__btn:active {
+  transform: scale(0.97);
+}
+
+.lg-auth__btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.lg-auth__btn--primary {
+  background: var(--color-accent, #3B82F6);
+  color: #fff;
+}
+
+.lg-auth__btn--link {
+  background: transparent;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  padding: 8px 6px;
+}
+
+.lg-auth__btn--ghost {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary, #fff);
+  padding: 6px 8px;
+}

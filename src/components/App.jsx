@@ -22,6 +22,7 @@ import { CommandPalette } from '../ui/CommandPalette.jsx';
 import { SpacesManager } from '../ui/SpacesManager.jsx';
 import { FolderViewModal } from '../ui/FolderViewModal.jsx';
 import LiquidOrb from '../ui/LiquidOrb.jsx';
+import AuthPanel from '../ui/AuthPanel.jsx';
 
 export function App() {
   const initialized = useRef(false);
@@ -29,6 +30,7 @@ export function App() {
 
   const {
     init,
+    initAuth,
     loadCanvas,
     canvasId,
     viewport,
@@ -90,8 +92,9 @@ export function App() {
     if (!initialized.current) {
       initialized.current = true;
       init();
+      initAuth();
     }
-  }, [init]);
+  }, [init, initAuth]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -726,6 +729,11 @@ export function App() {
           onClearSearch={clearSearch}
         />
       )}
+      {/* Cloud sync auth panel — bottom-right, above the AI orb */}
+      <div style={{ position: 'fixed', right: '16px', bottom: '96px', zIndex: 'calc(var(--z-toolbar, 100) - 1)', maxWidth: '320px' }}>
+        <AuthPanel />
+      </div>
+
       {/* AI Orb — bottom center */}
       <LiquidOrb />
     </div>

@@ -95,8 +95,29 @@ export const store = {
     return reqPromise(s.put({ ...state, updated_at: Date.now() }));
   },
 
+  /**
+   * RAW canvas upsert used by the sync engine — does NOT bump updated_at
+   * (the value arrives from the remote and must be preserved verbatim so
+   * LAST-WRITE-WINS conflict resolution stays correct).
+   */
+  async putCanvas(state) {
+    const s = await tx('canvases', 'readwrite');
+    return reqPromise(s.put(state));
+  },
+
+  async putItem(item) {
+    const s = await tx('items', 'readwrite');
+    return reqPromise(s.put(item));
+  },
+
   async listCanvases() {
     const s = await tx('canvases');
+    return reqPromise(s.getAll());
+  },
+
+  /** All items across every canvas (used by the sync engine's push path). */
+  async listItems() {
+    const s = await tx('items');
     return reqPromise(s.getAll());
   },
 

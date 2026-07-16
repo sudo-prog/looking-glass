@@ -21,6 +21,7 @@
   "dependencies": {
     "@agent-native/core": "^0.80.10",
     "@phosphor-icons/react": "^2.1.10",
+    "@supabase/supabase-js": "^2.110.6",
     "@tiptap/extension-link": "^2.11.0",
     "@tiptap/extension-placeholder": "^2.11.0",
     "@tiptap/extension-task-item": "^2.11.0",

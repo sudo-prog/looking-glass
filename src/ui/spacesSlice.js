@@ -9,6 +9,7 @@
 
 import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES } from '../data/schema.js';
+import { schedulePush } from '../lib/sync.js';
 
 export function spacesSlice(set, get) {
   return {
@@ -77,6 +78,7 @@ export function spacesSlice(set, get) {
         viewport: state.viewport,
         updated_at: Date.now(),
       });
+      schedulePush();
 
       // Load new space
       const canvas = await idbStore.getCanvas(spaceId);
@@ -111,6 +113,7 @@ export function spacesSlice(set, get) {
       const newSpace = { id, name, created_at: now, viewport: canvas.viewport, item_count: 0 };
       set((s) => ({ spaces: [...s.spaces, newSpace] }));
       await get().switchSpace(id);
+      schedulePush();
       return id;
     },
 
@@ -125,6 +128,7 @@ export function spacesSlice(set, get) {
         ),
         canvasName: s.activeSpaceId === spaceId ? newName.trim() : s.canvasName,
       }));
+      schedulePush();
     },
 
     // ── Delete Space ─────────────────────────────────────
@@ -148,6 +152,7 @@ export function spacesSlice(set, get) {
       if (state.activeSpaceId === spaceId && nextSpaceId) {
         await get().switchSpace(nextSpaceId);
       }
+      schedulePush();
     },
 
     // ── Refresh Item Count ────────────────────────────────

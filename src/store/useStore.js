@@ -6,8 +6,11 @@ import { create } from 'zustand';
 import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES } from '../data/schema.js';
 import { spacesSlice } from '../ui/spacesSlice.js';
+import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabaseClient.js';
+import { initSync, stopSync, schedulePush, setSyncRefresh } from '../lib/sync.js';
 
 let viewportSaveTimer = null;
+let authSubscription = null;
 
 // World-space spawn position centered in the actual browser viewport.
 // Falls back to a 1280x800 desktop size when `window` is undefined (SSR/build).
@@ -41,6 +44,60 @@ export const useStore = create((set, get) => ({
 
   // History (managed by HistoryManager, not Zustand)
   undoCounts: { undo: 0, redo: 0 },
+
+  // ── Auth / Cloud sync ─────────────────────────────────
+  // `user` is the Supabase auth user (or null when logged out / not configured).
+  // `authReady` flips true once we've resolved the initial session.
+  user: null,
+  authReady: !isSupabaseConfigured, // if unconfigured, auth is "ready" (never will auth)
+
+  // ── Auth wiring ───────────────────────────────────────
+  // Subscribe to Supabase auth changes and start/stop sync accordingly.
+  // Safe to call even when Supabase is unconfigured (it no-ops).
+  initAuth: async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      // Not configured — mark auth ready so UI stops showing "Checking session…"
+      set({ authReady: true });
+      return;
+    }
+
+    // Keep in-memory items/canvas fresh after a remote pull merges data.
+    setSyncRefresh(() => {
+      const state = get();
+      if (state.canvasId) {
+        idbStore.exportCanvas(state.canvasId).then((items) => {
+          if (items) useStore.setState({ items });
+        });
+      }
+    });
+
+    // Resolve the existing session first (handles persisted sessions + email links).
+    const { data: { session } } = await supabase.auth.getSession();
+    set({ user: session?.user ?? null, authReady: true });
+    if (session?.user) initSync(session.user);
+
+    if (authSubscription) authSubscription.unsubscribe();
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextUser = session?.user ?? null;
+      set({ user: nextUser });
+      if (nextUser) {
+        initSync(nextUser);
+        // Re-hydrate the active canvas from IDB after the pull lands.
+        schedulePush();
+      } else {
+        stopSync();
+      }
+      // Refresh active canvas in memory with anything pulled/merged.
+      const state = get();
+      if (state.canvasId) {
+        idbStore.exportCanvas(state.canvasId).then((items) => {
+          if (items) useStore.setState({ items });
+        });
+      }
+    });
+    authSubscription = sub;
+  },
 
   // Initialize — sets up DB, then loads spaces
   init: async () => {
@@ -79,6 +136,7 @@ export const useStore = create((set, get) => ({
     set((s) => ({ items: [...s.items, item] }));
     // Refresh space item count after adding
     get().refreshSpaceCount(state.canvasId);
+    schedulePush();
     return item;
   },
 
@@ -206,6 +264,7 @@ export const useStore = create((set, get) => ({
     set((s) => ({
       items: s.items.map((i) => (i.id === id ? updated : i)),
     }));
+    schedulePush();
   },
 
   deleteItem: async (id) => {
@@ -217,6 +276,7 @@ export const useStore = create((set, get) => ({
     }));
     // Refresh space item count after deleting
     get().refreshSpaceCount(state.canvasId);
+    schedulePush();
   },
 
   deleteSelected: async () => {
@@ -230,6 +290,7 @@ export const useStore = create((set, get) => ({
     }));
     // Refresh space item count after deleting
     get().refreshSpaceCount(state.canvasId);
+    schedulePush();
   },
 
   // Selection
@@ -270,6 +331,7 @@ export const useStore = create((set, get) => ({
       if (viewportSaveTimer) clearTimeout(viewportSaveTimer);
       viewportSaveTimer = setTimeout(() => {
         idbStore.saveCanvas({ id: state.canvasId, name: state.canvasName, viewport: get().viewport });
+        schedulePush();
       }, 400);
     }
   },
