@@ -1,0 +1,27 @@
+.lg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    calc(env(safe-area-inset-top) + 8px)
+    calc(env(safe-area-inset-right) + 8px)
+    calc(env(safe-area-inset-bottom) + 8px)
+    calc(env(safe-area-inset-left) + 8px);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: lg-modal-fade 0.18s ease both;
+  /* Any direct child panel is capped to the viewport — fixes off-center / overflow modals */
+}
+.lg-modal-overlay > * {
+  max-width: min(100%, 92vw);
+  max-height: 90dvh;
+  max-height: 90vh; /* fallback for browsers without dvh */
+}
+@keyframes lg-modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

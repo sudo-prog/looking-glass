@@ -657,7 +657,7 @@ export default function LiquidOrb() {
         const id = op.id || `feat-${Date.now()}`;
         if (document.getElementById(id)) return;
         const w = document.createElement('div'); w.id = id;
-        w.innerHTML = op.html || `<div style="position:fixed;top:20px;right:80px;z-index:600;background:rgba(16,16,24,.82);border:1px solid rgba(255,255,255,.09);color:rgba(238,238,248,.82);font-family:'DM Sans',sans-serif;font-size:12px;padding:8px 16px;border-radius:20px;backdrop-filter:blur(20px);">${esc(op.label || 'Feature')}</div>`;
+        w.innerHTML = op.html || `<div style="position:fixed;top:20px;right:80px;z-index:600;background:rgba(16,16,24,.82);border:1px solid rgba(255,255,255,.09);color:rgba(238,238,248,.82);font-family:var(--font-body);font-size:12px;padding:8px 16px;border-radius:var(--radius-2xl);backdrop-filter:blur(20px);">${esc(op.label || 'Feature')}</div>`;
         document.body.appendChild(w);
         featuresRef.current[id] = w;
         logMut('add', `Feature: ${op.label || id}`); break;
@@ -671,7 +671,7 @@ export default function LiquidOrb() {
         const variants = { success: 'rgba(80,200,120,.75)', error: 'rgba(255,80,80,.75)', info: 'rgba(165,165,185,.55)' };
         const dot = variants[op.variant] || variants.info;
         const n = document.createElement('div');
-        n.style.cssText = `position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(12,12,20,.92);border:1px solid rgba(255,255,255,.09);color:rgba(238,238,248,.88);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 18px;border-radius:16px;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.4);display:flex;align-items:center;gap:9px;pointer-events:none;`;
+        n.style.cssText = `position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(12,12,20,.92);border:1px solid rgba(255,255,255,.09);color:rgba(238,238,248,.88);font-family:var(--font-body);font-size:13px;padding:10px 18px;border-radius:16px;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.4);display:flex;align-items:center;gap:9px;pointer-events:none;`;
         n.innerHTML = `<span style="color:${dot}">✦</span><span>${esc(op.message || '')}</span>`;
         document.body.appendChild(n);
         setTimeout(() => { n.remove(); }, op.duration || 3000);
@@ -920,7 +920,7 @@ export default function LiquidOrb() {
                 </span>
               </div>
               <div className="lg-orb-tb-r">
-                <button className="lg-orb-send" disabled={!taRef.current?.value?.trim()} onClick={handleSend}>
+                <button className="lg-orb-send" onClick={handleSend}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" /></svg>
                 </button>
               </div>
@@ -935,7 +935,8 @@ export default function LiquidOrb() {
           className="lg-orb-setup-overlay"
           style={{
             position: 'fixed', inset: 0, zIndex: 9999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            paddingTop: '12vh',
             background: 'rgba(0,0,0,0.50)',
             backdropFilter: 'blur(4px)',
             WebkitBackdropFilter: 'blur(4px)',
@@ -946,16 +947,19 @@ export default function LiquidOrb() {
             className="lg-orb-setup-dialog"
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: 'min(420px, 92vw)',
+              width: 'min(420px, calc(100vw - 24px))',
               background: 'var(--glass-frost)',
               backdropFilter: 'blur(32px) saturate(180%)',
               WebkitBackdropFilter: 'blur(32px) saturate(180%)',
               border: '1px solid var(--color-border)',
-              borderRadius: '24px',
+              borderRadius: 'var(--radius-2xl)',
               boxShadow: '0 24px 80px var(--glass-cast-shadow), inset 0 1px 0 var(--glass-specular)',
               padding: '28px 24px',
-              fontFamily: "'DM Sans',system-ui,sans-serif",
+              fontFamily: 'var(--font-body)',
               color: 'var(--text-primary)',
+              maxHeight: 'calc(100dvh - 24px)',
+              maxHeight: 'calc(100vh - 24px)',
+              overflowY: 'auto',
             }}
           >
             {/* Title */}
@@ -976,7 +980,7 @@ export default function LiquidOrb() {
                 onClick={() => setShowSetup(false)}
                 style={{
                   background: 'none', border: 'none', color: 'var(--text-secondary)',
-                  cursor: 'pointer', padding: 4, borderRadius: 8,
+                  cursor: 'pointer', padding: 4, borderRadius: 'var(--radius-md)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
@@ -987,7 +991,7 @@ export default function LiquidOrb() {
             {/* Provider tabs */}
             <div style={{
               display: 'flex', gap: 4, marginBottom: 16, padding: 3,
-              background: 'rgba(255,255,255,0.04)', borderRadius: 12, flexWrap: 'wrap',
+              background: 'rgba(255,255,255,0.04)', borderRadius: 'var(--radius-lg)', flexWrap: 'wrap',
             }}>
               {Object.entries(getProviders()).map(([pid, p]) => {
                 const active = pid === cfgProvider;
@@ -996,8 +1000,8 @@ export default function LiquidOrb() {
                   <div key={pid} style={{ position: 'relative', flex: '1 0 auto' }}>
                     <button style={{
                       width: '100%', background: active ? 'rgba(255,255,255,0.10)' : 'none',
-                      border: 'none', borderRadius: 9, padding: '6px 8px', cursor: 'pointer',
-                      fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: active ? 600 : 400,
+                      border: 'none', borderRadius: 'var(--radius-md)', padding: '6px 8px', cursor: 'pointer',
+                      fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: active ? 600 : 400,
                       color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                       transition: 'all 0.15s', whiteSpace: 'nowrap',
                     }} onClick={() => {
@@ -1027,10 +1031,10 @@ export default function LiquidOrb() {
                 onClick={() => setShowAddProvider(v => !v)}
                 style={{
                   flex: '0 0 auto', width: 32, height: 32,
-                  border: '1px dashed var(--color-border)', borderRadius: 9,
+                  border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-md)',
                   background: 'transparent', cursor: 'pointer', display: 'flex',
                   alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)',
-                  fontSize: 14, fontFamily: "'DM Sans',sans-serif",
+                  fontSize: 14, fontFamily: 'var(--font-body)',
                 }}
                 title="Add custom LLM / API"
               >+</button>
@@ -1039,30 +1043,30 @@ export default function LiquidOrb() {
             {/* Add custom provider form */}
             {showAddProvider && (
               <div style={{
-                marginBottom: 16, padding: '12px 14px', borderRadius: 12,
+                marginBottom: 16, padding: '12px 14px', borderRadius: 'var(--radius-lg)',
                 border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.03)',
                 display: 'flex', flexDirection: 'column', gap: 8,
               }}>
                 <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-disabled)', textTransform: 'uppercase' }}>Add Custom Provider</div>
                 <input type="text" placeholder="Provider name (e.g. Local LLM)" value={newProviderName}
                   onChange={e => setNewProviderName(e.target.value)}
-                  style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, outline: 'none' }}
+                  style={{ padding: '7px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 11, outline: 'none' }}
                 />
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <input type="text" placeholder="Icon (emoji, e.g. 🤖)" value={newProviderIcon} style={{ width: 50, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: 11, outline: 'none', textAlign: 'center' }} onChange={e => setNewProviderIcon(e.target.value)} />
-                  <input type="text" placeholder="API endpoint URL" value={newProviderURL} style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none' }} onChange={e => setNewProviderURL(e.target.value)} />
+                  <input type="text" placeholder="Icon (emoji, e.g. 🤖)" value={newProviderIcon} style={{ width: 50, padding: '7px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: 11, outline: 'none', textAlign: 'center' }} onChange={e => setNewProviderIcon(e.target.value)} />
+                  <input type="text" placeholder="API endpoint URL" value={newProviderURL} style={{ flex: 1, padding: '7px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', fontSize: 11, outline: 'none' }} onChange={e => setNewProviderURL(e.target.value)} />
                 </div>
                 <input type="text" placeholder="Models (comma-separated, e.g. model-a, model-b)" value={newProviderModels}
                   onChange={e => setNewProviderModels(e.target.value)}
-                  style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none' }}
+                  style={{ padding: '7px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', fontSize: 11, outline: 'none' }}
                 />
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer' }}>
                   <input type="checkbox" checked={newProviderNeedsKey} onChange={e => setNewProviderNeedsKey(e.target.checked)} />
                   Requires API key
                 </label>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={handleAddCustomProvider} style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'var(--color-accent, #8B5CF6)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: "'DM Sans',sans-serif" }}>Add Provider</button>
-                  <button onClick={() => setShowAddProvider(false)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, fontFamily: "'DM Sans',sans-serif" }}>Cancel</button>
+                  <button onClick={handleAddCustomProvider} style={{ flex: 1, padding: '8px 10px', borderRadius: 'var(--radius-md)', border: 'none', background: 'var(--color-accent, #8B5CF6)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-body)' }}>Add Provider</button>
+                  <button onClick={() => setShowAddProvider(false)} style={{ padding: '8px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-body)' }}>Cancel</button>
                 </div>
               </div>
             )}
@@ -1072,8 +1076,8 @@ export default function LiquidOrb() {
             <select
               style={{
                 width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                fontFamily: "'DM Sans',sans-serif", fontSize: 12, outline: 'none',
+                borderRadius: 'var(--radius-lg)', padding: '8px 10px', color: 'var(--text-primary)',
+                fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none',
                 marginBottom: 14, appearance: 'none', cursor: 'pointer',
               }}
               value={cfgModel}
@@ -1096,8 +1100,8 @@ export default function LiquidOrb() {
                   onChange={(e) => setCustomModel(e.target.value)}
                   style={{
                     width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                    borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                    fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
+                    borderRadius: 'var(--radius-lg)', padding: '8px 10px', color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-ui)', fontSize: 11, outline: 'none',
                   }}
                 />
               </div>
@@ -1115,8 +1119,8 @@ export default function LiquidOrb() {
                     onChange={(e) => setCfgKey(e.target.value)}
                     style={{
                       flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                      borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                      fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
+                      borderRadius: 'var(--radius-lg)', padding: '8px 10px', color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-ui)', fontSize: 11, outline: 'none',
                     }}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSetup(); }}
                   />
@@ -1134,8 +1138,8 @@ export default function LiquidOrb() {
                 <input type="text" placeholder="http://localhost:11434"
                   style={{
                     width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                    borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                    fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
+                    borderRadius: 'var(--radius-lg)', padding: '8px 10px', color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-ui)', fontSize: 11, outline: 'none',
                   }}
                 />
               </div>
@@ -1145,15 +1149,15 @@ export default function LiquidOrb() {
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
               <button style={{
                 flex: 1, background: 'var(--color-accent, #8B5CF6)', color: '#fff',
-                border: 'none', borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
-                fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 500,
+                border: 'none', borderRadius: 'var(--radius-lg)', padding: '10px 12px', cursor: 'pointer',
+                fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500,
               }} onClick={handleSaveSetup}>
                 Save & Continue
               </button>
               <button style={{
                 background: 'transparent', color: 'var(--text-secondary)',
-                border: '1px solid var(--color-border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
-                fontFamily: "'DM Sans',sans-serif", fontSize: 13,
+                border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '10px 12px', cursor: 'pointer',
+                fontFamily: 'var(--font-body)', fontSize: 13,
               }} onClick={() => setShowSetup(false)}>
                 Later
               </button>
@@ -1180,14 +1184,14 @@ export default function LiquidOrb() {
             backdropFilter: 'blur(32px) saturate(180%)',
             WebkitBackdropFilter: 'blur(32px) saturate(180%)',
             border: '1px solid var(--color-border)',
-            borderRadius: 20, padding: '20px 18px', width: 310,
+            borderRadius: 'var(--radius-2xl)', padding: '20px 18px', width: 310,
             boxShadow: '0 20px 60px var(--glass-cast-shadow), inset 0 1px 0 var(--glass-specular)',
-            fontFamily: "'DM Sans',system-ui,sans-serif",
+            fontFamily: 'var(--font-body)',
           }}
           onClick={(e) => e.stopPropagation()}
         >
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>AI Provider</div>
-          <div style={{ display: 'flex', gap: 4, marginBottom: 16, padding: 3, background: 'rgba(255,255,255,0.04)', borderRadius: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 16, padding: 3, background: 'rgba(255,255,255,0.04)', borderRadius: 'var(--radius-lg)', flexWrap: 'wrap' }}>
             {Object.entries(getProviders()).map(([pid, p]) => {
               const active = pid === cfgProvider;
               const isCustom = !p.builtin;
@@ -1195,8 +1199,8 @@ export default function LiquidOrb() {
                 <div key={pid} style={{ position: 'relative', flex: '1 0 auto' }}>
                   <button style={{
                     width: '100%', background: active ? 'rgba(255,255,255,0.10)' : 'none',
-                    border: 'none', borderRadius: 9, padding: '5px 6px', cursor: 'pointer',
-                    fontFamily: "'DM Sans',sans-serif", fontSize: 10, fontWeight: active ? 600 : 400,
+                    border: 'none', borderRadius: 'var(--radius-md)', padding: '5px 6px', cursor: 'pointer',
+                    fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: active ? 600 : 400,
                     color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                     transition: 'all 0.15s', whiteSpace: 'nowrap',
                   }} onClick={() => {
@@ -1226,10 +1230,10 @@ export default function LiquidOrb() {
               onClick={() => { setSettingsOpen(false); setShowAddProvider(true); setShowSetup(true); }}
               style={{
                 flex: '0 0 auto', width: 28, height: 28,
-                border: '1px dashed var(--color-border)', borderRadius: 9,
+                border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-md)',
                 background: 'transparent', cursor: 'pointer', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)',
-                fontSize: 13, fontFamily: "'DM Sans',sans-serif",
+                fontSize: 13, fontFamily: 'var(--font-body)',
               }}
               title="Add custom LLM / API"
             >+</button>
@@ -1239,8 +1243,8 @@ export default function LiquidOrb() {
           <select
             style={{
               width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-              borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-              fontFamily: "'DM Sans',sans-serif", fontSize: 12, outline: 'none',
+              borderRadius: 'var(--radius-lg)', padding: '8px 10px', color: 'var(--text-primary)',
+              fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none',
               marginBottom: 14, appearance: 'none', cursor: 'pointer',
             }}
             value={cfgModel}
@@ -1262,8 +1266,8 @@ export default function LiquidOrb() {
                 onChange={(e) => setCustomModel(e.target.value)}
                 style={{
                   width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                  borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                  fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
+                  borderRadius: 'var(--radius-lg)', padding: '8px 10px', color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-ui)', fontSize: 11, outline: 'none',
                 }}
               />
             </div>
@@ -1278,8 +1282,8 @@ export default function LiquidOrb() {
               onChange={(e) => setCfgKey(e.target.value)}
               style={{
                 flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
+                borderRadius: 'var(--radius-lg)', padding: '8px 10px', color: 'var(--text-primary)',
+                fontFamily: 'var(--font-ui)', fontSize: 11, outline: 'none',
               }}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSettings(); if (e.key === 'Escape') setSettingsOpen(false); }}
             />
@@ -1292,13 +1296,13 @@ export default function LiquidOrb() {
           <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
             <button style={{
               flex: 1, background: 'var(--color-accent, #8B5CF6)', color: '#fff',
-              border: 'none', borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
-              fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 500,
+              border: 'none', borderRadius: 'var(--radius-lg)', padding: '9px 12px', cursor: 'pointer',
+              fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500,
             }} onClick={handleSaveSettings}>Save</button>
             <button style={{
               background: 'rgba(255,80,80,0.10)', color: 'rgba(255,100,100,0.75)',
-              border: '1px solid rgba(255,80,80,0.18)', borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
-              fontFamily: "'DM Sans',sans-serif", fontSize: 12,
+              border: '1px solid rgba(255,80,80,0.18)', borderRadius: 'var(--radius-lg)', padding: '9px 12px', cursor: 'pointer',
+              fontFamily: 'var(--font-body)', fontSize: 12,
             }} onClick={handleClearKey}>Clear</button>
           </div>
 

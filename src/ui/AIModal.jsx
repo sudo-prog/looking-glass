@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Sparkle, Eye, EyeSlash, Warning } from '@phosphor-icons/react';
 import { getProviders, loadAIConfig, saveAIConfig } from '../utils/aiConfig.js';
 import './AIModal.css';
+import Modal from './primitives/Modal';
 
 export default function AIModal({ isOpen, onClose }) {
   const [provider, setProvider] = useState('gemini-web2api');
@@ -104,7 +105,7 @@ export default function AIModal({ isOpen, onClose }) {
   const currentProvider = getProviders()[provider];
 
   return (
-    <div className="lg-ai-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <Modal isOpen={isOpen} onClose={onClose} labelledBy="ai-modal-title">
       {/* Mobile bottom-sheet drag grip (hidden on desktop via CSS) */}
       <div className="lg-ai-modal__grip" aria-hidden="true">
         <span className="lg-ai-modal__grip-bar" />
@@ -238,6 +239,6 @@ export default function AIModal({ isOpen, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

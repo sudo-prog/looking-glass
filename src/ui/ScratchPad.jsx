@@ -147,49 +147,52 @@ export function ScratchPad() {
 
   return (
     <>
-      {/* Dim overlay */}
+      {/* Dim overlay + flexbox centering wrapper */}
       <div
+        onClick={() => setOpen(false)}
         style={{
           position: 'fixed',
           inset: 0,
+          zIndex: 'calc(var(--z-modal) + 1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding:
+            'calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 8px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 8px)',
           background: 'rgba(0,0,0,0.35)',
-          zIndex: 'var(--z-modal)',
           backdropFilter: 'blur(2px)',
         }}
-      />
-
-      {/* Panel */}
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-label="Scratch pad — capture a thought"
-        aria-modal="true"
-        style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 'calc(var(--z-modal) + 1)',
-          width: 'min(500px, 90vw)',
-          borderRadius: '20px',
-          background: color.bg,
-          border: `1px solid ${color.border}`,
-          boxShadow:
-            'inset 0 1px 0 rgba(255,255,255,0.10), 0 24px 64px rgba(0,0,0,0.80)',
-          backdropFilter: 'blur(40px) saturate(120%)',
-          WebkitBackdropFilter: 'blur(40px) saturate(120%)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          animation: 'scratch-appear 0.22s cubic-bezier(0.34,1.56,0.64,1) both',
-        }}
       >
-        <style>{`
-          @keyframes scratch-appear {
-            from { opacity: 0; transform: translate(-50%,-50%) scale(0.90); }
-            to   { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-          }
-        `}</style>
+        {/* Panel */}
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-label="Scratch pad — capture a thought"
+          aria-modal="true"
+          style={{
+            maxWidth: 'min(500px, calc(100vw - 16px))',
+            width: 'min(500px, calc(100vw - 16px))',
+            maxHeight: '90dvh',
+            maxHeight: '90vh',
+            overflow: 'hidden',
+            borderRadius: 'var(--radius-2xl)',
+            background: color.bg,
+            border: `1px solid ${color.border}`,
+            boxShadow:
+              'inset 0 1px 0 rgba(255,255,255,0.10), 0 24px 64px rgba(0,0,0,0.80)',
+            backdropFilter: 'blur(40px) saturate(120%)',
+            WebkitBackdropFilter: 'blur(40px) saturate(120%)',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'scratch-appear 0.22s cubic-bezier(0.34,1.56,0.64,1) both',
+          }}
+        >
+          <style>{`
+            @keyframes scratch-appear {
+              from { opacity: 0; transform: scale(0.90); }
+              to   { opacity: 1; transform: scale(1); }
+            }
+          `}</style>
 
         {/* Header */}
         <div
@@ -325,6 +328,7 @@ export function ScratchPad() {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </>
   );

@@ -407,7 +407,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
                 onPointerDown={(e) => handlePointerDown(e, index, id)}
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerUp}
-                draggable={!showRemove[id]}
+                draggable={!showRemove[id] && !isMobile}
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDrop={(e) => handleDrop(e, index)}

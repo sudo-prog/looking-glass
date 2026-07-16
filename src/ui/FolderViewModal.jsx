@@ -31,6 +31,7 @@ import {
   File as FileIcon,
   LinkSimple,
 } from '@phosphor-icons/react';
+import Modal from './primitives/Modal';
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -162,29 +163,14 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
   const children = folder.meta?.child_items || [];
 
   return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Folder: ${folder.content?.title || 'Folder'}`}
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 'var(--z-modal)',
-        background: 'rgba(0,0,0,0.55)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '8px',
-      }}
-    >
+    <Modal isOpen={!!folder} onClose={onClose} labelledBy="folder-view-modal-title">
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
           width: 'min(820px, 100%)',
-          height: 'min(84vh, 100%)',
-          maxHeight: 'calc(100vh - 16px)',
+          height: 'min(84dvh, 100%)',
+          maxHeight: '90dvh',
+          maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
           borderRadius: '20px',
@@ -256,6 +242,7 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
                 />
               ) : (
                 <div
+                  id="folder-view-modal-title"
                   onDoubleClick={() => setEditingName(true)}
                   style={{
                     fontFamily: 'var(--font-body)',
@@ -402,7 +389,7 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
           </button>
         </div>
       </div>
-    </div>,
+    </Modal>,
     document.body,
   );
 }

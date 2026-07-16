@@ -522,8 +522,11 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave, onOpen })
           display: 'flex',
           flexDirection: 'column',
           cursor: 'pointer',
-          transition: 'box-shadow 0.15s ease',
+          transition: 'box-shadow 0.15s ease, transform 0.15s ease',
         }}
+        onPointerDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)'; }}
+        onPointerUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+        onPointerLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
       >
         <FolderOpen size={18} weight="regular" style={{ color: 'var(--text-disabled)', flexShrink: 0, marginBottom: '14px' }} />
 
