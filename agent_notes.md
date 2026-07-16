@@ -27,9 +27,11 @@
    `bw get item` (note: `bw get` TRUNCATES long values — use `bw list items --pretty` to get
    the FULL anon key / JWT). Write to a chmod-600 temp file, use via env, then **shred
    immediately** (`shred -u -z`). Never leave temp secret files for end-of-task cleanup.
-3. A daily cron (`tmp-secret-scrub-daily`, 04:00) scans /tmp surgically for leftover plaintext
-   secrets and shreds them. The guard only acts when BOTH filename matches a secret pattern AND
-   content holds a real secret value — it will NOT shred code/screenshots.
+3. SECRET CLEANUP IS DONE **IN-SESSION, PERSONALLY** — NOT by an autonomous cron. A daily
+   REPORT-ONLY reminder (`tmp-secret-cleanup-reminder`, 09:00) nudges the agent to scan /tmp
+   and shred leftover plaintext secrets **with verification** (look at each file first). The
+   old auto-scrub cron was REMOVED after it destroyed 29 collateral files on 2026-07-16.
+   MANDATORY AUDIT TRAIL: every file shredded (in-session or via the reminder) MUST be logged to OPS_LOG.md — dated line with absolute path, matched secret type, and reason judged safe to delete. No deletion without a log line.
 
 ## How to verify mobile UI (MANDATORY — see `mobile-ui-verification-standard` skill)
 The agent model is text-only (no native vision). Previous "fixed" claims were wrong
