@@ -82,3 +82,7 @@ because they relied on build success + code reading + a screenshot. Correct loop
 - **Status:** PASS (live: looking-glass-eta.vercel.app)
 - **Verified:** 2026-07-17 via /tmp/mobile_audit.mjs @390x844 (tap-target >=44px T-1, overflow, safe-area, console errors)
 - **T-1 fix:** enforce 44x44px on touch/coarse + <=767px; backend API queries gated behind DEV||VITE_API_ENABLED to silence 404s on static Vercel deploy.
+
+## Deploy Reconciliation — 2026-07-17 (night, post 17:13 CPU-spike force-reset)
+- After the force-reset, reconciliation confirmed: the 6 mobile-std kanban tasks were CODE-complete + committed + pushed (0 ahead/0 behind on each repo); 4 were stale-"blocked" (workers killed pre-status-flip); 3 live URLs (WWW/PWA/DESIGN) were 404 (stale deploys, NOT code). Per user directive (workers code → orchestrator verifies + pushes + deploys; do NOT re-dispatch 6 workers / do NOT crash again): orchestrator ran dispatch-preflight (cap=2, OK), removed worker temp QA scripts (LG+DESIGN), redeployed WWW/PWA/DESIGN via `vercel deploy --prod --yes` (REMOTE build, zero local RAM), verified all live URLs HTTP 200, marked all 6 tasks + umbrella done on kanban board, committed reconciliation notes. RAM stayed CPU<15%/MEM~30% — no crash. Full detail in chief-of-staff OPS_LOG.md.
+- DESIGN Studio got a SEPARATE follow-up this night: its Phase-2 mock `api/` backend was actually integrated + deployed (VITE_API_ENABLED=true set on prod; `api/index.js` catch-all + vercel.json `/api/*` rewrite). See DESIGN `agent_notes.md` for detail.
