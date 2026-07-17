@@ -77,3 +77,8 @@ because they relied on build success + code reading + a screenshot. Correct loop
   `pkill -f 'Xvfb :99'` which self-matches). Launch script refuses if display is taken.
 - Playwright scripts must run from the repo dir so `require('playwright')` resolves
   from `./node_modules` (it's a devDependency, not global).
+
+## Mobile UI Compliance (MOBILE-UI-STANDARD.md)
+- **Status:** PASS (live: looking-glass-eta.vercel.app)
+- **Verified:** 2026-07-17 via /tmp/mobile_audit.mjs @390x844 (tap-target >=44px T-1, overflow, safe-area, console errors)
+- **T-1 fix:** enforce 44x44px on touch/coarse + <=767px; backend API queries gated behind DEV||VITE_API_ENABLED to silence 404s on static Vercel deploy.
