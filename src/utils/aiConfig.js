@@ -170,6 +170,17 @@ const BUILTIN_PROVIDERS = {
     showBaseURL: false,
     builtin: true,
   },
+  opencode: {
+    name: 'OpenCode Zen',
+    icon: '⌁',
+    keyPlaceholder: '(optional — free models need no key)',
+    keyLabel: 'OpenCode Zen API Key (optional)',
+    baseURL: 'https://opencode.ai/zen/v1/chat/completions',
+    models: ['big-pickle', 'minimax-m2.5-free', 'deepseek-v4-flash-free', 'nemotron-3-super-free'],
+    needsKey: false,
+    showBaseURL: false,
+    builtin: true,
+  },
 };
 
 // ── Custom providers (stored in localStorage) ─────────────────────────────────

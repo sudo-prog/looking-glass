@@ -62,10 +62,19 @@ because they relied on build success + code reading + a screenshot. Correct loop
 - [x] **AI relay** — api/chat.js: OpenRouter → Google native → web2api fallback,
       free-tier-only models, no personal key.
 - [ ] **LG-8 refinements (2026-07-16, IN PROGRESS):** §9.1 send-twice (LiquidOrb), §9.2
-      ScratchPad flexbox+dvh centering, §9.3 FolderCard tap feedback, §9.4 LiquidOrb
-      fonts/radii→design tokens, §1d sidebar touch reorder, §10.1 shared Modal primitive,
-      §10.2 stylelint. New verification harness: `lg8-verify-mobile.mjs` (Playwright 390×844).
-      Build + deploy + visual verify PENDING (worker editing worktree).
+  ScratchPad flexbox+dvh centering, §9.3 FolderCard tap feedback, §9.4 LiquidOrb
+  fonts/radii→design tokens, §1d sidebar touch reorder, §10.1 shared Modal primitive,
+  §10.2 stylelint. New verification harness: `lg8-verify-mobile.mjs` (Playwright 390×844).
+  Build + deploy + visual verify PENDING (worker editing worktree).
+
+## LiquidOrb AI fixes — 2026-07-23
+- **BUG-ORB-1** text stays in box → controlled textarea (`value={draft}` / `onChange={setDraft}`); `handleSend` clears immediately with `setDraft('')`.
+- **BUG-ORB-2** Enter doesn't send / double-click → Enter sends via `e.key === 'Enter' && !e.shiftKey`; controlled component keeps `disabled` prop synced on every keystroke.
+- **BUG-ORB-3** chat closes mid-conversation → removed the `setTimeout(…goToPhase('pill'))` that force-collapsed the panel after replies.
+- Removed `ACTIONS` quick-action buttons (`Fix errors`, `Add feature`, `Change theme`, `Edit self`) and the `lg-orb-pill-actions` block. Replaced by `/debug` typed in chat to toggle debug mode.
+- Collapse button now uses `setDraft('')` instead of broken `taRef.current.value = ''`.
+- **New `src/utils/debugLog.js`** — in-memory error log (200 entries) capturing window errors, unhandled rejections, console.error. Accessible from Settings panel via ⚠ Debug Log button. Copy to clipboard as Markdown / Download as `.md` / Clear.
+- **New OpenCode Zen provider** in `src/utils/aiConfig.js` — 4 free models (big-pickle, minimax-m2.5-free, deepseek-v4-flash-free, nemotron-3-super-free), `needsKey: false`.
 
 ## Gotchas for future agents
 - The infinite canvas applies a world transform (`translate(x,y) scale(s)`); screen→world

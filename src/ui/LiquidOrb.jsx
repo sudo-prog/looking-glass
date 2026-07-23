@@ -9,6 +9,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getProviders, loadAIConfig, saveAIConfig, getProviderDef, addCustomProvider, removeCustomProvider, refreshProviders, resolveModelAlias } from '../utils/aiConfig.js';
+import { initDebugLog, addDebugEntry, getDebugLog, clearDebugLog, downloadDebugLog, copyDebugLog, onDebugLogChange } from '../utils/debugLog.js';
 import './LiquidOrb.css';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -302,8 +303,6 @@ const ORB_LENS = {
   chroma: .18, glow: .10, edgeHighlight: .22, specularAngle: 45
 };
 
-const ACTIONS = ['Fix errors', 'Add feature', 'Change theme', 'Edit self'];
-
 export default function LiquidOrb() {
   const [phase, setPhase] = useState('orb'); // 'orb' | 'pill' | 'chat'
   const [showSetup, setShowSetup] = useState(false); // centered setup dialog
@@ -314,9 +313,13 @@ export default function LiquidOrb() {
   const [attachments, setAttachments] = useState([]);
   const [activeAction, setActiveAction] = useState(null);
   const [chatMode, setChatMode] = useState('chat'); // 'edit' | 'chat' — default conversational so users can ask questions; toggle to Edit UI for fixes
-  const [, forceRender] = useState(0); // forces re-render so the uncontrolled textarea's send-button disabled state updates on each keystroke
+  const [draft, setDraft] = useState('');
+  const [debugMode, setDebugMode] = useState(false);
   const [logs, setLogs] = useState([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showDebugLog, setShowDebugLog] = useState(false);
+  const [dbgEntries, setDbgEntries] = useState([]);
+
 
   // Settings state — read from shared config
   const [cfgProvider, setCfgProvider] = useState('openrouter');
@@ -387,6 +390,16 @@ export default function LiquidOrb() {
     applyOrbFilter(lensRef.current);
     return () => spring.cancel();
   }, [applyOrbFilter]);
+
+  // ── Init debug log capture on mount ──
+  useEffect(() => {
+    initDebugLog();
+    const unsub = onDebugLogChange((entries) => {
+      setDbgEntries(entries.slice());
+    });
+    setDbgEntries(getDebugLog());
+    return unsub;
+  }, []);
 
   // ── Load shared config on mount & check if configured ────────────
   useEffect(() => {
@@ -532,8 +545,18 @@ export default function LiquidOrb() {
 
   // ── Send handler ─────────────────────────────────────────────────
   const handleSend = useCallback(async () => {
-    const txt = taRef.current?.value?.trim();
+    const txt = draft.trim();
     if (!txt && attachments.length === 0) return;
+
+    // /debug toggles debug mode instead of sending
+    if (/^\/debug\b/i.test(txt)) {
+      setDebugMode(m => !m);
+      setDraft('');
+      logMut('info', debugMode ? 'Debug mode off' : 'Debug mode on — AI will inspect DOM for real fixes');
+      return;
+    }
+
+    setDraft(''); // clear immediately — fixes the "text stays in box" bug
 
     const cfg = loadAIConfig();
     if (!cfg.key && getProviderDef(cfg.provider).needsKey) {
@@ -550,7 +573,7 @@ export default function LiquidOrb() {
     try {
       setThinkLabel(chatMode === 'chat' ? 'Thinking…' : 'Planning edits…');
       const snapshot = chatMode === 'chat' ? null : buildSnapshot();
-      const result = await callAI(txt, snapshot, chatMode);
+      const result = await callAI(debugMode ? `[DEBUG MODE] ${txt}` : txt, snapshot, chatMode);
 
       setThinking(false);
       // Show mutation preview
@@ -572,12 +595,7 @@ export default function LiquidOrb() {
         setTimeout(() => {
           setMutPreview('');
           setAiResponse(result.plan);
-          setTimeout(() => {
-            setThinking(false);
-            setAiResponse('');
-            setMutPreview('');
-            goToPhase('pill');
-          }, 2800);
+          // no more auto-collapse — chat stays open so the conversation can continue
         }, totalDelay);
       }, 700);
 
@@ -588,7 +606,7 @@ export default function LiquidOrb() {
         setTimeout(() => setSettingsOpen(true), 400);
       }
     }
-  }, [attachments, logMut, goToPhase]);
+  }, [draft, debugMode, attachments, logMut, goToPhase, chatMode, buildSnapshot]);
 
   // ── DOM Snapshot builder ─────────────────────────────────────────
   const buildSnapshot = useCallback(() => {
@@ -852,20 +870,6 @@ export default function LiquidOrb() {
               <span className="lg-orb-pill-label">Looking Glass AI</span>
             </button>
             <div className="lg-orb-pill-divider" />
-            <div className="lg-orb-pill-actions">
-              {ACTIONS.map(a => (
-                <button
-                  key={a}
-                  className={`lg-orb-pill-action ${activeAction === a ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveAction(a === activeAction ? null : a);
-                    goToPhase('chat');
-                  }}
-                >
-                  {a}
-                </button>
-              ))}
-            </div>
             <button className="lg-orb-pill-close" onClick={() => goToPhase('orb')}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
             </button>
@@ -933,19 +937,20 @@ export default function LiquidOrb() {
                 ref={taRef}
                 className="lg-orb-ta"
                 rows={1}
-                placeholder={activeAction === 'Edit self' ? 'Describe what to change about the UI…' : 'Ask AI to change the UI…'}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder={debugMode ? 'Debug mode: describe the bug…' : 'Ask AI to change the UI…'}
                 onKeyDown={(e) => {
-                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); handleSend(); }
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
                   if (e.key === 'Escape') { goToPhase('pill'); }
                 }}
-                onInput={() => forceRender(n => n + 1)}
               />
             </div>
 
             {/* Toolbar */}
             <div className="lg-orb-toolbar">
               <div className="lg-orb-tb-l">
-                <button className="lg-orb-tool" onClick={() => { taRef.current.value = ''; goToPhase('pill'); }}>
+                <button className="lg-orb-tool" onClick={() => { setDraft(''); goToPhase('pill'); }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
                 <button className="lg-orb-tool" onClick={() => setSettingsOpen(true)}>
@@ -956,7 +961,7 @@ export default function LiquidOrb() {
                 </span>
               </div>
               <div className="lg-orb-tb-r">
-                <button className="lg-orb-send" disabled={!taRef.current?.value?.trim()} onClick={handleSend}>
+                <button className="lg-orb-send" disabled={!draft.trim() && attachments.length === 0} onClick={handleSend}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" /></svg>
                 </button>
               </div>
@@ -1346,6 +1351,156 @@ export default function LiquidOrb() {
               ? `✓ ${providerDef.name} · ${cfgModel || 'no model'}`
               : providerDef.needsKey ? `⚠ No API key set for ${providerDef.name}` : `${providerDef.name} · no key needed`
             }
+          </div>
+
+          {/* Debug Log */}
+          <div style={{ paddingTop: 12, borderTop: '1px solid var(--color-border)', marginTop: 12 }}>
+            <button
+              onClick={() => { setShowDebugLog(true); }}
+              style={{
+                width: '100%', background: 'rgba(255,180,60,0.08)', color: 'rgba(255,180,60,0.75)',
+                border: '1px solid rgba(255,180,60,0.18)', borderRadius: 10, padding: '9px 12px',
+                cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 500,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              <span>⚠</span>
+              <span>Debug Log {dbgEntries.length > 0 ? `(${dbgEntries.length})` : ''}</span>
+            </button>
+          </div>
+        </div>
+      )}
+      {/* ── Debug Log Viewer ── */}
+      {showDebugLog && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.55)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setShowDebugLog(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(560px, 94vw)',
+              maxHeight: '80vh',
+              background: 'var(--glass-frost)',
+              backdropFilter: 'blur(32px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 20,
+              boxShadow: '0 24px 80px var(--glass-cast-shadow), inset 0 1px 0 var(--glass-specular)',
+              padding: '24px 20px',
+              fontFamily: "'DM Sans',system-ui,sans-serif",
+              color: 'var(--text-primary)',
+              display: 'flex', flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
+                <span>⚠</span>
+                <span>Debug Log</span>
+                <span style={{ fontSize: 11, color: 'var(--text-disabled)', fontWeight: 400 }}>
+                  {dbgEntries.length} entries
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={copyDebugLog}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid var(--color-border)',
+                    borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+                    color: 'var(--text-secondary)', fontSize: 10, fontFamily: "'DM Sans',sans-serif",
+                  }}
+                  title="Copy as Markdown"
+                >📋 Copy</button>
+                <button
+                  onClick={downloadDebugLog}
+                  style={{
+                    background: 'rgba(80,200,120,0.10)', border: '1px solid rgba(80,200,120,0.25)',
+                    borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+                    color: 'rgba(80,200,120,0.75)', fontSize: 10, fontFamily: "'DM Sans',sans-serif",
+                  }}
+                  title="Download as .md file"
+                >⬇ Download</button>
+                <button
+                  onClick={() => { clearDebugLog(); }}
+                  style={{
+                    background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.18)',
+                    borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+                    color: 'rgba(255,100,100,0.65)', fontSize: 10, fontFamily: "'DM Sans',sans-serif",
+                  }}
+                  title="Clear all entries"
+                >✕ Clear</button>
+                <button
+                  onClick={() => setShowDebugLog(false)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                    color: 'var(--text-secondary)', fontSize: 16, lineHeight: 1,
+                  }}
+                >×</button>
+              </div>
+            </div>
+
+            {/* Log entries */}
+            <div style={{
+              flex: 1, overflow: 'auto', minHeight: 0,
+              fontFamily: "'DM Mono',monospace", fontSize: 10, lineHeight: 1.6,
+            }}>
+              {dbgEntries.length === 0 ? (
+                <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-disabled)', fontSize: 11, fontFamily: "'DM Sans',sans-serif" }}>
+                  No errors captured yet. Reproduce the issue and check back here.
+                  <div style={{ marginTop: 8, fontSize: 10, opacity: 0.6 }}>
+                    All runtime errors (window errors, AI call failures, mutation errors) are automatically logged.
+                  </div>
+                </div>
+              ) : (
+                dbgEntries.map(e => (
+                  <div key={e.id} style={{
+                    padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    display: 'flex', gap: 6,
+                  }}>
+                    <span style={{ flexShrink: 0, width: 12 }}>
+                      {e.level === 'error' ? '🔴' : e.level === 'warn' ? '🟡' : '🔵'}
+                    </span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                        <span style={{ color: 'var(--text-disabled)', fontSize: 9 }}>
+                          {new Date(e.time).toLocaleTimeString()}
+                        </span>
+                        <span style={{
+                          color: e.level === 'error' ? 'rgba(255,100,100,0.7)' : 'rgba(255,180,60,0.6)',
+                          fontSize: 9, fontWeight: 600, textTransform: 'uppercase',
+                        }}>
+                          {e.source}
+                        </span>
+                      </div>
+                      <div style={{ color: 'var(--text-primary)', wordBreak: 'break-word', marginTop: 1 }}>
+                        {e.message}
+                      </div>
+                      {e.detail?.stack && (
+                        <div style={{ color: 'var(--text-disabled)', fontSize: 9, marginTop: 2, whiteSpace: 'pre-wrap', maxHeight: 60, overflow: 'hidden' }}>
+                          {e.detail.stack}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer hint */}
+            <div style={{
+              marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--color-border)',
+              fontSize: 10, color: 'var(--text-disabled)', textAlign: 'center',
+            }}>
+              Download the log as .md to share with the AI for diagnosis
+            </div>
           </div>
         </div>
       )}
