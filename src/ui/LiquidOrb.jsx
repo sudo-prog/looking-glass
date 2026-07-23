@@ -8,7 +8,7 @@
  * + custom model IDs for any provider.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getProviders, loadAIConfig, saveAIConfig, getProviderDef, addCustomProvider, removeCustomProvider, refreshProviders } from '../utils/aiConfig.js';
+import { getProviders, loadAIConfig, saveAIConfig, getProviderDef, addCustomProvider, removeCustomProvider, refreshProviders, resolveModelAlias } from '../utils/aiConfig.js';
 import './LiquidOrb.css';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -71,19 +71,40 @@ PATCH_SOURCE — commit a source code fix to GitHub (permanent fix):
 - Prefer EVAL for immediate fixes, PATCH_SOURCE for permanent ones that survive page reload.`
 
 // ═══════════════════════════════════════════════════════════════════
+//  CHAT MODE SYSTEM PROMPT — general conversational assistant
+//  Used when the user toggles out of "edit UI" mode. No JSON mutation
+//  plans; just natural-language help.
+// ═══════════════════════════════════════════════════════════════════
+const SYS_CHAT = `You are the AI assistant for "Looking Glass" — a visual bookmarking and note-taking app. Help the user with general questions, explanations, and advice about their saved items, the app, or anything else they ask. Respond in natural, helpful prose. Do NOT emit JSON mutation plans or rewrite the UI unless the user explicitly asks you to. Be concise and friendly.`;
+
+// ═══════════════════════════════════════════════════════════════════
 //  MULTI-PROVIDER AI CALLER
 // ═══════════════════════════════════════════════════════════════════
-async function callAI(userMsg, snapshot) {
+async function callAI(userMsg, snapshot, mode) {
   const cfg = loadAIConfig();
   const pid = cfg.provider;
   const p = getProviderDef(pid);
   const key = cfg.key;
-  const model = cfg.model;
+  const model = resolveModelAlias(cfg.model);
+  const systemPrompt = mode === 'chat' ? SYS_CHAT : SYS;
 
   if (!model) throw new Error(`No model selected — configure AI in settings`);
   if (p.needsKey && !key) throw new Error(`No API key — add your ${p.name} key in settings`);
 
-  const prompt = `User instruction: "${userMsg}"\n\nCurrent UI snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+  const prompt = mode === 'chat'
+    ? userMsg
+    : `User instruction: "${userMsg}"\n\nCurrent UI snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+
+  // Finalize the raw model text into {plan, ops} based on mode.
+  const finalize = (text) => {
+    if (mode === 'chat') return { plan: text || 'No response', ops: [] };
+    try {
+      const parsed = parseJSON(text);
+      return { plan: parsed.plan || text || 'AI plan missing', ops: Array.isArray(parsed.ops) ? parsed.ops : [] };
+    } catch (e) {
+      return { plan: text || 'AI response could not be parsed', ops: [] };
+    }
+  };
 
   // ── Anthropic Messages API ───────────────────────────────────────
   if (pid === 'anthropic') {
@@ -95,11 +116,11 @@ async function callAI(userMsg, snapshot) {
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true',
       },
-      body: JSON.stringify({ model, max_tokens: 2000, system: SYS, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model, max_tokens: 2000, system: systemPrompt, messages: [{ role: 'user', content: prompt }] })
     });
     if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text().catch(() => ''))}`);
     const d = await r.json();
-    return parseJSON(d.content?.map(b => b.text || '').join('') || '');
+    return finalize(d.content?.map(b => b.text || '').join('') || '');
   }
 
   // ── Google Gemini ────────────────────────────────────────────────
@@ -109,14 +130,14 @@ async function callAI(userMsg, snapshot) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYS }] },
+        system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 2000, temperature: 0.3 },
       })
     });
     if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text().catch(() => ''))}`);
     const d = await r.json();
-    return parseJSON(d.candidates?.[0]?.content?.parts?.[0]?.text || '');
+    return finalize(d.candidates?.[0]?.content?.parts?.[0]?.text || '');
   }
 
   // ── OpenAI-compatible: OpenAI / Groq / OpenRouter / Ollama / LiteLLM ────
@@ -135,7 +156,7 @@ async function callAI(userMsg, snapshot) {
       max_tokens: 2000,
       temperature: 0.3,
       messages: [
-        { role: 'system', content: SYS },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt },
       ]
     })
@@ -143,15 +164,7 @@ async function callAI(userMsg, snapshot) {
   if (!r.ok) throw new Error(`${p.name} ${r.status}: ${(await r.text().catch(() => ''))}`);
   const d = await r.json();
   const content = d.choices?.[0]?.message?.content || '';
-  try {
-    const parsed = parseJSON(content);
-    return {
-      plan: parsed.plan || content || 'AI plan missing',
-      ops: Array.isArray(parsed.ops) ? parsed.ops : [],
-    };
-  } catch (e) {
-    return { plan: content || 'AI response could not be parsed', ops: [] };
-  }
+  return finalize(content);
 }
 
 function parseJSON(raw) {
@@ -300,6 +313,7 @@ export default function LiquidOrb() {
   const [mutPreview, setMutPreview] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [activeAction, setActiveAction] = useState(null);
+  const [chatMode, setChatMode] = useState('edit'); // 'edit' | 'chat'
   const [logs, setLogs] = useState([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -310,7 +324,13 @@ export default function LiquidOrb() {
   const [customModel, setCustomModel] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [cfgStatus, setCfgStatus] = useState('');
-  const [isConfigured, setIsConfigured] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(() => {
+    try {
+      const cfg = loadAIConfig();
+      const p = getProviderDef(cfg.provider);
+      return !!(cfg.provider && cfg.model && (!p.needsKey || cfg.key));
+    } catch { return false; }
+  });
   // Custom provider add form
   const [showAddProvider, setShowAddProvider] = useState(false);
   const [newProviderName, setNewProviderName] = useState('');
@@ -486,8 +506,8 @@ export default function LiquidOrb() {
     removeCustomProvider(pid);
     // If we removed the active provider, switch to openrouter
     if (cfgProvider === pid) {
-      setCfgProvider('openrouter');
-      setCfgModel('anthropic/claude-sonnet-4-5');
+      setCfgProvider('gemini-web2api');
+      setCfgModel('gemini-3.5-flash');
       setCfgKey('');
       setCustomModel('');
     }
@@ -527,14 +547,14 @@ export default function LiquidOrb() {
     setMutPreview('');
 
     try {
-      setThinkLabel('Planning edits…');
-      const snapshot = buildSnapshot();
-      const result = await callAI(txt, snapshot);
+      setThinkLabel(chatMode === 'chat' ? 'Thinking…' : 'Planning edits…');
+      const snapshot = chatMode === 'chat' ? null : buildSnapshot();
+      const result = await callAI(txt, snapshot, chatMode);
 
       setThinking(false);
       // Show mutation preview
       setMutPreview(
-        `<span class="lg-orb-op-fix">PLAN</span> ${esc(result.plan)}\n\n` +
+        `<span class="lg-orb-op-fix">${chatMode === 'chat' ? 'RESPONSE' : 'PLAN'}</span> ${esc(result.plan)}\n\n` +
         (result.ops || []).map(op => {
           const cls = op.type.includes('REMOVE') ? 'lg-orb-op-rm'
             : op.type.includes('FIX') || op.type.includes('PATCH') || op.type.includes('REWRITE') ? 'lg-orb-op-fix'
@@ -857,6 +877,20 @@ export default function LiquidOrb() {
           <div className="lg-orb-chat-inner lg-orb-glass-surf">
             <div className="lg-orb-chat-sheen" />
             <div className="lg-orb-chat-rim" />
+
+            {/* Mode toggle: Edit UI vs Chat */}
+            <div style={{ display: 'flex', gap: 4, padding: '8px 12px 0', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setChatMode('edit')}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'edit' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'edit' ? 600 : 400, cursor: 'pointer' }}
+              >Edit UI</button>
+              <button
+                type="button"
+                onClick={() => setChatMode('chat')}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'chat' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'chat' ? 600 : 400, cursor: 'pointer' }}
+              >Chat</button>
+            </div>
 
             {/* Thinking */}
             {thinking && (

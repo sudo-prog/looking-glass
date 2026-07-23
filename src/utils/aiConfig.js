@@ -24,6 +24,13 @@ const BUILTIN_PROVIDERS = {
       'google/gemini-2.5-flash',
       'meta-llama/llama-3.3-70b-instruct',
       'mistralai/mistral-large',
+      'openrouter/auto',
+      'meta-llama/llama-3.3-70b-instruct:free',
+      'google/gemma-4-26b-a4b-it:free',
+      'tencent/hy3:free',
+      'nousresearch/hermes-3-llama-3.1-405b:free',
+      'deepseek/deepseek-r1-distill-llama-70b:free',
+      'openrouter:free',
     ],
     needsKey: true,
     showBaseURL: false,
@@ -280,6 +287,20 @@ export function saveAIConfig({ provider, model, key, endpoint }) {
 
 export function getProviderDef(pid) {
   return PROVIDERS[pid] || PROVIDERS['gemini-web2api'];
+}
+
+// ── Model aliases ──────────────────────────────────────────────────
+// Maps user-friendly pseudo-model IDs to real provider model IDs.
+// e.g. 'openrouter:free' is OpenRouter's UI shorthand but NOT a valid
+// API slug — alias it to a real free-tier model so it doesn't 404.
+export const MODEL_ALIASES = {
+  'openrouter:free': 'meta-llama/llama-3.3-70b-instruct:free',
+  'openrouter/auto': 'openrouter/auto',
+};
+
+export function resolveModelAlias(model) {
+  if (!model) return model;
+  return MODEL_ALIASES[model] || model;
 }
 
 /**

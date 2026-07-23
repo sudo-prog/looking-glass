@@ -85,7 +85,7 @@ export default function handler(req, res) {
       authHeader = `Bearer ${openrouterKey}`;
       extraHeaders['HTTP-Referer'] = 'https://looking-glass-eta.vercel.app';
       extraHeaders['X-Title'] = 'Looking Glass AI';
-      modelForRequest = OPENROUTER_MODEL_MAP[model] || DEFAULT_FREE_MODEL;
+      modelForRequest = model?.endsWith(':free') ? model : (OPENROUTER_MODEL_MAP[model] || DEFAULT_FREE_MODEL);
     } else if (geminiKey) {
       endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
       authHeader = `Bearer ${geminiKey}`;

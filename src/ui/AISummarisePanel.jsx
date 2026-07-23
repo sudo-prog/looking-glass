@@ -53,7 +53,7 @@ import {
 // AI API CALL
 // ─────────────────────────────────────────────────────────────
 
-import { loadAIConfig, getProviderDef } from '../utils/aiConfig.js';
+import { loadAIConfig, getProviderDef, resolveModelAlias } from '../utils/aiConfig.js';
 
 // ─────────────────────────────────────────────────────────────
 // AI API CALL
@@ -62,7 +62,7 @@ import { loadAIConfig, getProviderDef } from '../utils/aiConfig.js';
 async function callAI(messages, { signal } = {}) {
   const config = loadAIConfig();
   const provider = getProviderDef(config.provider);
-  const model = config.model;
+  const model = resolveModelAlias(config.model);
   const key = config.key;
 
   if (!model) throw new Error(`No model selected. Open Settings → AI Assistant.`);
