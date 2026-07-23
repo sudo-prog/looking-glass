@@ -380,6 +380,7 @@ export function TagEditor({ tags = [], onChange, compact = false }) {
         <Hash size={9} weight="regular" style={{ color: 'var(--text-disabled)' }} />
         <input
           ref={inputRef}
+          className="lg-tag-input"
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           onKeyDown={handleKeyDown}

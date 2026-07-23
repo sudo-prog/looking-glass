@@ -63,6 +63,57 @@ export function spacesSlice(set, get) {
       // Load items for the active space
       const items = await idbStore.exportCanvas(firstId);
       set({ items: items || [] });
+
+      // ── Seed a welcome board if the canvas is empty (LG-EMPTY-BOARD) ──
+      // A brand-new canvas has 0 items and nothing to show. Drop a welcome
+      // NOTE + a BOOKMARK at the *visible* viewport center so the user never
+      // stares at a blank screen. Coords are world-space, derived from the
+      // space viewport + live window size (never hardcoded desktop numbers).
+      if (!items || items.length === 0) {
+        const vp = spaces[0]?.viewport || { x: 0, y: 0, scale: 1 };
+        const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
+        const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+        const cx = (-vp.x + vw / 2) / (vp.scale || 1);
+        const cy = (-vp.y + vh / 2) / (vp.scale || 1);
+
+        const note = createItem({
+          type:       ITEM_TYPES.NOTE,
+          canvas_id:  firstId,
+          x:          cx - 170,
+          y:          cy - 150,
+          width:      340,
+          content: {
+            title: 'Welcome to Looking Glass',
+            text:  'Tap + to add a note, drop a link to save a bookmark, or tap the AI orb to ask anything about your canvas.',
+          },
+        });
+        const bookmark = createItem({
+          type:      ITEM_TYPES.BOOKMARK,
+          canvas_id: firstId,
+          x:         cx - 170,
+          y:         cy + 30,
+          width:     340,
+          content: {
+            title:       'Looking Glass',
+            url:         'https://looking-glass.app',
+            description: 'Your infinite canvas for everything you save.',
+          },
+          meta: { domain: 'looking-glass.app', source: 'manual' },
+        });
+
+        await idbStore.upsertItem(note);
+        await idbStore.upsertItem(bookmark);
+
+        const seeded = await idbStore.exportCanvas(firstId);
+        set({ items: seeded || [] });
+        if (seeded && seeded.length) {
+          set((s) => ({
+            spaces: s.spaces.map((sp) =>
+              sp.id === firstId ? { ...sp, item_count: seeded.length } : sp
+            ),
+          }));
+        }
+      }
     },
 
     // ── Switch Space ─────────────────────────────────────

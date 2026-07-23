@@ -463,13 +463,26 @@ export function ContextMenu({
 
 export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), onClose, onAction }) {
   const sheetRef = useRef(null);
+  // Timestamp when the sheet opened. A long-press ends with a finger-lift that
+  // the browser turns into a synthetic click; without this gate that click
+  // lands on the freshly-mounted overlay and instantly re-closes the sheet
+  // (the classic long-press → tap-through bug). Ignore clicks for a short
+  // window after open. Mirrors the ScratchPad click-outside guard.
+  const openedAtRef = useRef(0);
 
   useEffect(() => {
     if (!isOpen) return;
+    openedAtRef.current = Date.now();
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
+
+  const handleOverlayClick = useCallback(() => {
+    // Swallow the tap-through click that immediately follows the opening long-press.
+    if (Date.now() - openedAtRef.current < 400) return;
+    onClose();
+  }, [onClose]);
 
   const act = useCallback(
     (action) => {
@@ -490,7 +503,7 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
     <>
       {/* Overlay */}
       <div
-        onClick={onClose}
+        onClick={handleOverlayClick}
         style={{
           position: 'fixed', inset: 0,
           zIndex: 'calc(var(--z-bottom-sheet) - 1)',

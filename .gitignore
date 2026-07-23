@@ -15,3 +15,7 @@ VID_REF_MP4/
 
 # local git worktrees (not part of source)
 .worktrees/
+.agent-skills/
+.opencode/
+lg_audit_real.mjs
+lg_debug*.mjs

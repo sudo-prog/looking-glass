@@ -323,12 +323,18 @@ export function AISummarisePanel({
   return (
     <>
       {/* Overlay */}
+      {/* LG-POINTER-FIX: this whole subtree is only mounted by App.jsx when
+          aiSummarise != null (i.e. the panel is OPEN). When the panel is
+          closed it is unmounted, so it can't intercept pointer events on the
+          sidebar. The explicit pointer-events below are defensive: the panel
+          captures input only while mounted/open, never as a hidden overlay. */}
       <div
         onClick={onClose}
         style={{
           position: 'fixed', inset: 0,
           zIndex: 'calc(var(--z-modal) - 1)',
           background: 'rgba(0,0,0,0.30)',
+          pointerEvents: 'auto',
         }}
       />
 
@@ -339,6 +345,7 @@ export function AISummarisePanel({
         aria-label={`AI: ${titles[mode]}`}
         aria-modal="true"
         style={{
+          pointerEvents: 'auto',
           borderRadius: '16px',
           background: 'rgba(14,14,14,0.97)',
           backdropFilter: 'blur(40px) saturate(120%)',

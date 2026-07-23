@@ -230,8 +230,8 @@
 .lg-orb-chat-row{padding:13px 15px 4px;position:relative;z-index:2}
 .lg-orb-ta{width:100%;background:transparent;border:none;outline:none;resize:none;
   font-family:var(--orb-font);font-size:15px;font-weight:400;color:var(--orb-fg);
-  line-height:1.55;min-height:26px;max-height:190px;overflow-y:auto;scrollbar-width:none;
-  caret-color:rgba(210,210,228,0.9);letter-spacing:-0.01em}
+  line-height:1.55;min-height:44px;max-height:190px;overflow-y:auto;scrollbar-width:none;
+  caret-color:rgba(210,210,228,0.9);letter-spacing:-0.01em;padding:11px 0}
 .lg-orb-ta::placeholder{color:var(--orb-fg2)}
 .lg-orb-ta::-webkit-scrollbar{display:none}
 
@@ -293,6 +293,47 @@
 @media(max-width:767px){
   .lg-orb{bottom:calc(72px + env(safe-area-inset-bottom, 0px)) !important}
 }
+
+/* ── MOBILE BOTTOM-CLUSTER (no overlap, 44px targets) ───────────────
+   On mobile the toolbar docks to a fixed bottom bar (≈60px tall incl.
+   safe-area). The orb root is also fixed at the bottom-center, so it
+   would overlap the docked toolbar / "Add note" button. Lift the orb
+   root ABOVE the docked bar and raise its stacking so it never covers
+   interactive toolbar controls. The pill/chat are centered modals that
+   only appear when active (phase pill/chat) and sit above everything. */
+@media(max-width:767px){
+  .lg-orb-root{
+    bottom:calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index:120 !important;
+  }
+  /* Let the pill wrap instead of clipping action labels on narrow screens */
+  .lg-orb-pill-inner{
+    flex-wrap:wrap;
+    max-width:calc(100vw - 24px);
+    border-radius:24px;
+  }
+  .lg-orb-pill-actions{
+    flex-wrap:wrap;
+    justify-content:center;
+    overflow:visible;
+    min-width:100%;
+    gap:6px;
+    padding:2px 0 4px;
+  }
+  .lg-orb-pill-action{
+    min-width:44px;
+    min-height:44px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .lg-orb-pill-divider{display:none}
+  .lg-orb-chat{
+    bottom:calc(78px + env(safe-area-inset-bottom, 0px));
+    width:calc(100vw - 24px);
+  }
+}
+
 @media(max-width:480px){
   .lg-orb-pill-action{font-size:11px;padding:4px 9px}
   .lg-orb-ta{font-size:16px}
