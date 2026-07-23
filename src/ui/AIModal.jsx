@@ -20,23 +20,32 @@ export default function AIModal({ isOpen, onClose }) {
     try {
       const cfg = loadAIConfig();
       if (cfg.provider) setProvider(cfg.provider);
-      if (cfg.model) setModel(cfg.model);
-      if (cfg.model) setCustomModel(cfg.model);
+      if (cfg.model) {
+        const p = getProviders()[cfg.provider];
+        if (p && p.models.includes(cfg.model)) {
+          setModel(cfg.model);
+          setCustomModel('');
+        } else {
+          setModel('custom');
+          setCustomModel(cfg.model);
+        }
+      }
       if (cfg.key) setApiKey(cfg.key);
     } catch {}
     // Focus first input
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [isOpen]);
 
-  // Update model default when provider changes
+  // Update model default when provider changes — but preserve a custom model
+  // the user has already typed/picked (don't wipe it on every provider switch).
   useEffect(() => {
     const p = getProviders()[provider];
-    if (p && p.models.length > 0) {
+    if (p && p.models.length > 0 && model !== 'custom' && !p.models.includes(model)) {
       setModel(p.models[0]);
-      setCustomModel('');
     }
     setStatus('idle');
     setErrorMsg('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider]);
 
   // Keyboard: Escape closes

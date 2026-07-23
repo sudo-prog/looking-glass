@@ -37,12 +37,24 @@ export function spacesSlice(set, get) {
           updated_at: Date.now(),
         };
         await idbStore.saveCanvas(defaultCanvas);
+
+        // Seed a welcome card so first-time visitors see content
+        const seedItem = createItem({
+          canvas_id: defaultCanvas.id,
+          type: ITEM_TYPES.NOTE,
+          x: 200,
+          y: 200,
+          width: 280,
+          content: { title: 'Welcome', text: 'Welcome to Looking Glass!' },
+        });
+        await idbStore.upsertItem(seedItem);
+
         spaces.push({
           id:         defaultCanvas.id,
           name:       defaultCanvas.name,
           created_at: defaultCanvas.created_at,
           viewport:   defaultCanvas.viewport,
-          item_count: 0,
+          item_count: 1,
         });
       }
 
