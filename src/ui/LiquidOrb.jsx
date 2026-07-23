@@ -543,6 +543,46 @@ export default function LiquidOrb() {
     setSettingsOpen(false);
   }, [cfgProvider, cfgModel, cfgKey, customModel, logMut]);
 
+  // ── DOM Snapshot builder ─────────────────────────────────────────
+  const buildSnapshot = useCallback(() => {
+    const cs = getComputedStyle(document.documentElement);
+    const cssVars = {};
+    ['--bg', '--fg', '--fg2', '--glass-tint', '--glass-border'].forEach(v => {
+      cssVars[v] = cs.getPropertyValue(v).trim();
+    });
+
+    // Build DOM tree snapshot — list all elements with id/tag/classes
+    const domTree = [];
+    const walk = (el, depth) => {
+      if (depth > 4) return;
+      if (!el || el.nodeType !== 1) return;
+      const tag = el.tagName?.toLowerCase();
+      if (!tag) return;
+      const entry = {
+        tag,
+        id: el.id || undefined,
+        classes: el.className && typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : undefined,
+        text: el.children?.length === 0 ? (el.textContent || '').slice(0, 60) : undefined,
+      };
+      // Only include if it has an id or classes (useful for targeting)
+      if (entry.id || entry.classes?.length) {
+        domTree.push(entry);
+      }
+      // Walk children
+      for (const child of el.children || []) {
+        walk(child, depth + 1);
+      }
+    };
+    walk(document.body, 0);
+
+    return {
+      cssVars,
+      lens: { ...lensRef.current },
+      injectedCSS: uiStylesRef.current?.textContent?.slice(0, 600) || '',
+      domTree,
+    };
+  }, []);
+
   // ── Send handler ─────────────────────────────────────────────────
   const handleSend = useCallback(async () => {
     const txt = draft.trim();
@@ -607,46 +647,6 @@ export default function LiquidOrb() {
       }
     }
   }, [draft, debugMode, attachments, logMut, goToPhase, chatMode, buildSnapshot]);
-
-  // ── DOM Snapshot builder ─────────────────────────────────────────
-  const buildSnapshot = useCallback(() => {
-    const cs = getComputedStyle(document.documentElement);
-    const cssVars = {};
-    ['--bg', '--fg', '--fg2', '--glass-tint', '--glass-border'].forEach(v => {
-      cssVars[v] = cs.getPropertyValue(v).trim();
-    });
-
-    // Build DOM tree snapshot — list all elements with id/tag/classes
-    const domTree = [];
-    const walk = (el, depth) => {
-      if (depth > 4) return;
-      if (!el || el.nodeType !== 1) return;
-      const tag = el.tagName?.toLowerCase();
-      if (!tag) return;
-      const entry = {
-        tag,
-        id: el.id || undefined,
-        classes: el.className && typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : undefined,
-        text: el.children?.length === 0 ? (el.textContent || '').slice(0, 60) : undefined,
-      };
-      // Only include if it has an id or classes (useful for targeting)
-      if (entry.id || entry.classes?.length) {
-        domTree.push(entry);
-      }
-      // Walk children
-      for (const child of el.children || []) {
-        walk(child, depth + 1);
-      }
-    };
-    walk(document.body, 0);
-
-    return {
-      cssVars,
-      lens: { ...lensRef.current },
-      injectedCSS: uiStylesRef.current?.textContent?.slice(0, 600) || '',
-      domTree,
-    };
-  }, []);
 
   // ── Mutation executor ────────────────────────────────────────────
   const execMutations = useCallback((ops, delay = 220) => {
