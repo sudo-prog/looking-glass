@@ -313,7 +313,8 @@ export default function LiquidOrb() {
   const [mutPreview, setMutPreview] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [activeAction, setActiveAction] = useState(null);
-  const [chatMode, setChatMode] = useState('edit'); // 'edit' | 'chat'
+  const [chatMode, setChatMode] = useState('chat'); // 'edit' | 'chat' — default conversational so users can ask questions; toggle to Edit UI for fixes
+  const [, forceRender] = useState(0); // forces re-render so the uncontrolled textarea's send-button disabled state updates on each keystroke
   const [logs, setLogs] = useState([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -937,6 +938,7 @@ export default function LiquidOrb() {
                   if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); handleSend(); }
                   if (e.key === 'Escape') { goToPhase('pill'); }
                 }}
+                onInput={() => forceRender(n => n + 1)}
               />
             </div>
 

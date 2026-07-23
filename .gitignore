@@ -15,3 +15,6 @@ VID_REF_MP4/
 
 # local git worktrees (not part of source)
 .worktrees/
+
+# agent working dir (opencode) — not source
+.opencode/
