@@ -399,6 +399,9 @@ export function TagEditor({ tags = [], onChange, compact = false }) {
             width: `${Math.max(30, inputVal.length * 7 + 30)}px`,
             minWidth: '30px',
             maxWidth: '120px',
+            height: '28px',
+            minHeight: '28px',
+            padding: '4px 2px',
             caretColor: 'var(--text-primary)',
           }}
         />
