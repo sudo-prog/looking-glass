@@ -712,7 +712,9 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
       {/* Kebab: opens the card menu on touch / always-visible-but-small.
           Positioned in the canvas coordinate space (the wrapper uses
           display:contents, so absolute children resolve against the
-          canvas container — same space as the cards themselves). */}
+          canvas container — same space as the cards themselves).
+          On narrow viewports, clamp the button so its right edge does
+          not exceed the viewport width. */}
       <button
         type="button"
         aria-label="Card actions"
@@ -720,7 +722,10 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
         onClick={handleKebab}
         style={{
           position: 'absolute',
-          left: (item.x + (item.width || 280)) - 34,
+          left: Math.min(
+            (item.x + (item.width || 280)) - 34,
+            window.innerWidth - 46
+          ),
           top: item.y + 6,
           width: 44,
           height: 44,
