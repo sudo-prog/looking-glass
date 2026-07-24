@@ -1,6 +1,6 @@
 # Agent Notes — Looking Glass
-**Last updated:** 2026-07-14
-**Status:** Full audit verified, mobile UI fixed, AI 502 upstream error fixed, main-branch audit remediation (LG-1..LG-7) applied 2026-07-14, deployed to Vercel (looking-glass-eta)
+**Last updated:** 2026-07-24
+**Status:** Full audit verified, mobile UI fixed, AI 502 upstream error fixed, main-branch audit remediation (LG-1..LG-7) applied 2026-07-14, deployed to Vercel (looking-glass-eta). 2026-07-24: Team A mobile audit merged to main + Celine orb/AI-chat fixes confirmed in main code + Vercel prod deploy Ready.
 
 ---
 
@@ -430,3 +430,23 @@ A second audit report (LOOKING_GLASS_AUDIT_MAIN_BRANCH.md) was written against `
 > - Switched relay to **OpenRouter priority** (commit 0cd2b35b): `api/chat.js` now prefers `OPENROUTER_API_KEY`, falls back to `GEMINI_API_KEY` (Google native) then legacy web2api. Added `OPENROUTER_MODEL_MAP` (short name → valid OpenRouter id) + HTTP-Referer/X-Title headers.
 > - **No AI key is currently set on Vercel** (relay returns clean 503 until a non-personal OPENROUTER_API_KEY is provisioned). User to supply OpenRouter key; it will go into Bitwarden (encrypted) + Vercel env, never git/chat.
 > - **Rule going forward (Mnemosyne 657ee46a):** NEVER use the user's personal Google API key (POLYGOD-Development/GEMINI_API_KEY) in any app/Vercel/code outside Bitwarden. Use OpenRouter or other non-personal keys only.
+
+---
+
+## Merge + Audit Sweep — 2026-07-24
+
+**User directive:** confirm all of Celine's updates are implemented, merge all audit branches into main, update docs, Vercel CLI error-check.
+
+### Celine's updates — CONFIRMED IN MAIN CODE
+- Celine's orb + AI-chat fix branch `sudo-prog/lg-ui-fix` was **already merged into `main`** on 2026-07-23 (commit `1a1dfa86` "fix(orb): controlled textarea, /debug mode, debugLog, OpenCode Zen" + AI-chat send-button/chat-mode commits `a8bfb972`/`26651ce9` + merge `70e28880`).
+- Verified the fix is in the **code**, not just commits: `origin/main:src/ui/LiquidOrb.jsx` contains `debugMode` state, `/debug` toggle (line 592), `debugLog` import, `callAI(debugMode ? ...)` (line 616). `AIModal.jsx` has controlled `value`/`onChange`. No overwrite risk.
+
+### Branches merged to main (2026-07-24)
+- **looking-glass `sudo-prog/team-a-audit`** → fast-forward merged into `main` (07e6375f → 892e27c4), pushed. 7 commits: 5 mobile fixes (canvas-world overflow containment `src/styles/canvas.css`, CanvasCard overflow:hidden, TagsSystem tag-input height 15→28px + touch-target buttons, kebab viewport clamp) + regenerated `AUDIT_REPORT.md` + playwright-core chore. `pnpm build` exit 0. Celine orb fix untouched (`diff origin/main HEAD` on LiquidOrb files = 0 lines).
+- **www-studio `sudo-prog/team-b-audit`** → fast-forward merged into `main` (0183d52 → b4180b6), pushed. 7 src + 2 e2e scripts: AiChatWidget label, components/dashboard/gallery/home/scenes pages, mobile touch-visibility. www-studio main checkout had 2 uncommitted loose files (`.gitignore` adds `.opencode/`+`.agent-skills/`; `index.css` 44px toolbar touch-targets) — stashed, merged, restored, committed as `393dfd0` "chore(www): gitignore agent dirs + enforce 44px toolbar touch targets".
+- **NOT merged (out of scope / sensitive):** `wt/lg8-mobile-design`, `wt/lg9-supabase-sync` — unrelated in-progress work incl. LG-9 Supabase cloud sync; flagged to user, left on branches.
+
+### Vercel CLI check (2026-07-24)
+- `vercel build` looking-glass → exit 0, "Build Completed in .vercel/output". Auto-deploy from git push = **Ready** (deploy dpl_6sTMd…, created 12:01, alias looking-glass-eta.vercel.app).
+- `vercel build` www-studio (repo root) → exit 0. Benign sourcemap warnings only (UI component files: "Can't resolve original location of error" — pre-existing, not build failures). `vercel deploy --prod` triggered for www-studio (background, in flight at time of writing — www-studio-red alias was 7d stale pre-merge).
+- No build errors in either project.
