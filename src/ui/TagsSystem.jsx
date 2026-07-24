@@ -119,8 +119,10 @@ function TagChip({ tag, count, active, onRemove, onClick, size = 'sm' }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '14px',
-            height: '14px',
+            width: '24px',
+            height: '24px',
+            minWidth: '24px',
+            minHeight: '24px',
             border: 'none',
             background: 'transparent',
             color: 'var(--text-secondary)',
@@ -131,7 +133,7 @@ function TagChip({ tag, count, active, onRemove, onClick, size = 'sm' }) {
             flexShrink: 0,
           }}
         >
-          <X size={8} weight="bold" />
+          <X size={10} weight="bold" />
         </button>
       )}
     </div>
@@ -478,8 +480,10 @@ export function TagFilterBar({ activeTagFilters = new Set(), onToggleTag, onClea
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: '20px',
-          height: '20px',
+          width: '32px',
+          height: '32px',
+          minWidth: '32px',
+          minHeight: '32px',
           border: 'none',
           background: 'transparent',
           color: 'var(--text-disabled)',
@@ -490,7 +494,7 @@ export function TagFilterBar({ activeTagFilters = new Set(), onToggleTag, onClea
         }}
         aria-label="Clear all tag filters"
       >
-        <X size={10} weight="bold" />
+        <X size={12} weight="bold" />
       </button>
     </div>
   );
