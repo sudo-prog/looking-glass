@@ -478,6 +478,7 @@ export function Canvas({
           minHeight: '5000px',
           transformOrigin: '0 0',
           willChange: 'transform',
+          overflow: 'hidden',
         }}
       >
         {items.map((item) => (
