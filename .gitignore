@@ -11,7 +11,10 @@ package-lock.json
 pnpm-lock.yaml.bak
 VID_REF_MP4/
 *.pdf
-.vercel
+# env files
+.env
+.env.local
+.env.*.local
 
 # local git worktrees (not part of source)
 .worktrees/
@@ -21,3 +24,8 @@ VID_REF_MP4/
 .opencode/
 lg_audit_real.mjs
 lg_debug*.mjs
+lg_inspect.mjs
+lg_probe.mjs
+lg_verify_mobile.mjs
+test_omniroute.js
+lg-verify-report.json
