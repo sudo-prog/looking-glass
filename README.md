@@ -36,3 +36,15 @@ pnpm install && pnpm run dev
 - **Cloud sync (Supabase)** — sign in to access your canvases across desktop, tablet, and mobile from one source (IndexedDB local-first, mirrored to Supabase with row-level security)
 - Dark/light theme with glass aesthetic
 - PWA with service worker
+
+## AI Provider (OmniRoute)
+
+AI features route through the **OmniRoute gateway** (OpenAI-compatible, local on port `20128`). Configure via `.env.local`:
+
+```bash
+LLM_BASE_URL=http://127.0.0.1:20128/v1   # tailnet: http://100.125.198.47:20128/v1
+LLM_API_KEY=omniroute                      # literal string, no real key required
+LLM_MODEL=auto/best-coding-fast            # also: auto/best-coding, auto/best-reasoning
+```
+
+OmniRoute is the only AI backend — no Anthropic/OpenAI/Groq/Gemini keys are used. Note: the gateway is local-only, so Vercel production needs a tunnel or hosted endpoint to use AI.

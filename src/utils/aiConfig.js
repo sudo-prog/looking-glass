@@ -136,6 +136,31 @@ const BUILTIN_PROVIDERS = {
     showBaseURL: true,
     builtin: true,
   },
+  omniroute: {
+    name: 'OmniRoute',
+    icon: '⚡',
+    keyPlaceholder: 'omniroute',
+    keyLabel: 'OmniRoute API Key',
+    baseURL: 'http://127.0.0.1:20128/v1/chat/completions',
+    models: [
+      'auto/best-coding-fast',
+      'auto/best-coding',
+      'auto/best-reasoning',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-thinking',
+      'gemini-3.1-pro',
+      'gemini-auto',
+      'gemini-3.5-flash-thinking-lite',
+      'gemini-flash-lite',
+      'gpt-4o-mini',
+      'claude-sonnet-4-5',
+      'tencent/hy3',
+      'hy3',
+    ],
+    needsKey: true,
+    showBaseURL: true,
+    builtin: true,
+  },
   'gemini-web2api': {
     name: 'Gemini Web2API',
     icon: '✧',
@@ -274,16 +299,16 @@ const deobfuscate = (enc) => { try { return atob(enc).split('').reverse().join('
 export function loadAIConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { provider: 'gemini-web2api', model: 'gemini-3.5-flash', key: '' };
+    if (!raw) return { provider: 'omniroute', model: 'auto/best-coding-fast', key: 'omniroute' };
     const parsed = JSON.parse(raw);
     return {
-      provider: parsed.provider || 'gemini-web2api',
-      model:    parsed.model    || 'gemini-3.5-flash',
-      key:      parsed.key ? deobfuscate(parsed.key) : '',
+      provider: parsed.provider || 'omniroute',
+      model:    parsed.model    || 'auto/best-coding-fast',
+      key:      parsed.key ? deobfuscate(parsed.key) : 'omniroute',
       endpoint: parsed.endpoint || '',
     };
   } catch {
-    return { provider: 'gemini-web2api', model: 'gemini-3.5-flash', key: '' };
+    return { provider: 'omniroute', model: 'auto/best-coding-fast', key: 'omniroute' };
   }
 }
 
@@ -319,7 +344,7 @@ export function resolveModelAlias(model) {
  * Always starts with the preferred provider, then alternates through fallbacks.
  */
 export function getProviderFallbackOrder(preferred) {
-  const all = ['gemini-web2api', 'openrouter', 'nous'];
+  const all = ['omniroute', 'openrouter', 'nous'];
   if (!preferred) return all;
   // Put preferred first, then the rest in order
   const rest = all.filter(p => p !== preferred);

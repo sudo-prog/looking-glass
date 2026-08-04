@@ -24,22 +24,24 @@ function newRequestId() {
   }
 }
 
-// Map the app's short model names to VALID OpenRouter FREE-TIER model IDs ONLY.
-// Every value ends in ':free' — no paid model is ever selected. Unknown short
-// names fall through to the DEFAULT_FREE_MODEL below.
-const OPENROUTER_MODEL_MAP = {
-  'gemini-3.5-flash': 'google/gemma-4-26b-a4b-it:free',
-  'gemini-3.5-flash-thinking': 'meta-llama/llama-3.3-70b-instruct:free',
-  'gemini-3.5-flash-thinking-lite': 'meta-llama/llama-3.2-3b-instruct:free',
-  'gemini-3.1-pro': 'nvidia/nemotron-3-super-120b-a12b:free',
-  'gemini-auto': 'google/gemma-4-26b-a4b-it:free',
-  'gemini-flash-lite': 'meta-llama/llama-3.2-3b-instruct:free',
-  'gpt-4o-mini': 'openai/gpt-oss-20b:free',
-  'claude-sonnet-4-5': 'nousresearch/hermes-3-llama-3.1-405b:free',
-  'tencent/hy3': 'tencent/hy3:free',
-  'hy3': 'tencent/hy3:free',
+// Map the app's short model names to OmniRoute virtual models.
+// Every value uses OmniRoute's auto-routing models — no paid model is ever selected.
+const OMNIRUTE_MODEL_MAP = {
+  'auto/best-coding-fast': 'auto/best-coding-fast',
+  'auto/best-coding': 'auto/best-coding',
+  'auto/best-reasoning': 'auto/best-reasoning',
+  'gemini-3.5-flash': 'auto/best-coding-fast',
+  'gemini-3.5-flash-thinking': 'auto/best-reasoning',
+  'gemini-3.1-pro': 'auto/best-reasoning',
+  'gemini-auto': 'auto/best-coding',
+  'gemini-3.5-flash-thinking-lite': 'auto/best-coding-fast',
+  'gemini-flash-lite': 'auto/best-coding-fast',
+  'gpt-4o-mini': 'auto/best-coding-fast',
+  'claude-sonnet-4-5': 'auto/best-reasoning',
+  'tencent/hy3': 'auto/best-coding-fast',
+  'hy3': 'auto/best-coding-fast',
 };
-const DEFAULT_FREE_MODEL = 'tencent/hy3:free';
+const DEFAULT_OMNIRUTE_MODEL = 'auto/best-coding-fast';
 
 export default function handler(req, res) {
   const requestId = req.headers?.['x-request-id'] || newRequestId();
@@ -68,9 +70,12 @@ export default function handler(req, res) {
     }
 
     // Resolve upstream. Priority order (all env-driven, server-side only):
-    //   1. OpenRouter (OPENROUTER_API_KEY) — recommended, non-personal key
-    //   2. Google native OpenAI-compat (GEMINI_API_KEY)
-    //   3. Legacy cookie-scraper web2api (GEMINI_WEB2API_URL)
+    //   1. OmniRoute (LLM_BASE_URL + LLM_API_KEY) — primary, local gateway
+    //   2. OpenRouter (OPENROUTER_API_KEY) — fallback
+    //   3. Google native OpenAI-compat (GEMINI_API_KEY)
+    //   4. Legacy cookie-scraper web2api (GEMINI_WEB2API_URL)
+    const omnirouteUrl = process.env.LLM_BASE_URL;
+    const omnirouteKey = process.env.LLM_API_KEY;
     const openrouterKey = process.env.OPENROUTER_API_KEY;
     const geminiKey = process.env.GEMINI_API_KEY;
     const web2apiUrl = process.env.GEMINI_WEB2API_URL;
@@ -80,7 +85,13 @@ export default function handler(req, res) {
     let authHeader = null;
     const extraHeaders = {};
     let modelForRequest = model;
-    if (openrouterKey) {
+    
+    // 1. OmniRoute (primary)
+    if (omnirouteUrl && omnirouteKey) {
+      endpoint = omnirouteUrl;
+      authHeader = `Bearer ${omnirouteKey}`;
+      modelForRequest = model?.startsWith('auto/') ? model : (OMNIRUTE_MODEL_MAP[model] || DEFAULT_OMNIRUTE_MODEL);
+    } else if (openrouterKey) {
       endpoint = 'https://openrouter.ai/api/v1/chat/completions';
       authHeader = `Bearer ${openrouterKey}`;
       extraHeaders['HTTP-Referer'] = 'https://looking-glass-eta.vercel.app';
@@ -94,7 +105,7 @@ export default function handler(req, res) {
       if (web2apiKey) authHeader = `Bearer ${web2apiKey}`;
     } else {
       logError('ai_chat_no_upstream', requestId, new Error('No AI upstream configured'), {});
-      return res.status(503).json({ error: 'AI not configured (set OPENROUTER_API_KEY)' });
+      return res.status(503).json({ error: 'AI not configured (set LLM_BASE_URL and LLM_API_KEY for OmniRoute)' });
     }
 
     const headers = {
