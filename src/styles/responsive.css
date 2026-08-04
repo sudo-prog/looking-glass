@@ -108,6 +108,103 @@
   }
 }
 
+/* ── UNIVERSAL TAP-TARGET FLOOR (T-1) ────────────────
+   MOBILE-UI-STANDARD T-1 / iOS HIG / WCAG 2.5.5: every interactive control
+   must present a >=44x44px hit area on touch devices.
+
+   This app styles most controls with INLINE style objects (no Tailwind), and
+   inline styles only ever set padding/font-size here — never height or
+   min-height — so this cascade rule wins for geometry while leaving every
+   component's own look untouched. That makes the floor structural: it covers
+   controls that are not mounted on first paint (modals, sheets, context menus,
+   panels) without touching 30+ component files.
+
+   Scoped to (pointer: coarse) so desktop density is unchanged. min-height on
+   an inline box (e.g. a prose <a>) is inert by spec, so body-copy links are
+   deliberately unaffected.
+
+   !important is required and deliberate: ~17 controls set an inline
+   height/minHeight (e.g. the tag input at 28px), and an inline declaration
+   always beats a cascade rule without it. This matches the existing
+   .lg-orb-* treatment above. */
+@media (pointer: coarse) {
+  button,
+  select,
+  summary,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="switch"],
+  input:not([type="hidden"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+  textarea {
+    min-height: 44px !important;
+  }
+
+  button,
+  select,
+  summary,
+  [role="button"],
+  [role="tab"],
+  [role="switch"] {
+    min-width: 44px !important;
+  }
+
+  /* Inline height/minHeight on a control would otherwise pin it below the
+     floor; neutralise the fixed height so min-height can take effect. */
+  button,
+  select,
+  [role="button"],
+  [role="tab"],
+  input:not([type="hidden"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]) {
+    height: auto !important;
+  }
+
+  /* Icon-only / compact controls: keep glyphs optically centred once the
+     control grows to the 44px floor instead of sitting top-left. */
+  button,
+  [role="button"],
+  [role="tab"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Tag entry field: rendered 30x28 with no rule of its own (measured on prod
+     2026-08-04). Give it the floor explicitly so it cannot regress. */
+  .lg-tag-input {
+    min-height: 44px !important;
+    height: auto !important;
+    box-sizing: border-box;
+  }
+
+  /* Checkbox/radio are exempt from the box rules above (forcing 44px would
+     distort the control itself); grow the hit area instead. */
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 24px;
+    min-height: 24px;
+  }
+}
+
+/* ── WIDE CONTENT SELF-SCROLLS (L-1 / L-2) ───────────
+   Iron Rule 7: a wide <table> without a scroll wrapper pushes past the
+   viewport. Make it its own scroll container capped to the viewport rather
+   than letting it overflow the page. */
+@media (max-width: 640px) {
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  pre,
+  code {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}
+
 /* ── HORIZONTAL OVERFLOW SAFETY NET ──────────────── */
 html, body {
   max-width: 100%;

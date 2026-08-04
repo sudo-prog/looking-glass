@@ -149,6 +149,7 @@ export function SpacesManager({ isOpen, onClose }) {
         <div
           style={{
             display: 'flex',
+            flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '16px 16px 12px',

@@ -19,6 +19,9 @@ VID_REF_MP4/
 # local git worktrees (not part of source)
 .worktrees/
 
+# Vercel build output (not source; may contain preview env)
+.vercel/
+
 # agent working dir (opencode) — not source
 .agent-skills/
 .opencode/
