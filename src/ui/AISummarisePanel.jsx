@@ -367,7 +367,7 @@ export function AISummarisePanel({
           /* Panel positioning. Per-component CSS lives alongside the component. */
           .ai-summarise-panel {
             position: fixed;
-            bottom: 24px;
+            bottom: calc(24px + env(safe-area-inset-bottom, 0px));
             right: 24px;
             width: min(420px, calc(100vw - 48px));
             max-height: 70vh;
@@ -377,7 +377,7 @@ export function AISummarisePanel({
             .ai-summarise-panel {
               left: 12px;
               right: 12px;
-              bottom: calc(64px + env(safe-area-inset-bottom));
+              bottom: calc(64px + env(safe-area-inset-bottom, 0px));
               width: auto;
               max-height: calc(70vh - 64px - env(safe-area-inset-bottom));
             }
@@ -406,7 +406,7 @@ export function AISummarisePanel({
           </div>
           <button
             onClick={onClose}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', borderRadius: '6px', flexShrink: 0 }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', borderRadius: '6px', flexShrink: 0 }}
             aria-label="Close"
           >
             <X size={14} weight="regular" />
@@ -486,6 +486,7 @@ export function AISummarisePanel({
           <div
             style={{
               display: 'flex',
+              flexWrap: 'wrap',
               gap: '8px',
               padding: '12px 16px',
               borderTop: '1px solid rgba(255,255,255,0.08)',
@@ -531,7 +532,7 @@ const footerBtn = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '5px',
-  height: '30px',
+  minHeight: '44px',
   padding: '0 12px',
   borderRadius: '7px',
   border: '1px solid rgba(255,255,255,0.10)',

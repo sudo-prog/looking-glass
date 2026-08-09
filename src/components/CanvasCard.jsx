@@ -68,7 +68,7 @@ function BookmarkCard({ item, isSelected, onSelect, onDragStart, onLightbox }) {
       <div className="card-footer">
         {item.meta?.domain && <span className="card-domain">{escapeHtml(item.meta.domain)}</span>}
         {item.content.url && (
-          <a href={escapeHtml(item.content.url)} target="_blank" rel="noopener" className="card-link" onClick={(e) => e.stopPropagation()}>↗</a>
+          <a href={escapeHtml(item.content.url)} target="_blank" rel="noopener" className="card-link" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }} onClick={(e) => e.stopPropagation()}>↗</a>
         )}
       </div>
     </div>
@@ -240,7 +240,7 @@ function WebClipCard({ item, isSelected, onSelect, onDragStart }) {
       )}
       {item.content.url && (
         <div className="card-footer">
-          <a href={escapeHtml(item.content.url)} target="_blank" rel="noopener" className="card-link" onClick={(e) => e.stopPropagation()}>↗</a>
+          <a href={escapeHtml(item.content.url)} target="_blank" rel="noopener" className="card-link" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }} onClick={(e) => e.stopPropagation()}>↗</a>
         </div>
       )}
     </div>
@@ -389,7 +389,12 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
               <>
                 <div className="stack-count-badge">{count}</div>
                 <div className="stack-top-title">{topItem.content?.title || 'Stack'}</div>
-                <div className="stack-hint" onClick={toggleFan} onPointerDown={(e) => e.stopPropagation()}>
+                <div
+                  className="stack-hint"
+                  style={{ display: 'flex', alignItems: 'center', minHeight: '44px' }}
+                  onClick={toggleFan}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
                   Click to fan
                 </div>
               </>

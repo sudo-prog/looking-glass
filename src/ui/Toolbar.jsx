@@ -124,7 +124,7 @@ export function Toolbar({
           [role="toolbar"] { padding: 6px 8px calc(6px + env(safe-area-inset-bottom)) !important; }
         }
         @media (max-width: 320px) {
-          .toolbar-btn { width: 40px; height: 40px; }
+          .toolbar-btn { width: 44px; height: 44px; }
           [role="toolbar"] { padding: 4px 4px calc(4px + env(safe-area-inset-bottom)) !important; gap: 2px; }
         }
       `}</style>
@@ -195,6 +195,7 @@ export function Toolbar({
               border: '1px solid rgba(255,255,255,0.15)',
               borderRadius: '8px',
               padding: '4px 8px',
+              minHeight: '44px',
               fontSize: '12px',
               color: 'var(--text-primary, #e0e0e0)',
               outline: 'none',

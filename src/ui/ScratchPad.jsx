@@ -164,6 +164,7 @@ export function ScratchPad() {
         role="dialog"
         aria-label="Scratch pad — capture a thought"
         aria-modal="true"
+        className="lg-scratch-pad"
         style={{
           position: 'fixed',
           top: '50%',
@@ -189,6 +190,28 @@ export function ScratchPad() {
             from { opacity: 0; transform: translate(-50%,-50%) scale(0.90); }
             to   { opacity: 1; transform: translate(-50%,-50%) scale(1); }
           }
+
+          /* MOBILE-UI-STANDARD (<=640px): bottom-dock the capture panel so the
+             auto-focused textarea clears the on-screen keyboard, and lift it
+             off the iOS home indicator. Desktop keeps the centered modal.
+             !important beats the inline styles above (top/left/width/transform). */
+          @media (max-width: 640px) {
+            .lg-scratch-pad {
+              top: auto !important;
+              left: 12px !important;
+              right: 12px !important;
+              bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+              width: auto !important;
+              transform: none !important;
+              animation-name: scratch-appear-mobile !important;
+              max-height: calc(100dvh - 24px - env(safe-area-inset-bottom, 0px));
+            }
+
+            @keyframes scratch-appear-mobile {
+              from { opacity: 0; transform: translateY(16px) scale(0.97); }
+              to   { opacity: 1; transform: none; }
+            }
+          }
         `}</style>
 
         {/* Header */}
@@ -197,6 +220,8 @@ export function ScratchPad() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            rowGap: '10px',
             padding: '12px 16px 8px',
             borderBottom: `1px solid ${color.border}`,
           }}
@@ -269,6 +294,8 @@ export function ScratchPad() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            rowGap: '10px',
             padding: '10px 16px',
             borderTop: `1px solid ${color.border}`,
           }}

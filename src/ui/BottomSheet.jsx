@@ -115,7 +115,7 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
             ? 'none'
             : 'transform 280ms cubic-bezier(0.32,0.72,0,1)',
           borderRadius: 'var(--radius-2xl) var(--radius-2xl) 0 0',
-          maxHeight:    '92vh',
+          maxHeight:    '92dvh',
           overflowY:    'auto',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -124,12 +124,14 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
       >
         <div
           className="bottom-sheet__handle"
-          style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.20)', borderRadius: 2, margin: '10px auto 6px', cursor: 'grab' }}
+          style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', background: 'transparent', cursor: 'grab' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-        />
+        >
+          <div style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.20)', borderRadius: 2 }} />
+        </div>
         <div className="bottom-sheet__content">{children}</div>
       </div>
     </div>,

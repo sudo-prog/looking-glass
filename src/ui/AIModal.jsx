@@ -198,6 +198,7 @@ export default function AIModal({ isOpen, onClose }) {
                 id="ai-key"
                 type={showKey ? 'text' : 'password'}
                 className={`lg-ai-modal__input ${status === 'error' ? 'lg-ai-modal__input--error' : ''}`}
+                style={{ paddingRight: 56 }}
                 value={apiKey}
                 onChange={(e) => { setApiKey(e.target.value); setStatus('idle'); setErrorMsg(''); }}
                 placeholder={currentProvider?.keyPlaceholder || 'Enter API key'}
@@ -238,7 +239,7 @@ export default function AIModal({ isOpen, onClose }) {
         <div className="lg-ai-modal__divider" />
 
         {/* Footer actions */}
-        <div className="lg-ai-modal__footer">
+        <div className="lg-ai-modal__footer" style={{ flexWrap: 'wrap' }}>
           <button className="lg-ai-modal__btn-secondary" onClick={handleTest} disabled={status === 'testing'}>
             TEST CONNECTION
           </button>

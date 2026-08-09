@@ -132,6 +132,7 @@ function PDFReaderOverlay({ pdfDoc, title, onClose, pageCount, onDropHighlight }
       <div
         style={{
           display: 'flex',
+          flexWrap: 'wrap',
           alignItems: 'center',
           gap: '12px',
           padding: '12px 20px',

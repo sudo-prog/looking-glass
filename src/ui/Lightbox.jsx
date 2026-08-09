@@ -116,6 +116,7 @@ export function Lightbox({ item, onClose, onColor }) {
           display: 'flex',
           alignItems: 'center',
           padding: '18px 20px',
+          paddingTop: 'calc(18px + env(safe-area-inset-top, 0px))',
           flexShrink: 0,
         }}
         onClick={(e) => e.stopPropagation()}
@@ -149,7 +150,7 @@ export function Lightbox({ item, onClose, onColor }) {
           justifyContent: 'center',
           gap: isMobileViewport ? '12px' : 'clamp(16px, 4vw, 56px)',
           padding: isMobileViewport ? '0 12px' : '0 24px',
-          overflow: 'hidden',
+          overflow: isMobileViewport ? 'visible' : 'hidden',
           minHeight: 0,
           flexDirection: isMobileViewport ? 'column' : 'row',
         }}
@@ -208,7 +209,7 @@ export function Lightbox({ item, onClose, onColor }) {
               onLoad={(e) => setNaturalSize({ w: e.target.naturalWidth, h: e.target.naturalHeight })}
               style={{
                 maxWidth: '100%',
-                maxHeight: '52vh',
+                maxHeight: '52dvh',
                 objectFit: 'contain',
                 borderRadius: '6px',
                 boxShadow: '0 24px 64px rgba(0,0,0,0.55)',
@@ -283,6 +284,7 @@ export function Lightbox({ item, onClose, onColor }) {
           display: 'flex',
           justifyContent: 'center',
           padding: '20px',
+          paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
           flexShrink: 0,
         }}
         onClick={(e) => e.stopPropagation()}

@@ -130,7 +130,9 @@ function DropOverlay({ active, fileTypes }) {
           flexDirection: 'column',
           alignItems: 'center',
           gap: '14px',
-          padding: '40px 56px',
+          padding: '28px 24px',
+          boxSizing: 'border-box',
+          maxWidth: '100%',
           borderRadius: '20px',
           border: '2px dashed rgba(255,255,255,0.30)',
           background: 'rgba(255,255,255,0.05)',
@@ -147,6 +149,7 @@ function DropOverlay({ active, fileTypes }) {
             letterSpacing: '0.15em',
             color: 'rgba(255,255,255,0.60)',
             textAlign: 'center',
+            maxWidth: '100%',
           }}
         >
           {labels[type] || labels.file}
@@ -321,7 +324,7 @@ export function DropZoneHandler({ children, viewport, onDrop }) {
 
   return (
     <div
-      style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0, minHeight: 0 }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}

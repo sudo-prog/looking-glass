@@ -234,7 +234,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
   const providerDef = getProviderDef(aiProvider);
 
   const tabBtn = (id, label, Icon) => ({
-    display: 'flex', alignItems: 'center', gap: '6px',
+    display: 'flex', alignItems: 'center', gap: '6px', minHeight: '44px',
     padding: '6px 12px', borderRadius: '10px', border: 'none',
     background: activeTab === id ? 'rgba(255,255,255,0.10)' : 'transparent',
     color: activeTab === id ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -261,6 +261,14 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
           input[type="range"] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; background: var(--color-border); outline: none; cursor: pointer; width: 100%; }
           input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--color-accent, #8B5CF6); border: 2px solid var(--glass-frost); box-shadow: 0 2px 8px var(--glass-cast-shadow); cursor: pointer; }
           .lg-settings-section + .lg-settings-section { margin-top: 16px; }
+          /* MOBILE-UI-STANDARD: 44px touch targets + thin slider tracks, scoped to settings sections */
+          .lg-settings-section button, .lg-settings-section select, .lg-settings-section input:not([type="file"]) { min-height: 44px !important; }
+          .lg-settings-section input[type="color"] { min-width: 44px; }
+          .lg-settings-section input[type="range"] { height: 44px; background: transparent; }
+          .lg-settings-section input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--color-border); }
+          .lg-settings-section input[type="range"]::-webkit-slider-thumb { margin-top: -6px; }
+          .lg-settings-section input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--color-border); }
+          .lg-settings-section input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--color-accent, #8B5CF6); border: 2px solid var(--glass-frost); box-shadow: 0 2px 8px var(--glass-cast-shadow); cursor: pointer; }
         `}</style>
 
         {/* Header */}
@@ -269,7 +277,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
             <GearSix size={18} weight="regular" style={{ color: 'var(--text-primary)' }} />
             <span style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.08em' }}>SETTINGS</span>
           </div>
-          <button onClick={onClose} aria-label="Close settings" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+          <button onClick={onClose} aria-label="Close settings" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', minWidth: '44px', minHeight: '44px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
             <X size={16} weight="regular" />
           </button>
         </div>
@@ -290,7 +298,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
               <SettingsSection title="MODE">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={sLabel}>{dark ? 'Dark Mode' : 'Light Mode'}</span>
-                  <button onClick={handleThemeToggle} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <button onClick={handleThemeToggle} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', minWidth: '44px', minHeight: '44px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>
                     {dark ? <Sun size={16} /> : <Moon size={16} />}
                   </button>
                 </div>
@@ -445,7 +453,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                         onDragStart={e => { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; }}
                         onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                         onDrop={e => { e.preventDefault(); const fromId = e.dataTransfer.getData('text/plain'); if (!fromId || fromId === id) return; const newOrder = menuIcons.filter(x => x !== fromId); const idx = newOrder.indexOf(id); newOrder.splice(idx + (newOrder.indexOf(fromId) < idx ? 1 : 0), 0, fromId); setMenuIcons(newOrder); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.04)', cursor: 'grab', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', minHeight: '44px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.04)', cursor: 'grab', fontSize: '11px', color: 'var(--text-secondary)' }}>
                         <span>{info.icon}</span><span>{info.label}</span>
                         <span style={{ cursor: 'pointer', opacity: 0.4, marginLeft: '2px' }} onClick={() => { setMenuIcons(prev => prev.filter(x => x !== id)); setRemovedIcons(prev => [...prev, id]); }}>✕</span>
                       </div>
@@ -464,7 +472,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                         onDragStart={e => { setDraggingPoolId(info.id); e.dataTransfer.setData('text/plain', info.id); e.dataTransfer.effectAllowed = 'copy'; }}
                         onDragEnd={() => setDraggingPoolId(null)}
                         onClick={() => inRemoved ? (setMenuIcons(prev => prev.includes(info.id) ? prev : [...prev, info.id]), setRemovedIcons(prev => prev.filter(i => i !== info.id))) : null}
-                        style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '8px', border: `1px solid ${inRemoved ? 'var(--color-border)' : 'rgba(255,255,255,0.04)'}`, background: inRemoved ? 'rgba(255,255,255,0.03)' : inMenu ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)', cursor: inRemoved ? 'pointer' : 'grab', fontSize: '11px', color: inRemoved ? 'var(--text-disabled)' : inMenu ? 'var(--text-primary)' : 'var(--text-secondary)', opacity: inMenu ? 0.6 : 1 }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', minHeight: '44px', borderRadius: '8px', border: `1px solid ${inRemoved ? 'var(--color-border)' : 'rgba(255,255,255,0.04)'}`, background: inRemoved ? 'rgba(255,255,255,0.03)' : inMenu ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)', cursor: inRemoved ? 'pointer' : 'grab', fontSize: '11px', color: inRemoved ? 'var(--text-disabled)' : inMenu ? 'var(--text-primary)' : 'var(--text-secondary)', opacity: inMenu ? 0.6 : 1 }}>
                         <span>{info.icon}</span><span>{info.label}</span>
                         {inRemoved && <span style={{ fontSize: '9px', opacity: 0.5 }}>↩</span>}
                       </div>
@@ -521,9 +529,9 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ padding: '12px 20px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <span style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', color: 'var(--text-disabled)', letterSpacing: '0.06em' }}>V0.1 · LOOKING GLASS</span>
-          <button onClick={handleSave} style={{ padding: '8px 20px', borderRadius: '8px', border: 'none', background: saved ? 'rgba(34,197,94,0.2)' : 'var(--color-accent, #8B5CF6)', color: saved ? '#22c55e' : '#fff', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', transition: 'all 0.2s ease' }}>
+          <button onClick={handleSave} style={{ padding: '8px 20px', minHeight: '44px', borderRadius: '8px', border: 'none', background: saved ? 'rgba(34,197,94,0.2)' : 'var(--color-accent, #8B5CF6)', color: saved ? '#22c55e' : '#fff', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', transition: 'all 0.2s ease' }}>
             {saved ? '✓ SAVED' : 'SAVE'}
           </button>
         </div>
@@ -585,12 +593,12 @@ function ToggleRow({ label, enabled, onChange }) {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <span style={sLabel}>{label}</span>
       <button onClick={() => onChange(!enabled)} style={{
-        width: '36px', height: '22px', borderRadius: '11px', border: 'none',
+        width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', borderRadius: '22px', border: 'none',
         background: enabled ? 'var(--color-accent, #8B5CF6)' : 'rgba(255,255,255,0.10)',
         cursor: 'pointer', position: 'relative', transition: 'background 0.15s',
       }}>
         <span style={{
-          position: 'absolute', top: '2px', left: enabled ? '18px' : '2px',
+          position: 'absolute', top: '13px', left: enabled ? '22px' : '4px',
           width: '18px', height: '18px', borderRadius: '50%',
           background: '#fff', transition: 'left 0.15s',
         }} />

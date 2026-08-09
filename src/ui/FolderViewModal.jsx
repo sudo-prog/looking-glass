@@ -125,6 +125,8 @@ function FolderPreviewTile({ child, onRemove }) {
           justifyContent: 'center',
           width: '26px',
           height: '26px',
+          minWidth: '44px',
+          minHeight: '44px',
           borderRadius: '7px',
           border: '1px solid rgba(255,255,255,0.15)',
           background: 'rgba(0,0,0,0.55)',
@@ -183,8 +185,8 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
         onClick={(e) => e.stopPropagation()}
         style={{
           width: 'min(820px, 100%)',
-          height: 'min(84vh, 100%)',
-          maxHeight: 'calc(100vh - 16px)',
+          height: 'min(84dvh, 100%)',
+          maxHeight: 'calc(100dvh - 16px)',
           display: 'flex',
           flexDirection: 'column',
           borderRadius: '20px',
@@ -252,6 +254,7 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
                     outline: 'none',
                     width: '100%',
                     padding: '2px 0',
+                    minHeight: '44px',
                   }}
                 />
               ) : (
@@ -286,6 +289,7 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
                     outline: 'none',
                     width: '100%',
                     marginTop: '4px',
+                    minHeight: '44px',
                   }}
                 />
               ) : (
@@ -314,6 +318,8 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
               justifyContent: 'center',
               width: '30px',
               height: '30px',
+              minWidth: '44px',
+              minHeight: '44px',
               borderRadius: '8px',
               border: 'none',
               background: 'transparent',
@@ -386,6 +392,7 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
             disabled={children.length === 0}
             style={{
               height: '32px',
+              minHeight: '44px',
               padding: '0 14px',
               borderRadius: '8px',
               border: '1px solid var(--color-border)',

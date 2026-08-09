@@ -282,7 +282,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
             aria-label="Close bookmarks"
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: '28px', height: '28px', borderRadius: '8px',
+              width: '44px', height: '44px', borderRadius: '8px',
               border: 'none', background: 'transparent',
               color: 'var(--text-secondary)', cursor: 'pointer',
             }}
@@ -352,7 +352,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
                   placeholder="Paste X/Twitter bookmark URL..."
                   onKeyDown={e => e.key === 'Enter' && handleTwitterImport()}
                   style={{
-                    flex: 1, border: 'none', background: 'transparent',
+                    flex: 1, minHeight: '44px', border: 'none', background: 'transparent',
                     color: 'var(--text-primary)',
                     fontFamily: 'var(--font-ui)', fontSize: '12px',
                     outline: 'none',
@@ -363,7 +363,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
                 onClick={handleTwitterImport}
                 disabled={importing || !twitterUrl.trim()}
                 style={{
-                  padding: '8px 14px', borderRadius: '10px',
+                  padding: '8px 14px', minHeight: '44px', borderRadius: '10px',
                   border: 'none',
                   background: twitterUrl.trim() ? 'var(--color-accent, #8B5CF6)' : 'rgba(255,255,255,0.06)',
                   color: twitterUrl.trim() ? '#fff' : 'var(--text-disabled)',
@@ -420,7 +420,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search bookmarks..."
               style={{
-                flex: 1, border: 'none', background: 'transparent',
+                flex: 1, minHeight: '44px', border: 'none', background: 'transparent',
                 color: 'var(--text-primary)',
                 fontFamily: 'var(--font-ui)', fontSize: '12px',
                 outline: 'none',
@@ -490,7 +490,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
                       onClick={() => window.open(bm.content.url, '_blank')}
                       title="Open link"
                       style={{
-                        width: '26px', height: '26px', borderRadius: '6px',
+                        width: '44px', height: '44px', borderRadius: '6px',
                         border: 'none', background: 'transparent',
                         color: 'var(--text-secondary)', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -503,7 +503,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
                     onClick={() => handleDelete(bm.id)}
                     title="Remove bookmark"
                     style={{
-                      width: '26px', height: '26px', borderRadius: '6px',
+                      width: '44px', height: '44px', borderRadius: '6px',
                       border: 'none', background: 'transparent',
                       color: 'var(--text-disabled)', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',

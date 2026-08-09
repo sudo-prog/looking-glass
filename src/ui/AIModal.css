@@ -24,7 +24,7 @@
 .lg-ai-modal {
   width: min(480px, 100%);
   max-width: calc(100vw - 16px);
-  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border-active);
   overflow: auto;

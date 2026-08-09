@@ -541,6 +541,8 @@ export function WebClipScreenshotCard({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                minWidth: '44px',
+                minHeight: '44px',
                 width: '22px',
                 height: '22px',
                 borderRadius: '6px',

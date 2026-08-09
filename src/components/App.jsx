@@ -546,7 +546,7 @@ export function App() {
   }, [filteredItems, selectedIds]);
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', width: '100%', height: '100dvh', overflow: 'hidden' }}>
       <Toaster
         position="bottom-center"
         toastOptions={{
@@ -703,7 +703,7 @@ export function App() {
           }}>
             <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>TAGS</span>
-              <button onClick={() => setShowTags(false)} style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>✕</button>
+              <button onClick={() => setShowTags(false)} style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', minWidth: '44px', minHeight: '44px' }}>✕</button>
             </div>
             <TagsPanel
               items={items}

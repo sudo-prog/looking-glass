@@ -888,12 +888,12 @@ export default function LiquidOrb() {
               <button
                 type="button"
                 onClick={() => setChatMode('edit')}
-                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'edit' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'edit' ? 600 : 400, cursor: 'pointer' }}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'edit' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'edit' ? 600 : 400, cursor: 'pointer', minHeight: '44px' }}
               >Edit UI</button>
               <button
                 type="button"
                 onClick={() => setChatMode('chat')}
-                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'chat' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'chat' ? 600 : 400, cursor: 'pointer' }}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'chat' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'chat' ? 600 : 400, cursor: 'pointer', minHeight: '44px' }}
               >Chat</button>
             </div>
 
@@ -1019,6 +1019,7 @@ export default function LiquidOrb() {
                   background: 'none', border: 'none', color: 'var(--text-secondary)',
                   cursor: 'pointer', padding: 4, borderRadius: 8,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  minWidth: 44, minHeight: 44,
                 }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -1040,7 +1041,7 @@ export default function LiquidOrb() {
                       border: 'none', borderRadius: 9, padding: '6px 8px', cursor: 'pointer',
                       fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: active ? 600 : 400,
                       color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                      transition: 'all 0.15s', whiteSpace: 'nowrap',
+                      transition: 'all 0.15s', whiteSpace: 'nowrap', minHeight: 44,
                     }} onClick={() => {
                       setCfgProvider(pid);
                       setCfgModel(getProviders()[pid].models[0]);
@@ -1067,7 +1068,7 @@ export default function LiquidOrb() {
               <button
                 onClick={() => setShowAddProvider(v => !v)}
                 style={{
-                  flex: '0 0 auto', width: 32, height: 32,
+                  flex: '0 0 auto', width: 44, height: 44,
                   border: '1px dashed var(--color-border)', borderRadius: 9,
                   background: 'transparent', cursor: 'pointer', display: 'flex',
                   alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)',
@@ -1266,7 +1267,7 @@ export default function LiquidOrb() {
             <button
               onClick={() => { setSettingsOpen(false); setShowAddProvider(true); setShowSetup(true); }}
               style={{
-                flex: '0 0 auto', width: 28, height: 28,
+                flex: '0 0 auto', width: 44, height: 44,
                 border: '1px dashed var(--color-border)', borderRadius: 9,
                 background: 'transparent', cursor: 'pointer', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)',

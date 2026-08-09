@@ -528,7 +528,7 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
           borderBottom: 'none',
           boxShadow: '0 -8px 48px rgba(0,0,0,0.60)',
           animation: 'sheet-rise 0.28s cubic-bezier(0.34,1.2,0.64,1) both',
-          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
         <style>{`

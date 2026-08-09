@@ -54,6 +54,8 @@ function ToolbarIconButton({ icon: Icon, label, onClick, disabled, danger, activ
         justifyContent: 'center',
         width: '36px',
         height: '36px',
+        minWidth: '44px',
+        minHeight: '44px',
         borderRadius: '10px',
         border: 'none',
         background: active
@@ -126,9 +128,12 @@ export function SelectionToolbar({
         transform: 'translateX(-50%)',
         zIndex: 'var(--z-canvas-ui)',
         display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
         alignItems: 'center',
         gap: '2px',
         padding: '6px',
+        maxWidth: 'calc(100vw - 24px)',
         borderRadius: '16px',
         background: 'rgba(16,16,16,0.94)',
         backdropFilter: 'blur(28px) saturate(120%)',
@@ -200,16 +205,31 @@ export function SelectionToolbar({
               title="Remove color"
               aria-label="Remove color"
               style={{
-                width: '16px',
-                height: '16px',
+                width: '44px',
+                height: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 borderRadius: '50%',
-                border: '1px solid rgba(255,255,255,0.25)',
+                border: 'none',
                 background: 'transparent',
                 cursor: 'pointer',
                 padding: 0,
                 flexShrink: 0,
               }}
-            />
+            >
+              <span
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  background: 'transparent',
+                  display: 'block',
+                  flexShrink: 0,
+                }}
+              />
+            </button>
             {COLOR_SWATCHES.map((swatch) => (
               <button
                 key={swatch.color}
@@ -217,13 +237,14 @@ export function SelectionToolbar({
                 title={swatch.label}
                 aria-label={swatch.label}
                 style={{
-                  width: '16px',
-                  height: '16px',
+                  width: '44px',
+                  height: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   borderRadius: '50%',
-                  border: activeColor === swatch.color
-                    ? '2px solid rgba(255,255,255,0.70)'
-                    : '1px solid rgba(255,255,255,0.12)',
-                  background: swatch.color,
+                  border: 'none',
+                  background: 'transparent',
                   cursor: 'pointer',
                   padding: 0,
                   flexShrink: 0,
@@ -231,7 +252,21 @@ export function SelectionToolbar({
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.25)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-              />
+              >
+                <span
+                  style={{
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    border: activeColor === swatch.color
+                      ? '2px solid rgba(255,255,255,0.70)'
+                      : '1px solid rgba(255,255,255,0.12)',
+                    background: swatch.color,
+                    display: 'block',
+                    flexShrink: 0,
+                  }}
+                />
+              </button>
             ))}
           </div>
         )}

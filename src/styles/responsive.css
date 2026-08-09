@@ -173,6 +173,7 @@
      2026-08-04). Give it the floor explicitly so it cannot regress. */
   .lg-tag-input {
     min-height: 44px !important;
+    min-width: 44px !important;
     height: auto !important;
     box-sizing: border-box;
   }

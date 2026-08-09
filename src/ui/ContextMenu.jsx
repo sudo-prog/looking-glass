@@ -479,6 +479,9 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
           boxShadow: '0 -8px 48px rgba(0,0,0,0.60)',
           animation: 'sheet-rise 0.28s cubic-bezier(0.34,1.2,0.64,1) both',
           paddingBottom: 'env(safe-area-inset-bottom)',
+          maxHeight: 'calc(100dvh - 16px)',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         <style>{`

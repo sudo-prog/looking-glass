@@ -230,6 +230,7 @@ export function VideoCard({
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                flexWrap: 'wrap',
                 gap: '6px',
                 padding: '8px 10px',
               }}
@@ -295,6 +296,7 @@ export function VideoCard({
         style={{
           display: 'flex',
           alignItems: 'center',
+          flexWrap: 'wrap',
           gap: '8px',
           padding: '8px 12px',
           borderTop: '1px solid rgba(255,255,255,0.06)',

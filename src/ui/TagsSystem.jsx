@@ -121,8 +121,8 @@ function TagChip({ tag, count, active, onRemove, onClick, size = 'sm' }) {
             justifyContent: 'center',
             width: '24px',
             height: '24px',
-            minWidth: '24px',
-            minHeight: '24px',
+            minWidth: '44px',
+            minHeight: '44px',
             border: 'none',
             background: 'transparent',
             color: 'var(--text-secondary)',
@@ -193,7 +193,7 @@ export function TagsPanel({ items = [], activeTagFilters = new Set(), onToggleTa
           placeholder="Filter tags…"
           style={{
             width: '100%',
-            height: '30px',
+            height: '44px',
             border: '1px solid var(--color-border)',
             borderRadius: '6px',
             background: 'var(--color-bg-raised)',
@@ -213,7 +213,7 @@ export function TagsPanel({ items = [], activeTagFilters = new Set(), onToggleTa
           onClick={onClearTags}
           style={{
             margin: '0 12px 6px',
-            height: '28px',
+            height: '44px',
             border: '1px solid var(--color-border)',
             borderRadius: '6px',
             background: 'transparent',
@@ -248,6 +248,7 @@ export function TagsPanel({ items = [], activeTagFilters = new Set(), onToggleTa
                 cursor: 'pointer',
                 transition: 'background 0.08s ease',
                 width: '100%',
+                minHeight: '44px',
               }}
               onMouseEnter={(e) => {
                 if (!active) e.currentTarget.style.background = 'var(--state-hover)';
@@ -371,6 +372,7 @@ export function TagEditor({ tags = [], onChange, compact = false }) {
             border: 'none',
             cursor: 'pointer',
             padding: '2px 4px',
+            minHeight: '44px',
           }}
         >
           +{tags.length - 3} more
@@ -402,7 +404,7 @@ export function TagEditor({ tags = [], onChange, compact = false }) {
             minWidth: '30px',
             maxWidth: '120px',
             height: '28px',
-            minHeight: '28px',
+            minHeight: '44px',
             padding: '4px 2px',
             caretColor: 'var(--text-primary)',
           }}
@@ -482,8 +484,8 @@ export function TagFilterBar({ activeTagFilters = new Set(), onToggleTag, onClea
           justifyContent: 'center',
           width: '32px',
           height: '32px',
-          minWidth: '32px',
-          minHeight: '32px',
+          minWidth: '44px',
+          minHeight: '44px',
           border: 'none',
           background: 'transparent',
           color: 'var(--text-disabled)',
