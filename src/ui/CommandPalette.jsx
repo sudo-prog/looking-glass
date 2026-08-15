@@ -137,18 +137,20 @@ export function CommandPalette({
     >
       <div
         className="command-palette glass-command-palette"
+        style={{ maxHeight: 'min(90dvh, 600px)' }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Command palette"
         aria-modal="true"
       >
         {/* Input */}
-        <div className="command-palette__input-wrap">
+        <div className="command-palette__input-wrap" style={{ flexWrap: 'wrap' }}>
           <MagnifyingGlass size={20} weight="regular" className="command-palette__search-icon" />
           <input
             ref={inputRef}
             type="text"
             className="command-palette__input"
+            style={{ minHeight: '44px' }}
             placeholder="Search or paste a URL…"
             value={query}
             onChange={handleChange}
@@ -159,6 +161,7 @@ export function CommandPalette({
           />
           <button
             className="command-palette__close"
+            style={{ minWidth: '44px', minHeight: '44px' }}
             onClick={() => { onClearSearch?.(); onClose(); }}
             type="button"
             aria-label="Close command palette"
@@ -178,6 +181,7 @@ export function CommandPalette({
                 key={item.id}
                 data-idx={idx}
                 className={`command-palette__result ${isActive ? 'command-palette__result--active' : ''}`}
+                style={{ minHeight: '48px', minWidth: '44px' }}
                 onClick={() => executeItem(item)}
                 type="button"
                 role="option"

@@ -133,8 +133,10 @@ export function SpacesManager({ isOpen, onClose }) {
           position: 'fixed',
           top: 0,
           left: 0,
-          bottom: 0,
-          width: '260px',
+          height: '100dvh',
+          minHeight: '100dvh',
+          width: '100%',
+          maxWidth: '260px',
           zIndex: 'var(--z-toolbar)',
           display: 'flex',
           flexDirection: 'column',
@@ -191,9 +193,12 @@ export function SpacesManager({ isOpen, onClose }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
+                  flexWrap: 'wrap',
                   gap: '6px',
                   borderRadius: '8px',
                   padding: '0 4px',
+                  minHeight: '44px',
+                  cursor: 'pointer',
                   marginBottom: '2px',
                   background: isActive ? 'var(--state-active)' : 'transparent',
                   transition: 'background 0.1s ease',
@@ -287,7 +292,7 @@ export function SpacesManager({ isOpen, onClose }) {
 
                 {/* Action buttons (on hover) */}
                 {isHovered && !isEditing && (
-                  <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: '2px', flexShrink: 0, flexWrap: 'wrap' }}>
                     <button
                       onClick={(e) => startEdit(space, e)}
                       title="Rename"
@@ -318,6 +323,7 @@ export function SpacesManager({ isOpen, onClose }) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                flexWrap: 'wrap',
                 gap: '6px',
                 padding: '4px 4px',
               }}

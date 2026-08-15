@@ -123,16 +123,14 @@ function FolderPreviewTile({ child, onRemove }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: '26px',
-          height: '26px',
           minWidth: '44px',
           minHeight: '44px',
           borderRadius: '7px',
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(0,0,0,0.55)',
-          color: 'rgba(255,255,255,0.85)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          background: 'rgba(0, 0, 0, 0.55)',
+          color: 'rgba(255, 255, 255, 0.85)',
           cursor: 'pointer',
-          opacity: hovered ? 1 : 0,
+          opacity: 1,
           transition: 'opacity 0.12s ease',
           backdropFilter: 'blur(8px)',
         }}
@@ -178,7 +176,7 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '8px',
+        padding: 'calc(8px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left))',
       }}
     >
       <div
@@ -212,10 +210,9 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
-            gap: '12px',
-            padding: '14px 16px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            flexShrink: 0,
+            flexWrap: 'wrap',
+            gap: '8px',
+            width: '100%',
           }}
         >
           <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
@@ -316,8 +313,6 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '30px',
-              height: '30px',
               minWidth: '44px',
               minHeight: '44px',
               borderRadius: '8px',
@@ -333,7 +328,7 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
         </div>
 
         {/* Grid */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '14px 16px calc(14px + env(safe-area-inset-bottom))' }}>
           {children.length === 0 ? (
             <div
               style={{
@@ -369,10 +364,11 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '12px 16px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            flexShrink: 0,
+            flexWrap: 'wrap',
             gap: '8px',
+            padding: '12px 16px calc(12px + env(safe-area-inset-bottom))',
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+            flexShrink: 0,
           }}
         >
           <span
@@ -391,8 +387,8 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
             onClick={onEmptyAll}
             disabled={children.length === 0}
             style={{
-              height: '32px',
               minHeight: '44px',
+              height: '44px',
               padding: '0 14px',
               borderRadius: '8px',
               border: '1px solid var(--color-border)',

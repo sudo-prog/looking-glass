@@ -102,6 +102,7 @@ export function Lightbox({ item, onClose, onColor }) {
       style={{
         position: 'fixed',
         inset: 0,
+        minHeight: '100dvh',
         zIndex: 'var(--z-lightbox)',
         background: 'rgba(8,8,8,0.94)',
         backdropFilter: 'blur(6px)',
@@ -128,8 +129,10 @@ export function Lightbox({ item, onClose, onColor }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '36px',
-            height: '36px',
+            minWidth: '44px',
+            minHeight: '44px',
+            width: '44px',
+            height: '44px',
             borderRadius: '10px',
             border: '1px solid rgba(255,255,255,0.10)',
             background: 'rgba(255,255,255,0.06)',
@@ -161,6 +164,8 @@ export function Lightbox({ item, onClose, onColor }) {
           style={{
             display: 'flex',
             flexDirection: isMobileViewport ? 'row' : 'column',
+            flexWrap: isMobileViewport ? 'wrap' : 'nowrap',
+            justifyContent: isMobileViewport ? 'center' : 'flex-start',
             gap: '14px',
             flexShrink: 0,
             order: isMobileViewport ? 2 : 0,
@@ -172,6 +177,8 @@ export function Lightbox({ item, onClose, onColor }) {
               onClick={() => handlePickColor(hex)}
               aria-label={`Tag color ${hex}`}
               style={{
+                minWidth: '44px',
+                minHeight: '44px',
                 width: '32px',
                 height: '32px',
                 borderRadius: '50%',
@@ -293,6 +300,8 @@ export function Lightbox({ item, onClose, onColor }) {
           style={{
             display: 'flex',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
             gap: '4px',
             padding: '6px',
             borderRadius: '14px',

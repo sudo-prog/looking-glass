@@ -40,6 +40,11 @@ if ('serviceWorker' in navigator) {
 initErrorTelemetry();
 
 const container = document.getElementById('app');
+// Mobile-safe root container (MOBILE-UI-STANDARD)
+container.style.height = '100dvh'; /* fallback: 100vh */
+container.style.width = '100%';
+container.style.maxWidth = '100%';
+container.style.overflowX = 'hidden';
 const root = createRoot(container);
 root.render(
   <ErrorBoundary name="root">

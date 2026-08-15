@@ -546,7 +546,7 @@ export function App() {
   }, [filteredItems, selectedIds]);
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100dvh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', width: '100%', height: '100dvh', overflow: 'hidden', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <Toaster
         position="bottom-center"
         toastOptions={{
@@ -558,6 +558,7 @@ export function App() {
             backdropFilter: 'blur(16px)',
             fontFamily: 'var(--font-ui)',
             fontSize: '12px',
+            marginBottom: 'env(safe-area-inset-bottom)',
           },
         }}
       />
@@ -571,7 +572,7 @@ export function App() {
         onAddUrl={addUrl}
         onExport={handleExport}
       />
-      <div data-main-content style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+      <div data-main-content style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minHeight: '100dvh', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <DropZoneHandler viewport={viewport} onDrop={handleDrop}>
           <TagFilterBar
             activeTagFilters={activeTagFilters}
@@ -700,8 +701,9 @@ export function App() {
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
+            paddingBottom: 'env(safe-area-inset-bottom)'
           }}>
-            <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>TAGS</span>
               <button onClick={() => setShowTags(false)} style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', minWidth: '44px', minHeight: '44px' }}>✕</button>
             </div>

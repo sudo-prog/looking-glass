@@ -52,10 +52,10 @@ function ToolbarIconButton({ icon: Icon, label, onClick, disabled, danger, activ
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        width: '36px',
-        height: '36px',
-        minWidth: '44px',
-        minHeight: '44px',
+        width: '48px',
+        height: '48px',
+        minWidth: '48px',
+        minHeight: '48px',
         borderRadius: '10px',
         border: 'none',
         background: active
@@ -200,13 +200,16 @@ export function SelectionToolbar({
               animation: 'sel-toolbar-in 0.15s cubic-bezier(0.34,1.56,0.64,1) both',
             }}
           >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', maxWidth: 'calc(100vw - 32px)', padding: '0 4px' }}>
             <button
               onClick={() => handlePickColor(null)}
               title="Remove color"
               aria-label="Remove color"
               style={{
-                width: '44px',
-                height: '44px',
+                width: '48px',
+                height: '48px',
+                minWidth: '48px',
+                minHeight: '48px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -237,8 +240,10 @@ export function SelectionToolbar({
                 title={swatch.label}
                 aria-label={swatch.label}
                 style={{
-                  width: '44px',
-                  height: '44px',
+                  width: '48px',
+                  height: '48px',
+                  minWidth: '48px',
+                  minHeight: '48px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -268,6 +273,7 @@ export function SelectionToolbar({
                 />
               </button>
             ))}
+            </div>
           </div>
         )}
       </div>

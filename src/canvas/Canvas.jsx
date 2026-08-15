@@ -528,20 +528,33 @@ export function Canvas({
         document.body
       )}
 
-      <SelectionToolbar
-        count={selectedIds.size}
-        canStack={selectedIds.size > 1}
-        canFolder={selectedIds.size > 1}
-        canArrange={selectedIds.size > 1}
-        activeColor={selectedColor}
-        onColor={(hex) => onColorSelected?.(hex)}
-        onStack={() => onCreateStack?.(selectedArray)}
-        onFolder={() => onCreateFolder?.(selectedArray, 'Folder name', '')}
-        onArrange={() => onArrangeSelected?.(selectedArray)}
-        onCopyLink={() => onCopyLinkSelected?.()}
-        onDelete={() => onDeleteSelected?.()}
-        onClear={() => onClearSelection()}
-      />
+      <div
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 'var(--z-canvas-ui)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingLeft: 'env(safe-area-inset-left)',
+          paddingRight: 'env(safe-area-inset-right)',
+        }}
+      >
+        <SelectionToolbar
+          count={selectedIds.size}
+          canStack={selectedIds.size > 1}
+          canFolder={selectedIds.size > 1}
+          canArrange={selectedIds.size > 1}
+          activeColor={selectedColor}
+          onColor={(hex) => onColorSelected?.(hex)}
+          onStack={() => onCreateStack?.(selectedArray)}
+          onFolder={() => onCreateFolder?.(selectedArray, 'Folder name', '')}
+          onArrange={() => onArrangeSelected?.(selectedArray)}
+          onCopyLink={() => onCopyLinkSelected?.()}
+          onDelete={() => onDeleteSelected?.()}
+          onClear={() => onClearSelection()}
+        />
+      </div>
     </div>
   );
 }

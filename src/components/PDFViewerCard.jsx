@@ -120,11 +120,16 @@ function PDFReaderOverlay({ pdfDoc, title, onClose, pageCount, onDropHighlight }
       style={{
         position: 'fixed',
         inset: 0,
+        height: '100dvh',
         zIndex: 'var(--z-lightbox)',
         background: 'rgba(0,0,0,0.88)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
@@ -203,7 +208,7 @@ function PDFReaderOverlay({ pdfDoc, title, onClose, pageCount, onDropHighlight }
 
 const ctrlBtn = {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  width: '28px', height: '28px', border: '1px solid rgba(255,255,255,0.10)',
+  minWidth: '44px', minHeight: '44px', border: '1px solid rgba(255,255,255,0.10)',
   borderRadius: '6px', background: 'transparent', color: 'var(--text-secondary)',
   cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '13px',
   flexShrink: 0,
@@ -357,6 +362,7 @@ export function PDFViewerCard({
                 color: 'rgba(255,255,255,0.80)',
                 fontFamily: 'var(--font-ui)', fontSize: '9px',
                 letterSpacing: '0.08em', cursor: 'pointer',
+                minWidth: '44px', minHeight: '44px',
                 opacity: 0, transition: 'opacity 0.15s ease',
               }}
               className="pdf-open-btn"
@@ -372,9 +378,9 @@ export function PDFViewerCard({
         <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
 
         {/* Footer */}
-        <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ padding: '8px 12px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
           <FilePdf size={12} weight="regular" style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
-          <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
             {item.content?.title || 'Document.pdf'}
           </span>
           <span style={{ fontFamily: 'var(--font-ui)', fontSize: '9px', color: 'var(--text-disabled)', flexShrink: 0 }}>

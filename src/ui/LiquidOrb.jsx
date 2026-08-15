@@ -884,16 +884,16 @@ export default function LiquidOrb() {
             <div className="lg-orb-chat-rim" />
 
             {/* Mode toggle: Edit UI vs Chat */}
-            <div style={{ display: 'flex', gap: 4, padding: '8px 12px 0', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '8px 12px 0', justifyContent: 'center' }}>
               <button
                 type="button"
                 onClick={() => setChatMode('edit')}
-                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'edit' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'edit' ? 600 : 400, cursor: 'pointer', minHeight: '44px' }}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'edit' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'edit' ? 600 : 400, cursor: 'pointer', minHeight: '44px', minWidth: '44px' }}
               >Edit UI</button>
               <button
                 type="button"
                 onClick={() => setChatMode('chat')}
-                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'chat' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'chat' ? 600 : 400, cursor: 'pointer', minHeight: '44px' }}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'chat' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'chat' ? 600 : 400, cursor: 'pointer', minHeight: '44px', minWidth: '44px' }}
               >Chat</button>
             </div>
 
@@ -921,11 +921,11 @@ export default function LiquidOrb() {
 
             {/* Attachments */}
             {attachments.length > 0 && (
-              <div className="lg-orb-attachments">
+              <div className="lg-orb-attachments" style={{ overflowX: 'auto' }}>
                 {attachments.map(a => (
                   <div key={a.id} className="lg-orb-att">
                     <img src={a.src} alt={a.name} />
-                    <button className="lg-orb-att-rm" onClick={() => setAttachments(prev => prev.filter(x => x.id !== a.id))}>×</button>
+                    <button className="lg-orb-att-rm" style={{ minHeight: 44, minWidth: 44 }} onClick={() => setAttachments(prev => prev.filter(x => x.id !== a.id))}>×</button>
                   </div>
                 ))}
               </div>
@@ -948,24 +948,24 @@ export default function LiquidOrb() {
             </div>
 
             {/* Toolbar */}
-            <div className="lg-orb-toolbar">
-              <div className="lg-orb-tb-l">
-                <button className="lg-orb-tool" onClick={() => { setDraft(''); goToPhase('pill'); }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
-                </button>
-                <button className="lg-orb-tool" onClick={() => setSettingsOpen(true)}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                </button>
-                <span className="lg-orb-ctx-lbl">
-                  {providerDef.name} · {cfgModel || 'no model'}
-                </span>
-              </div>
-              <div className="lg-orb-tb-r">
-                <button className="lg-orb-send" disabled={!draft.trim() && attachments.length === 0} onClick={handleSend}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" /></svg>
-                </button>
-              </div>
-            </div>
+                        <div className="lg-orb-toolbar" style={{ flexWrap: 'wrap' }}>
+                          <div className="lg-orb-tb-l" style={{ flexWrap: 'wrap' }}>
+                            <button className="lg-orb-tool" style={{ minHeight: 44, minWidth: 44 }} onClick={() => { setDraft(''); goToPhase('pill'); }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
+                            </button>
+                            <button className="lg-orb-tool" style={{ minHeight: 44, minWidth: 44 }} onClick={() => setSettingsOpen(true)}>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                            </button>
+                            <span className="lg-orb-ctx-lbl">
+                              {providerDef.name} · {cfgModel || 'no model'}
+                            </span>
+                          </div>
+                          <div className="lg-orb-tb-r" style={{ flexWrap: 'wrap' }}>
+                            <button className="lg-orb-send" style={{ minHeight: 44, minWidth: 44 }} disabled={!draft.trim() && attachments.length === 0} onClick={handleSend}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" /></svg>
+                            </button>
+                          </div>
+                        </div>
           </div>
         </div>
       </div>
@@ -980,6 +980,7 @@ export default function LiquidOrb() {
             background: 'rgba(0,0,0,0.50)',
             backdropFilter: 'blur(4px)',
             WebkitBackdropFilter: 'blur(4px)',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           }}
           onClick={() => setShowSetup(false)}
         >
@@ -1380,6 +1381,7 @@ export default function LiquidOrb() {
             background: 'rgba(0,0,0,0.55)',
             backdropFilter: 'blur(4px)',
             WebkitBackdropFilter: 'blur(4px)',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           }}
           onClick={() => setShowDebugLog(false)}
         >

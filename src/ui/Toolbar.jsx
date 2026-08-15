@@ -72,6 +72,8 @@ export function Toolbar({
         WebkitBackdropFilter: 'blur(20px) saturate(120%)',
         border: '1px solid rgba(255,255,255,0.08)',
         boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       <style>{`
@@ -79,8 +81,10 @@ export function Toolbar({
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 32px;
-          height: 32px;
+          width: 44px;
+          height: 44px;
+          min-width: 44px;
+          min-height: 44px;
           border-radius: 8px;
           border: none;
           background: transparent;
@@ -104,7 +108,20 @@ export function Toolbar({
           .toolbar-zoom { display: none; }
           .toolbar-sep { display: none; }
           .toolbar-hide-mobile { display: none !important; }
-          .toolbar-search-input { width: min(120px, 30vw) !important; }
+          .toolbar-search-input {
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.15);
+          border-radius: 8px;
+          padding: 4px 8px;
+          min-height: 44px;
+          min-width: 44px;
+          font-size: 12px;
+          color: var(--text-primary, #e0e0e0);
+          outline: none;
+          width: 140px;
+          font-family: var(--font-ui);
+          touch-action: manipulation;
+        }
           [role="toolbar"] {
             position: fixed !important;
             top: auto !important;
@@ -112,20 +129,33 @@ export function Toolbar({
             left: 0 !important;
             right: 0 !important;
             padding: 8px 12px calc(8px + env(safe-area-inset-bottom)) !important;
+            padding-left: max(12px, env(safe-area-inset-left)) !important;
+            padding-right: max(12px, env(safe-area-inset-right)) !important;
             border-radius: 16px 16px 0 0 !important;
             justify-content: space-around !important;
             box-shadow: 0 -4px 24px rgba(0,0,0,0.5) !important;
             z-index: var(--z-toolbar, 100) !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
           }
         }
         @media (max-width: 374px) {
           .toolbar-btn { width: 44px; height: 44px; }
           .toolbar-search-input { width: min(90px, 25vw) !important; }
-          [role="toolbar"] { padding: 6px 8px calc(6px + env(safe-area-inset-bottom)) !important; }
+          [role="toolbar"] {
+            padding: 6px 8px calc(6px + env(safe-area-inset-bottom)) !important;
+            padding-left: max(8px, env(safe-area-inset-left)) !important;
+            padding-right: max(8px, env(safe-area-inset-right)) !important;
+          }
         }
         @media (max-width: 320px) {
           .toolbar-btn { width: 44px; height: 44px; }
-          [role="toolbar"] { padding: 4px 4px calc(4px + env(safe-area-inset-bottom)) !important; gap: 2px; }
+          [role="toolbar"] {
+            padding: 4px 4px calc(4px + env(safe-area-inset-bottom)) !important;
+            padding-left: max(4px, env(safe-area-inset-left)) !important;
+            padding-right: max(4px, env(safe-area-inset-right)) !important;
+            gap: 2px;
+          }
         }
       `}</style>
 
@@ -196,11 +226,13 @@ export function Toolbar({
               borderRadius: '8px',
               padding: '4px 8px',
               minHeight: '44px',
+              minWidth: '44px',
               fontSize: '12px',
               color: 'var(--text-primary, #e0e0e0)',
               outline: 'none',
               width: '140px',
               fontFamily: 'var(--font-ui)',
+              touchAction: 'manipulation',
             }}
           />
           <button type="button" className="toolbar-btn" title="Clear search" aria-label="Clear search" onClick={handleSearchClear}>

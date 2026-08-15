@@ -99,7 +99,8 @@ function MenuItem({ icon: Icon, label, danger, active, disabled, onClick, kbd })
         alignItems: 'center',
         gap: '10px',
         width: '100%',
-        height: '38px',
+        minHeight: '44px',
+        height: '44px',
         padding: '0 14px',
         border: 'none',
         background: hovered ? 'var(--state-hover)' : 'transparent',
@@ -387,6 +388,7 @@ export function ContextMenu({
       <div
         style={{
           display: 'flex',
+          flexWrap: 'wrap',
           alignItems: 'center',
           gap: '8px',
           padding: '6px 14px 8px',
@@ -397,7 +399,7 @@ export function ContextMenu({
           onClick={() => act('color-none')}
           title="Remove colour"
           style={{
-            width: '16px', height: '16px',
+            minWidth: '44px', minHeight: '44px',
             borderRadius: '50%',
             border: '1px solid rgba(255,255,255,0.20)',
             background: 'transparent',
@@ -418,7 +420,7 @@ export function ContextMenu({
             title={swatch.label}
             aria-label={swatch.label}
             style={{
-              width: '16px', height: '16px',
+              minWidth: '44px', minHeight: '44px',
               borderRadius: '50%',
               border: item.meta?.color === swatch.color
                 ? '2px solid rgba(255,255,255,0.60)'
@@ -568,14 +570,14 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
           <MenuItem icon={Tag}          label="Edit Tags"   onClick={() => act('edit-tags')} />
           <Divider />
           {/* Colour row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', padding: '10px 16px' }}>
             {COLOR_SWATCHES.map((swatch, i) => (
               <button
                 key={i}
                 onClick={() => act(`color-${i}`)}
                 title={swatch.label}
                 style={{
-                  flex: 1, height: '32px', borderRadius: '8px',
+                  flex: 1, minHeight: '44px', height: '44px', borderRadius: '8px',
                   border: item.meta?.color === swatch.color ? '2px solid rgba(255,255,255,0.60)' : '1px solid rgba(255,255,255,0.10)',
                   background: swatch.color + '55',
                   cursor: 'pointer',

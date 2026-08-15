@@ -79,6 +79,8 @@ function TagChip({ tag, count, active, onRemove, onClick, size = 'sm' }) {
         transition: 'all 0.12s ease',
         userSelect: 'none',
         flexShrink: 0,
+        minHeight: '44px',
+        minWidth: '44px',
       }}
       role={onClick ? 'button' : undefined}
       aria-pressed={onClick ? active : undefined}
@@ -372,6 +374,7 @@ export function TagEditor({ tags = [], onChange, compact = false }) {
             border: 'none',
             cursor: 'pointer',
             padding: '2px 4px',
+            minWidth: '44px',
             minHeight: '44px',
           }}
         >
@@ -428,30 +431,30 @@ export function TagFilterBar({ activeTagFilters = new Set(), onToggleTag, onClea
   if (activeTagFilters.size === 0) return null;
 
   return (
-    <div
-      role="toolbar"
-      aria-label="Active tag filters"
-      style={{
-        position: 'absolute',
-        top: '12px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 'var(--z-canvas-ui)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '6px 10px',
-        borderRadius: '9999px',
-        background: 'var(--glass-frost)',
-        backdropFilter: 'blur(var(--glass-blur-lg))',
-        WebkitBackdropFilter: 'blur(var(--glass-blur-lg))',
-        border: '1px solid var(--color-border)',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
-        maxWidth: 'calc(100vw - 320px)',
-        flexWrap: 'nowrap',
-        overflowX: 'auto',
-      }}
-    >
+    <div className="overflow-x-auto">
+      <div
+        role="toolbar"
+        aria-label="Active tag filters"
+        style={{
+          position: 'absolute',
+          top: '12px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 'var(--z-canvas-ui)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '6px 10px',
+          borderRadius: '9999px',
+          background: 'var(--glass-frost)',
+          backdropFilter: 'blur(var(--glass-blur-lg))',
+          WebkitBackdropFilter: 'blur(var(--glass-blur-lg))',
+          border: '1px solid var(--color-border)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
+          maxWidth: 'calc(100vw - 24px)',
+          flexWrap: 'wrap',
+        }}
+      >
       <span
         style={{
           fontFamily: 'var(--font-ui)',
@@ -499,7 +502,8 @@ export function TagFilterBar({ activeTagFilters = new Set(), onToggleTag, onClea
         <X size={12} weight="bold" />
       </button>
     </div>
-  );
+  </div>
+);
 }
 
 export default { TagsPanel, TagEditor, TagFilterBar, extractHashtags, normaliseTag, aggregateTags };

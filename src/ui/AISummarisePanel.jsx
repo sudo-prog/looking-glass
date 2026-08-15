@@ -370,7 +370,7 @@ export function AISummarisePanel({
             bottom: calc(24px + env(safe-area-inset-bottom, 0px));
             right: 24px;
             width: min(420px, calc(100vw - 48px));
-            max-height: 70vh;
+            max-height: 70dvh;
             z-index: var(--z-modal);
           }
           @media (max-width: 767px) {
@@ -379,7 +379,7 @@ export function AISummarisePanel({
               right: 12px;
               bottom: calc(64px + env(safe-area-inset-bottom, 0px));
               width: auto;
-              max-height: calc(70vh - 64px - env(safe-area-inset-bottom));
+              max-height: calc(70dvh - 64px - env(safe-area-inset-bottom));
             }
           }
         `}</style>
@@ -389,6 +389,7 @@ export function AISummarisePanel({
           style={{
             display: 'flex',
             alignItems: 'center',
+            flexWrap: 'wrap',
             gap: '8px',
             padding: '14px 16px',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
@@ -406,7 +407,7 @@ export function AISummarisePanel({
           </div>
           <button
             onClick={onClose}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', borderRadius: '6px', flexShrink: 0 }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', borderRadius: '6px', flexShrink: 0 }}
             aria-label="Close"
           >
             <X size={14} weight="regular" />
@@ -442,7 +443,7 @@ export function AISummarisePanel({
 
               {/* Organise mode: show proposed groups */}
               {mode === 'organise' && parsed?.groups && parsed.groups.length > 0 && (
-                <div style={{ marginTop: '16px' }}>
+                <div style={{ marginTop: '16px', overflowX: 'auto' }}>
                   <div style={{ fontFamily: 'var(--font-ui)', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--text-disabled)', marginBottom: '8px', textTransform: 'uppercase' }}>
                     PROPOSED GROUPS ({parsed.groups.length})
                   </div>
@@ -451,6 +452,7 @@ export function AISummarisePanel({
                       key={i}
                       style={{
                         display: 'flex',
+                        flexWrap: 'wrap',
                         alignItems: 'center',
                         gap: '8px',
                         padding: '8px 10px',
@@ -467,10 +469,10 @@ export function AISummarisePanel({
                           flexShrink: 0,
                         }}
                       />
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', flex: 1 }}>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', flex: 1, minWidth: 0 }}>
                         {group.name}
                       </span>
-                      <span style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', color: 'var(--text-disabled)' }}>
+                      <span style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', color: 'var(--text-disabled)', flexShrink: 0 }}>
                         {group.item_ids?.length || 0} cards
                       </span>
                     </div>
@@ -531,8 +533,10 @@ export function AISummarisePanel({
 const footerBtn = {
   display: 'inline-flex',
   alignItems: 'center',
+  justifyContent: 'center',
   gap: '5px',
   minHeight: '44px',
+  minWidth: '44px',
   padding: '0 12px',
   borderRadius: '7px',
   border: '1px solid rgba(255,255,255,0.10)',

@@ -109,6 +109,8 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
           left:       0,
           right:      0,
           bottom:     0,
+          // Respect device safe-area so sheet content isn't hidden behind home indicator
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           // Use transform instead of top so bottom:0 doesn't stretch the element
           transform:  `translateY(${translateY})`,
           transition: isDragging.current
@@ -124,7 +126,7 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
       >
         <div
           className="bottom-sheet__handle"
-          style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', background: 'transparent', cursor: 'grab' }}
+          style={{ width: 48, height: 48, minWidth: 48, minHeight: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', background: 'transparent', cursor: 'grab', touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -132,7 +134,7 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
         >
           <div style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.20)', borderRadius: 2 }} />
         </div>
-        <div className="bottom-sheet__content">{children}</div>
+        <div className="bottom-sheet__content overflow-x-auto">{children}</div>
       </div>
     </div>,
     document.body

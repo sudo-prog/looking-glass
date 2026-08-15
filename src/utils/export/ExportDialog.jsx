@@ -110,19 +110,20 @@ export function ExportDialog({ onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 'calc(16px + env(safe-area-inset-top))', paddingRight: 'calc(16px + env(safe-area-inset-right))', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', paddingLeft: 'calc(16px + env(safe-area-inset-left))', background: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 'min(420px, 100%)', maxHeight: '90dvh', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'var(--color-bg-raised)', color: 'var(--text-primary)', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.4)' }}>
         <div className="modal-header">
           <h2>Export Data</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose} style={{ minHeight: '44px', minWidth: '44px' }}>✕</button>
         </div>
         <div className="modal-body">
           <p>Choose export format:</p>
-          <div className="export-options">
+          <div className="export-options" style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowX: 'auto' }}>
             <button
               className="export-btn"
               onClick={() => handleExport('json')}
               disabled={exporting}
+              style={{ minHeight: '44px', minWidth: '44px' }}
             >
               📄 JSON (full backup)
             </button>
@@ -130,6 +131,7 @@ export function ExportDialog({ onClose }) {
               className="export-btn"
               onClick={() => handleExport('markdown')}
               disabled={exporting}
+              style={{ minHeight: '44px', minWidth: '44px' }}
             >
               📝 Markdown (notes)
             </button>
@@ -137,6 +139,7 @@ export function ExportDialog({ onClose }) {
               className="export-btn"
               onClick={() => handleExport('png')}
               disabled={exporting}
+              style={{ minHeight: '44px', minWidth: '44px' }}
             >
               🖼️ PNG (canvas image)
             </button>
@@ -144,13 +147,14 @@ export function ExportDialog({ onClose }) {
               className="export-btn"
               onClick={() => handleExport('pdf')}
               disabled={exporting}
+              style={{ minHeight: '44px', minWidth: '44px' }}
             >
               📕 PDF (document)
             </button>
           </div>
 
           {/* PNG/PDF options */}
-          <div style={{ marginTop: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+          <div style={{ marginTop: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '12px', paddingBottom: 'env(safe-area-inset-bottom)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
               <label style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
                 PNG Scale:
@@ -158,7 +162,7 @@ export function ExportDialog({ onClose }) {
               <select
                 value={pngScale}
                 onChange={(e) => setPngScale(Number(e.target.value))}
-                style={{ background: 'var(--color-bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '2px 8px', fontSize: '12px' }}
+                style={{ background: 'var(--color-bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '2px 8px', fontSize: '12px', minHeight: '44px', minWidth: '44px' }}
               >
                 <option value={1}>1×</option>
                 <option value={2}>2×</option>
@@ -172,7 +176,7 @@ export function ExportDialog({ onClose }) {
               <select
                 value={pdfOrientation}
                 onChange={(e) => setPdfOrientation(e.target.value)}
-                style={{ background: 'var(--color-bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '2px 8px', fontSize: '12px' }}
+                style={{ background: 'var(--color-bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '2px 8px', fontSize: '12px', minHeight: '44px', minWidth: '44px' }}
               >
                 <option value="landscape">Landscape</option>
                 <option value="portrait">Portrait</option>

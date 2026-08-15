@@ -391,7 +391,7 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
                 <div className="stack-top-title">{topItem.content?.title || 'Stack'}</div>
                 <div
                   className="stack-hint"
-                  style={{ display: 'flex', alignItems: 'center', minHeight: '44px' }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }}
                   onClick={toggleFan}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
@@ -420,7 +420,9 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
             cursor: 'pointer',
-            padding: 0,
+            padding: '0',
+            minWidth: '44px',
+            minHeight: '44px',
           }}
         >
           Click any card to re-stack
@@ -591,6 +593,8 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave, onOpen })
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '8px',
             marginTop: '12px',
           }}
         >

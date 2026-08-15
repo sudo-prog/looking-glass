@@ -104,6 +104,7 @@ function DropOverlay({ active, fileTypes }) {
         inset: 0,
         zIndex: 9000,
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'center',
         background: 'rgba(10,10,10,0.65)',

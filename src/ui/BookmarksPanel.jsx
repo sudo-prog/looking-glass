@@ -259,8 +259,9 @@ export function BookmarksPanel({ isOpen, onClose }) {
       >
         {/* Header */}
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap',
           padding: '16px 20px',
+          paddingTop: 'max(16px, env(safe-area-inset-top))',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           flexShrink: 0,
         }}>
@@ -310,7 +311,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
               disabled={importing}
               style={{
                 display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '10px 14px', borderRadius: '10px',
+                padding: '10px 14px', minHeight: '44px', borderRadius: '10px',
                 border: '1px dashed rgba(139,92,246,0.30)',
                 background: 'rgba(139,92,246,0.06)',
                 color: 'var(--text-primary)',
@@ -337,7 +338,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
             />
 
             {/* Twitter bookmark import */}
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <div style={{
                 flex: 1, display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '8px 12px', borderRadius: '10px',
@@ -431,7 +432,8 @@ export function BookmarksPanel({ isOpen, onClose }) {
 
         {/* Bookmarks List */}
         <div style={{
-          flex: 1, overflowY: 'auto', padding: '8px 12px',
+          flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '8px 12px',
+          paddingBottom: 'calc(8px + env(safe-area-inset-bottom))',
         }}>
           {filtered.length === 0 ? (
             <div style={{
@@ -458,7 +460,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
               <div
                 key={bm.id}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
+                  display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
                   padding: '10px 12px', borderRadius: '10px',
                   marginBottom: '4px',
                   transition: 'background 0.1s ease',

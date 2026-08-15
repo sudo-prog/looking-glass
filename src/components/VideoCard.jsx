@@ -60,6 +60,14 @@ export function VideoCard({
   const videoRef  = useRef(null);
   const blobId    = item.content?.video_blob_id;
 
+  // Touch parity (MOBILE-UI-STANDARD T-3): touch devices have no hover state,
+  // so the hover-gated control bar would be permanently invisible/untappable.
+  // Detect coarse pointers and reveal controls on touch.
+  const isTouch =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(pointer: coarse)').matches
+      : false;
+
   // ── Load blob ────────────────────────────────────────
   useEffect(() => {
     if (!blobId) {
@@ -219,13 +227,13 @@ export function VideoCard({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-end',
-            background: hovered
+            background: (hovered || isTouch)
               ? 'linear-gradient(to top, rgba(0,0,0,0.70) 0%, transparent 60%)'
               : 'transparent',
             transition: 'background 0.2s ease',
           }}
         >
-          {hovered && (
+          {(hovered || isTouch) && (
             <div
               style={{
                 display: 'flex',
@@ -246,14 +254,23 @@ export function VideoCard({
                 onClick={handleSeek}
                 style={{
                   flex: 1,
-                  height: '3px',
-                  borderRadius: '2px',
-                  background: 'rgba(255,255,255,0.20)',
+                  minHeight: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
                   cursor: 'pointer',
                   position: 'relative',
-                  overflow: 'hidden',
                 }}
               >
+                <div
+                  style={{
+                    flex: 1,
+                    height: '3px',
+                    borderRadius: '2px',
+                    background: 'rgba(255,255,255,0.20)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
                 <div
                   style={{
                     position: 'absolute',
@@ -264,6 +281,7 @@ export function VideoCard({
                     transition: 'width 0.1s linear',
                   }}
                 />
+              </div>
               </div>
 
               {/* Duration */}
@@ -333,7 +351,7 @@ const centeredStyle = {
 
 const ctrlBtnStyle = {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  width: '26px', height: '26px', border: 'none',
+  width: '48px', height: '48px', minWidth: '44px', minHeight: '44px', border: 'none',
   background: 'rgba(255,255,255,0.12)', borderRadius: '6px',
   color: 'rgba(255,255,255,0.80)', cursor: 'pointer', flexShrink: 0,
 };

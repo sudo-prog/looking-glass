@@ -29,6 +29,7 @@ export function Minimap({ items = [], viewport, onViewportChange }) {
   const ctxRef      = useRef(null);
   const rafId       = useRef(null);
   const [dragging,  setDragging]  = useState(false);
+  const [visible,   setVisible]   = useState(true);
 
   // ── Compute world bounds of all items ───────────────────
   const getBounds = useCallback(() => {
@@ -171,18 +172,70 @@ export function Minimap({ items = [], viewport, onViewportChange }) {
   }, [dragging, onViewportChange, minimapToViewport]);
 
   return (
-    <div className="minimap-wrap" aria-label="Canvas minimap" role="img">
-      <canvas
-        ref={canvasRef}
-        width={MW}
-        height={MH}
-        className="minimap-canvas"
-        style={{ cursor: 'crosshair', display: 'block' }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-      />
+    <div
+      className="minimap-wrap"
+      aria-label="Canvas minimap"
+      role="img"
+      style={{
+        // S-1: bottom-docked → respect safe-area insets (never bare bottom:0)
+        bottom: 'max(16px, env(safe-area-inset-bottom))',
+        right: 'max(16px, env(safe-area-inset-right))',
+        // L-3: flex row that wraps instead of overflowing on narrow viewports
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end',
+        alignItems: 'flex-end',
+        gap: 8,
+      }}
+    >
+      {/* T-1: toggle button with a guaranteed ≥44×44px hit area */}
+      <button
+        type="button"
+        aria-label={visible ? 'Hide minimap' : 'Show minimap'}
+        aria-pressed={visible}
+        onClick={() => setVisible((v) => !v)}
+        className="minimap-toggle"
+        style={{
+          minWidth: 44,
+          minHeight: 44,
+          width: 44,
+          height: 44,
+          flex: '0 0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          touchAction: 'manipulation',
+          background: 'rgba(0,0,0,0.6)',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: 8,
+        }}
+      >
+        {visible ? '▾' : '▸'}
+      </button>
+      {/* L-1/L-4: contain wide content in a self-scrolling, viewport-capped wrapper */}
+      <div
+        className="minimap-canvas-wrap"
+        style={{
+          display: visible ? 'block' : 'none',
+          maxWidth: '100%',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          width={MW}
+          height={MH}
+          className="minimap-canvas"
+          style={{ cursor: 'crosshair', display: 'block', maxWidth: '100%', height: 'auto' }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+        />
+      </div>
     </div>
   );
 }
