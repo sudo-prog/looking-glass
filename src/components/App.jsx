@@ -546,7 +546,7 @@ export function App() {
   }, [filteredItems, selectedIds]);
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', width: '100%', height: '100dvh', overflow: 'hidden', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div className="flex flex-col sm:flex-row" style={{ width: '100%', height: '100dvh', overflow: 'hidden', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <Toaster
         position="bottom-center"
         toastOptions={{
@@ -572,13 +572,15 @@ export function App() {
         onAddUrl={addUrl}
         onExport={handleExport}
       />
-      <div data-main-content style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minHeight: '100dvh', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div data-main-content style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <DropZoneHandler viewport={viewport} onDrop={handleDrop}>
-          <TagFilterBar
-            activeTagFilters={activeTagFilters}
-            onToggleTag={toggleTagFilter}
-            onClearTags={clearTagFilters}
-          />
+          <div style={{ overflowX: 'auto' }}>
+            <TagFilterBar
+              activeTagFilters={activeTagFilters}
+              onToggleTag={toggleTagFilter}
+              onClearTags={clearTagFilters}
+            />
+          </div>
           <Canvas
             items={filteredItems}
             viewport={viewport}

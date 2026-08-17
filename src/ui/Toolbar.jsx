@@ -148,13 +148,11 @@ export function Toolbar({
             padding-right: max(8px, env(safe-area-inset-right)) !important;
           }
         }
-        @media (max-width: 320px) {
-          .toolbar-btn { width: 44px; height: 44px; }
+        @media (max-width: 640px) {
           [role="toolbar"] {
-            padding: 4px 4px calc(4px + env(safe-area-inset-bottom)) !important;
-            padding-left: max(4px, env(safe-area-inset-left)) !important;
-            padding-right: max(4px, env(safe-area-inset-right)) !important;
-            gap: 2px;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 8px !important;
           }
         }
       `}</style>

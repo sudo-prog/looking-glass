@@ -195,6 +195,7 @@ export function TagsPanel({ items = [], activeTagFilters = new Set(), onToggleTa
           placeholder="Filter tags…"
           style={{
             width: '100%',
+            minHeight: '44px',
             height: '44px',
             border: '1px solid var(--color-border)',
             borderRadius: '6px',
@@ -215,6 +216,8 @@ export function TagsPanel({ items = [], activeTagFilters = new Set(), onToggleTa
           onClick={onClearTags}
           style={{
             margin: '0 12px 6px',
+            minWidth: '44px',
+            minHeight: '44px',
             height: '44px',
             border: '1px solid var(--color-border)',
             borderRadius: '6px',
@@ -350,8 +353,9 @@ export function TagEditor({ tags = [], onChange, compact = false }) {
         gap: '4px',
         alignItems: 'center',
         padding: '6px 16px',
+        paddingBottom: 'calc(6px + env(safe-area-inset-bottom))',
         borderTop: '1px solid var(--color-border)',
-        minHeight: '32px',
+        minHeight: '44px',
       }}
     >
       {displayTags.map((tag) => (
@@ -437,7 +441,7 @@ export function TagFilterBar({ activeTagFilters = new Set(), onToggleTag, onClea
         aria-label="Active tag filters"
         style={{
           position: 'absolute',
-          top: '12px',
+          top: 'calc(12px + env(safe-area-inset-top))',
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 'var(--z-canvas-ui)',

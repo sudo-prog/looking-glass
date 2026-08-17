@@ -243,7 +243,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
         aria-label="Bookmarks"
         style={{
           position: 'fixed',
-          top: 0, left: 0, bottom: 0,
+          top: 0, left: 0, height: '100dvh',
           width: 'min(420px, 90vw)',
           zIndex: 'var(--z-dropdown)',
           background: 'var(--glass-frost)',
@@ -353,7 +353,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
                   placeholder="Paste X/Twitter bookmark URL..."
                   onKeyDown={e => e.key === 'Enter' && handleTwitterImport()}
                   style={{
-                    flex: 1, minHeight: '44px', border: 'none', background: 'transparent',
+                    flex: 1, minWidth: 0, minHeight: '44px', border: 'none', background: 'transparent',
                     color: 'var(--text-primary)',
                     fontFamily: 'var(--font-ui)', fontSize: '12px',
                     outline: 'none',
@@ -421,7 +421,7 @@ export function BookmarksPanel({ isOpen, onClose }) {
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search bookmarks..."
               style={{
-                flex: 1, minHeight: '44px', border: 'none', background: 'transparent',
+                flex: 1, minWidth: 0, minHeight: '44px', border: 'none', background: 'transparent',
                 color: 'var(--text-primary)',
                 fontFamily: 'var(--font-ui)', fontSize: '12px',
                 outline: 'none',

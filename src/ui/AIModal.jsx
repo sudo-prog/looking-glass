@@ -124,6 +124,7 @@ export default function AIModal({ isOpen, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-modal-title"
+        style={{ maxHeight: 'calc(100dvh - 16px)' }}
       >
         {/* Header */}
         <div className="lg-ai-modal__header" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
@@ -243,7 +244,7 @@ export default function AIModal({ isOpen, onClose }) {
         <div className="lg-ai-modal__divider" />
 
         {/* Footer actions */}
-        <div className="lg-ai-modal__footer" style={{ flexWrap: 'wrap' }}>
+        <div className="lg-ai-modal__footer" style={{ flexWrap: 'wrap', overflowX: 'auto' }}>
           <button className="lg-ai-modal__btn-secondary" onClick={handleTest} disabled={status === 'testing'} style={{ minHeight: '44px', minWidth: '44px' }}>
             TEST CONNECTION
           </button>

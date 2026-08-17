@@ -870,7 +870,7 @@ export default function LiquidOrb() {
               <span className="lg-orb-pill-label">Looking Glass AI</span>
             </button>
             <div className="lg-orb-pill-divider" />
-            <button className="lg-orb-pill-close" onClick={() => goToPhase('orb')}>
+            <button className="lg-orb-pill-close" onClick={() => goToPhase('orb')} style={{ minHeight: 44, minWidth: 44 }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
             </button>
             <div className="lg-orb-pill-sheen" />
@@ -1059,6 +1059,7 @@ export default function LiquidOrb() {
                           color: '#fff', fontSize: 10, cursor: 'pointer',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           lineHeight: 1, padding: 0, zIndex: 10,
+                          minWidth: 44, minHeight: 44,
                         }}
                         title={`Remove ${p.name}`}
                       >×</button>
@@ -1163,7 +1164,7 @@ export default function LiquidOrb() {
                     }}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSetup(); }}
                   />
-                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 4, opacity: 0.6 }}
+                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: 12, opacity: 0.6, minWidth: 44, minHeight: 44 }}
                     onClick={() => setShowKey(v => !v)}>
                     {showKey ? '🙈' : '👁'}
                   </button>
@@ -1326,7 +1327,7 @@ export default function LiquidOrb() {
               }}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSettings(); if (e.key === 'Escape') setSettingsOpen(false); }}
             />
-            <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 4, opacity: 0.6 }}
+            <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: 12, opacity: 0.6, minWidth: 44, minHeight: 44 }}
               onClick={() => setShowKey(v => !v)}>
               {showKey ? '🙈' : '👁'}
             </button>
@@ -1443,8 +1444,9 @@ export default function LiquidOrb() {
                 <button
                   onClick={() => setShowDebugLog(false)}
                   style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 4,
-                    color: 'var(--text-secondary)', fontSize: 16, lineHeight: 1,
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 10,
+                    color: 'var(--text-secondary)', fontSize: 20, lineHeight: 1,
+                    minWidth: 44, minHeight: 44,
                   }}
                 >×</button>
               </div>

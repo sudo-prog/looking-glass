@@ -520,7 +520,7 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
         aria-label="Card actions"
         style={{
           position: 'fixed',
-          left: 0, right: 0, bottom: 0,
+          left: 0, right: 0, bottom: 0, maxHeight: '90dvh', overflowY: 'auto',
           zIndex: 'var(--z-bottom-sheet)',
           borderRadius: '20px 20px 0 0',
           background: 'rgba(16,16,16,0.98)',
@@ -577,7 +577,7 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
                 onClick={() => act(`color-${i}`)}
                 title={swatch.label}
                 style={{
-                  flex: 1, minHeight: '44px', height: '44px', borderRadius: '8px',
+                  flex: 1, minWidth: '44px', minHeight: '44px', height: '44px', borderRadius: '8px',
                   border: item.meta?.color === swatch.color ? '2px solid rgba(255,255,255,0.60)' : '1px solid rgba(255,255,255,0.10)',
                   background: swatch.color + '55',
                   cursor: 'pointer',
@@ -605,11 +605,11 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
  */
 export function SmartContextMenu(props) {
   const [isMobile, setIsMobile] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
   );
 
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
+    const mq = window.matchMedia('(max-width: 640px)');
     const onChange = (e) => setIsMobile(e.matches);
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);

@@ -30,6 +30,15 @@ export function Minimap({ items = [], viewport, onViewportChange }) {
   const rafId       = useRef(null);
   const [dragging,  setDragging]  = useState(false);
   const [visible,   setVisible]   = useState(true);
+  const [isMobile,  setIsMobile]  = useState(false);
+
+  // ── Responsive: stack at ≤640px (L-3) ───────────────────────
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   // ── Compute world bounds of all items ───────────────────
   const getBounds = useCallback(() => {
@@ -178,10 +187,12 @@ export function Minimap({ items = [], viewport, onViewportChange }) {
       role="img"
       style={{
         // S-1: bottom-docked → respect safe-area insets (never bare bottom:0)
+        position: 'fixed',
         bottom: 'max(16px, env(safe-area-inset-bottom))',
         right: 'max(16px, env(safe-area-inset-right))',
-        // L-3: flex row that wraps instead of overflowing on narrow viewports
+        // L-3: flex row that wraps, stacking to column at ≤640px
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
         flexWrap: 'wrap',
         justifyContent: 'flex-end',
         alignItems: 'flex-end',

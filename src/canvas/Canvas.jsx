@@ -460,6 +460,14 @@ export function Canvas({
         flex: 1,
         position: 'relative',
         overflow: 'hidden',
+        /* MOBILE-UI-STANDARD L-1/L-4: guarantee the canvas container can never
+           exceed the viewport width (no flex min-content blow-out, no overflow).
+           The large 5000px world inside is intentionally clipped by this
+           overflow:hidden ancestor — the standard's sanctioned infinite-canvas
+           pattern — so it is correctly excluded from per-element overflow. */
+        minWidth: 0,
+        maxWidth: '100%',
+        minHeight: '100dvh',
         cursor: 'grab',
         touchAction: 'none',
       }}
@@ -534,7 +542,11 @@ export function Canvas({
           left: 0,
           right: 0,
           bottom: 0,
+          width: '100%',
+          boxSizing: 'border-box',
           zIndex: 'var(--z-canvas-ui)',
+          /* S-1: bottom-docked UI honours the safe-area insets (never bare
+             bottom:0) so the toolbar clears the home indicator / notches. */
           paddingBottom: 'env(safe-area-inset-bottom)',
           paddingLeft: 'env(safe-area-inset-left)',
           paddingRight: 'env(safe-area-inset-right)',

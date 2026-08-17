@@ -89,7 +89,7 @@ export function Lightbox({ item, onClose, onColor }) {
   const url = item.content?.url;
 
   // Detect mobile for layout adjustments
-  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth <= 640;
   const isVerySmall = typeof window !== 'undefined' && window.innerWidth < 375;
 
   return createPortal(
@@ -164,7 +164,7 @@ export function Lightbox({ item, onClose, onColor }) {
           style={{
             display: 'flex',
             flexDirection: isMobileViewport ? 'row' : 'column',
-            flexWrap: isMobileViewport ? 'wrap' : 'nowrap',
+            flexWrap: 'wrap',
             justifyContent: isMobileViewport ? 'center' : 'flex-start',
             gap: '14px',
             flexShrink: 0,
@@ -179,8 +179,8 @@ export function Lightbox({ item, onClose, onColor }) {
               style={{
                 minWidth: '44px',
                 minHeight: '44px',
-                width: '32px',
-                height: '32px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '50%',
                 border: activeColor === hex
                   ? '2px solid rgba(255,255,255,0.85)'

@@ -71,6 +71,7 @@ function ToolbarIconButton({ icon: Icon, label, onClick, disabled, danger, activ
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.35 : 1,
         transition: 'background 0.12s ease, transform 0.1s ease',
+        touchAction: 'manipulation',
         flexShrink: 0,
       }}
     >
@@ -123,7 +124,7 @@ export function SelectionToolbar({
       aria-label="Selection actions"
       style={{
         position: 'absolute',
-        bottom: '28px',
+        bottom: 'calc(28px + env(safe-area-inset-bottom))',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 'var(--z-canvas-ui)',
@@ -219,6 +220,7 @@ export function SelectionToolbar({
                 cursor: 'pointer',
                 padding: 0,
                 flexShrink: 0,
+                touchAction: 'manipulation',
               }}
             >
               <span
@@ -254,6 +256,7 @@ export function SelectionToolbar({
                   padding: 0,
                   flexShrink: 0,
                   transition: 'transform 0.1s ease',
+                  touchAction: 'manipulation',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.25)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}

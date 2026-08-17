@@ -39,8 +39,8 @@ export function DropModePicker({ x, y, onStack, onFolder, onDismiss }) {
       {/* Mobile-UI-STANDARD: ≥44×44 (prefer 48px) tap targets (T-1), flex-wrap (L-3),
           viewport-capped width (L-4) — gated to mobile, desktop layout untouched. */}
       <style>{`
-        @media (max-width: 767px) {
-          .drop-mode-picker { flex-wrap: wrap; max-width: calc(100vw - 16px); }
+        @media (max-width: 640px) {
+          .drop-mode-picker { display: flex; flex-direction: column; flex-wrap: wrap; max-width: calc(100vw - 16px); overflow-x: auto; }
           .dmp-btn { min-height: 48px; min-width: 48px; }
         }
       `}</style>

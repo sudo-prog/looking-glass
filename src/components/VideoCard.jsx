@@ -241,6 +241,7 @@ export function VideoCard({
                 flexWrap: 'wrap',
                 gap: '6px',
                 padding: '8px 10px',
+                paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
               }}
               onClick={(e) => e.stopPropagation()}
             >

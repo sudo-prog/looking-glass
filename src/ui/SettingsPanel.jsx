@@ -247,7 +247,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-dropdown)', background: 'rgba(0,0,0,0.40)' }} />
       <div role="dialog" aria-label="Settings" style={{
-        position: 'fixed', top: 0, left: 0, bottom: 0,
+        position: 'fixed', top: 0, left: 0, height: '100dvh',
         width: 'min(440px, 100vw)', zIndex: 'var(--z-dropdown)',
         background: 'var(--glass-frost)', backdropFilter: 'blur(32px) saturate(120%)',
         WebkitBackdropFilter: 'blur(32px) saturate(120%)',
@@ -283,7 +283,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '2px', padding: '8px 10px', borderBottom: '1px solid var(--color-border)', overflowX: 'auto', flexShrink: 0, flexWrap: 'nowrap' }}>
+        <div style={{ display: 'flex', gap: '2px', padding: '8px 10px', borderBottom: '1px solid var(--color-border)', overflowX: 'auto', flexShrink: 0, flexWrap: 'wrap' }}>
           <button style={{ ...tabBtn('theme', 'Theme', Palette), padding: '6px 8px', fontSize: '10px', whiteSpace: 'nowrap' }} onClick={() => setActiveTab('theme')}><Palette size={10} /><span>Theme</span></button>
           <button style={{ ...tabBtn('icons', 'Icons', Eye), padding: '6px 8px', fontSize: '10px', whiteSpace: 'nowrap' }} onClick={() => setActiveTab('icons')}><Eye size={10} /><span>Icons</span></button>
           <button style={{ ...tabBtn('ai', 'AI', Sparkle), padding: '6px 8px', fontSize: '10px', whiteSpace: 'nowrap' }} onClick={() => setActiveTab('ai')}><Sparkle size={10} /><span>AI</span></button>
@@ -392,7 +392,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                   <input type="text" value={fontImport} onChange={e => setFontImport(e.target.value)} placeholder='@import url("https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap");' style={{
                     width: '100%', padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--color-border)',
                     background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-mono)', fontSize: '10px', outline: 'none', marginTop: '4px', boxSizing: 'border-box', resize: 'vertical', minHeight: '40px',
+                    fontFamily: 'var(--font-mono)', fontSize: '10px', outline: 'none', marginTop: '4px', boxSizing: 'border-box', resize: 'vertical', minHeight: '44px',
                   }} />
                 </div>
 

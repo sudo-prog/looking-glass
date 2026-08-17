@@ -301,6 +301,7 @@ export function AudioMemoCard({
         style={{
           display: 'flex',
           alignItems: 'center',
+          flexWrap: 'wrap',
           gap: '8px',
           padding: '12px 14px 8px',
         }}
@@ -385,6 +386,7 @@ export function AudioMemoCard({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
           padding: '8px 14px 12px',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -398,6 +400,7 @@ export function AudioMemoCard({
               alignItems: 'center',
               gap: '6px',
               minWidth: '44px',
+              minHeight: '44px',
               height: '44px',
               padding: '0 14px',
               borderRadius: '8px',
@@ -423,6 +426,7 @@ export function AudioMemoCard({
               alignItems: 'center',
               justifyContent: 'center',
               width: '44px',
+              minHeight: '44px',
               height: '44px',
               borderRadius: '8px',
               border: '1px solid rgba(255,255,255,0.12)',
@@ -447,6 +451,7 @@ export function AudioMemoCard({
             alignItems: 'center',
             justifyContent: 'center',
             width: '44px',
+            minHeight: '44px',
             height: '44px',
             borderRadius: '6px',
             border: 'none',

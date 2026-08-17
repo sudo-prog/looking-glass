@@ -51,8 +51,8 @@ function BookmarkCard({ item, isSelected, onSelect, onDragStart, onLightbox }) {
       onPointerDown={onDragStart}
       onClick={(e) => onSelect(e.ctrlKey || e.metaKey)}
     >
-      <div className="card-header">
-        <span className="card-handle">⠿</span>
+      <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
+        <span className="card-handle" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⠿</span>
         <span className="card-title">{escapeHtml(item.content.title || 'Bookmark')}</span>
       </div>
       {item.content.image_url && (
@@ -65,7 +65,7 @@ function BookmarkCard({ item, isSelected, onSelect, onDragStart, onLightbox }) {
           <p className="card-desc">{escapeHtml(item.content.description)}</p>
         </div>
       )}
-      <div className="card-footer">
+      <div className="card-footer" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
         {item.meta?.domain && <span className="card-domain">{escapeHtml(item.meta.domain)}</span>}
         {item.content.url && (
           <a href={escapeHtml(item.content.url)} target="_blank" rel="noopener" className="card-link" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }} onClick={(e) => e.stopPropagation()}>↗</a>
@@ -87,8 +87,8 @@ function ImageCard({ item, isSelected, onSelect, onDragStart, onLightbox }) {
       onPointerDown={onDragStart}
       onClick={(e) => onSelect(e.ctrlKey || e.metaKey)}
     >
-      <div className="card-header">
-        <span className="card-handle">⠿</span>
+      <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
+        <span className="card-handle" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⠿</span>
         <span className="card-title">{escapeHtml(item.content.title || 'Image')}</span>
       </div>
       {item.content.image_url && (
@@ -203,8 +203,8 @@ function NoteCard({ item, isSelected, onSelect, onDragStart, onSave }) {
       onClick={(e) => onSelect(e.ctrlKey || e.metaKey)}
       onDoubleClick={handleDoubleClick}
     >
-      <div className="card-header">
-        <span className="card-handle">⠿</span>
+      <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
+        <span className="card-handle" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⠿</span>
         <span className="card-note-icon">📝</span>
         <span className="card-title">{escapeHtml(firstLine)}</span>
       </div>
@@ -231,15 +231,15 @@ function WebClipCard({ item, isSelected, onSelect, onDragStart }) {
       onPointerDown={onDragStart}
       onClick={(e) => onSelect(e.ctrlKey || e.metaKey)}
     >
-      <div className="card-header">
-        <span className="card-handle">⠿</span>
+      <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
+        <span className="card-handle" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⠿</span>
         <span className="card-title">{escapeHtml(item.content.title || 'Web Clip')}</span>
       </div>
       {item.content.embed_html && (
         <div className="card-body" dangerouslySetInnerHTML={{ __html: item.content.embed_html }} />
       )}
       {item.content.url && (
-        <div className="card-footer">
+        <div className="card-footer" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
           <a href={escapeHtml(item.content.url)} target="_blank" rel="noopener" className="card-link" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }} onClick={(e) => e.stopPropagation()}>↗</a>
         </div>
       )}
@@ -259,8 +259,8 @@ function GroupCard({ item, isSelected, onSelect, onDragStart, children }) {
       onPointerDown={onDragStart}
       onClick={(e) => onSelect(e.ctrlKey || e.metaKey)}
     >
-      <div className="card-header">
-        <span className="card-handle">⠿</span>
+      <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
+        <span className="card-handle" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⠿</span>
         <span className="card-title">{escapeHtml(item.content.title || 'Group')}</span>
       </div>
       <div className="group-children">
@@ -553,6 +553,7 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave, onOpen })
               outline: 'none',
               color: 'var(--text-primary)',
               padding: '0 0 2px',
+              minHeight: '44px',
               width: '100%',
               boxSizing: 'border-box',
             }}

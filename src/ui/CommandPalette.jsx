@@ -137,14 +137,14 @@ export function CommandPalette({
     >
       <div
         className="command-palette glass-command-palette"
-        style={{ maxHeight: 'min(90dvh, 600px)' }}
+        style={{ maxHeight: 'min(90dvh, 600px)', paddingBottom: 'env(safe-area-inset-bottom)' }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Command palette"
         aria-modal="true"
       >
         {/* Input */}
-        <div className="command-palette__input-wrap" style={{ flexWrap: 'wrap' }}>
+        <div className="command-palette__input-wrap flex flex-col sm:flex-row">
           <MagnifyingGlass size={20} weight="regular" className="command-palette__search-icon" />
           <input
             ref={inputRef}
@@ -180,7 +180,7 @@ export function CommandPalette({
               <button
                 key={item.id}
                 data-idx={idx}
-                className={`command-palette__result ${isActive ? 'command-palette__result--active' : ''}`}
+                className={`command-palette__result flex flex-wrap ${isActive ? 'command-palette__result--active' : ''}`}
                 style={{ minHeight: '48px', minWidth: '44px' }}
                 onClick={() => executeItem(item)}
                 type="button"
@@ -188,7 +188,7 @@ export function CommandPalette({
                 aria-selected={isActive}
               >
                 {Icon && <Icon size={16} weight="regular" className="command-palette__result-icon" />}
-                <span className="command-palette__result-label">{item.label}</span>
+                <span className="command-palette__result-label overflow-x-auto block">{item.label}</span>
               </button>
             );
           })}

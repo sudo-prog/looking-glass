@@ -93,7 +93,7 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
 
   if (!isOpen) return null;
 
-  const translateY = `${yFrac * 100}vh`;
+  const translateY = `${yFrac * 100}dvh`;
 
   return createPortal(
     <div

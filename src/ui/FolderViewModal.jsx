@@ -65,6 +65,9 @@ function FolderPreviewTile({ child, onRemove }) {
         background: 'var(--color-bg-card)',
         border: '1px solid var(--color-border)',
         minHeight: '160px',
+        minWidth: '140px',
+        maxWidth: '180px',
+        flex: '0 0 140px',
         display: 'flex',
         flexDirection: 'column',
         cursor: 'grab',
@@ -183,7 +186,7 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
         onClick={(e) => e.stopPropagation()}
         style={{
           width: 'min(820px, 100%)',
-          height: 'min(84dvh, 100%)',
+          height: 'min(100dvh, 100%)',
           maxHeight: 'calc(100dvh - 16px)',
           display: 'flex',
           flexDirection: 'column',
@@ -198,10 +201,17 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
         }}
       >
         <style>{`
-          @keyframes folder-modal-in {
-            from { opacity: 0; transform: scale(0.96) translateY(10px); }
-            to   { opacity: 1; transform: scale(1)    translateY(0); }
-          }
+        @keyframes folder-modal-in {
+          from { opacity: 0; transform: scale(0.96) translateY(10px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0); }
+        }
+        @media (max-width: 640px) {
+          .lg-folder-grid { gap: 10px !important; }
+          .lg-folder-grid > * { flex: 0 0 calc(50% - 5px) !important; max-width: calc(50% - 5px) !important; }
+        }
+        @media (max-width: 420px) {
+          .lg-folder-grid > * { flex: 0 0 100% !important; max-width: 100% !important; }
+        }
         `}</style>
 
         {/* Header */}
@@ -215,12 +225,12 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
             width: '100%',
           }}
         >
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
             <div
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '9px',
+                width: '44px',
+                height: '44px',
+                borderRadius: '11px',
                 background: 'rgba(215,25,33,0.12)',
                 display: 'flex',
                 alignItems: 'center',
@@ -345,9 +355,10 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
             </div>
           ) : (
             <div
+              className="lg-folder-grid"
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(min(150px, 100%), 1fr))',
+                display: 'flex',
+                flexWrap: 'wrap',
                 gap: '12px',
               }}
             >

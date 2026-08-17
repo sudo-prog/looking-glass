@@ -373,8 +373,36 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
 
   return (
     <>
-      {/* Click-outside backdrop (shown on mobile while the bottom nav is open) */}
-      <div
+      <style>{`
+        .lg-sidebar__nav-item,
+        .lg-sidebar__flyout-item,
+        .lg-sidebar__flyout-close,
+        .lg-sidebar__theme-btn,
+        .lg-sidebar__settings-btn,
+        .lg-sidebar__nav-theme,
+        .lg-sidebar__close {
+          min-height: 44px !important;
+          min-width: 44px !important;
+        }
+        .lg-sidebar__nav {
+          flex-wrap: wrap !important;
+        }
+        @media (max-width: 640px) {
+          .lg-sidebar__nav {
+            flex-direction: column !important;
+          }
+          .lg-sidebar__nav-item {
+            width: 100% !important;
+            justify-content: flex-start !important;
+          }
+        }
+        .lg-sidebar--expanded {
+          min-height: 100dvh !important;
+          padding-bottom: env(safe-area-inset-bottom) !important;
+        }
+      `}</style>
+      {/* Click-outside backdrop (shown on mobile while the bottom nav is open) */}\n      <div
+
         className={`lg-sidebar-backdrop${isMobile && mobileExpanded ? ' lg-sidebar-backdrop--mobile-visible' : ''}`}
         onClick={closeMobile}
       />

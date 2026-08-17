@@ -198,8 +198,8 @@ export function ScratchPad() {
           @media (max-width: 767px) {
             .lg-scratch-pad {
               top: auto !important;
-              left: 12px !important;
-              right: 12px !important;
+              left: calc(12px + env(safe-area-inset-left, 0px)) !important;
+              right: calc(12px + env(safe-area-inset-right, 0px)) !important;
               bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
               width: auto !important;
               transform: none !important;
@@ -229,6 +229,11 @@ export function ScratchPad() {
         >
           <div
             style={{
+              flex: '1 1 auto',
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
               fontFamily: 'var(--font-ui)',
               fontSize: '9px',
               letterSpacing: '0.15em',
@@ -247,6 +252,8 @@ export function ScratchPad() {
                 aria-label={`Color: ${c.label}`}
                 onClick={() => setColorIdx(i)}
                 style={{
+                  minHeight: '44px',
+                  minWidth: '44px',
                   width: '44px',
                   height: '44px',
                   display: 'flex',

@@ -112,11 +112,11 @@ export function ExportDialog({ onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 'calc(16px + env(safe-area-inset-top))', paddingRight: 'calc(16px + env(safe-area-inset-right))', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', paddingLeft: 'calc(16px + env(safe-area-inset-left))', background: 'rgba(0,0,0,0.5)' }}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 'min(420px, 100%)', maxHeight: '90dvh', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'var(--color-bg-raised)', color: 'var(--text-primary)', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.4)' }}>
-        <div className="modal-header">
+        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
           <h2>Export Data</h2>
           <button className="modal-close" onClick={onClose} style={{ minHeight: '44px', minWidth: '44px' }}>✕</button>
         </div>
-        <div className="modal-body">
+        <div className="modal-body" style={{ overflowX: 'auto' }}>
           <p>Choose export format:</p>
           <div className="export-options" style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowX: 'auto' }}>
             <button

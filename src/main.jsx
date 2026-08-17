@@ -45,6 +45,11 @@ container.style.height = '100dvh'; /* fallback: 100vh */
 container.style.width = '100%';
 container.style.maxWidth = '100%';
 container.style.overflowX = 'hidden';
+container.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+container.style.paddingBottom = 'env(safe-area-inset-bottom, 0px)';
+container.style.paddingLeft = 'env(safe-area-inset-left, 0px)';
+container.style.paddingRight = 'env(safe-area-inset-right, 0px)';
+container.style.boxSizing = 'border-box';
 const root = createRoot(container);
 root.render(
   <ErrorBoundary name="root">

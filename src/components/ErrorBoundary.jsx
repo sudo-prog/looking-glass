@@ -41,14 +41,18 @@ export class ErrorBoundary extends React.Component {
         role="alert"
         style={{
           position: 'fixed',
-          inset: 0,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: '100dvh',
           zIndex: 99999,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           gap: '16px',
-          padding: '24px',
+          padding: 'calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom)) 24px',
           textAlign: 'center',
           background: 'var(--canvas-bg, #0A0A0A)',
           color: 'var(--text-primary, #F5F5F5)',
@@ -67,7 +71,7 @@ export class ErrorBoundary extends React.Component {
         <h1 style={{ fontSize: '18px', fontWeight: 600, margin: 0, letterSpacing: '0.02em' }}>
           Something went wrong
         </h1>
-        <p style={{ fontSize: '13px', opacity: 0.6, maxWidth: '420px', margin: 0, lineHeight: 1.5 }}>
+        <p style={{ fontSize: '13px', opacity: 0.6, maxWidth: '100%', margin: 0, lineHeight: 1.5 }}>
           The canvas hit an unexpected error. Your data is safe on this device.
           Reload to continue, or the issue has been reported.
         </p>

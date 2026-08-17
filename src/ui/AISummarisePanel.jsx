@@ -382,6 +382,15 @@ export function AISummarisePanel({
               max-height: calc(70dvh - 64px - env(safe-area-inset-bottom));
             }
           }
+          @media (max-width: 640px) {
+            .ai-summarise-footer {
+              flex-direction: column;
+            }
+            .ai-summarise-footer button {
+              width: 100%;
+              justify-content: center;
+            }
+          }
         `}</style>
 
         {/* Header */}
@@ -437,7 +446,17 @@ export function AISummarisePanel({
 
           {status === 'done' && (
             <>
-              <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: '13px', lineHeight: 1.65, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '13px',
+                  lineHeight: 1.65,
+                  color: 'var(--text-primary)',
+                  whiteSpace: 'pre-wrap',
+                  overflowWrap: 'anywhere',
+                }}
+              >
                 {result}
               </p>
 
@@ -486,6 +505,7 @@ export function AISummarisePanel({
         {/* Footer actions */}
         {status === 'done' && (
           <div
+            className="ai-summarise-footer"
             style={{
               display: 'flex',
               flexWrap: 'wrap',
