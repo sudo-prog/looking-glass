@@ -392,6 +392,7 @@ export function ContextMenu({
           alignItems: 'center',
           gap: '8px',
           padding: '6px 14px 8px',
+          overflowX: 'auto',
         }}
       >
         {/* Neutral / remove */}
@@ -570,7 +571,7 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
           <MenuItem icon={Tag}          label="Edit Tags"   onClick={() => act('edit-tags')} />
           <Divider />
           {/* Colour row */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', padding: '10px 16px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', padding: '10px 16px', overflowX: 'auto' }}>
             {COLOR_SWATCHES.map((swatch, i) => (
               <button
                 key={i}

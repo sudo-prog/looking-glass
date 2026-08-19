@@ -131,20 +131,20 @@ export function CommandPalette({
 
   return (
     <div
-      className="command-palette-overlay"
+      className="command-palette-overlay min-h-[100dvh]"
       onClick={onClose}
       role="presentation"
     >
       <div
         className="command-palette glass-command-palette"
-        style={{ maxHeight: 'min(90dvh, 600px)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+        style={{ maxHeight: 'min(100dvh, 600px)', paddingBottom: 'env(safe-area-inset-bottom)' }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Command palette"
         aria-modal="true"
       >
         {/* Input */}
-        <div className="command-palette__input-wrap flex flex-col sm:flex-row">
+        <div className="command-palette__input-wrap flex flex-col sm:flex-row flex-wrap">
           <MagnifyingGlass size={20} weight="regular" className="command-palette__search-icon" />
           <input
             ref={inputRef}

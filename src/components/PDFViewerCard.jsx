@@ -138,6 +138,7 @@ function PDFReaderOverlay({ pdfDoc, title, onClose, pageCount, onDropHighlight }
         className="flex flex-col sm:flex-row"
         style={{
           alignItems: 'center',
+          flexWrap: 'wrap',
           gap: '12px',
           padding: '12px 20px',
           width: '100%',
@@ -378,7 +379,7 @@ export function PDFViewerCard({
         <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
 
         {/* Footer */}
-        <div className="flex flex-col sm:flex-row" style={{ padding: '8px 12px', alignItems: 'center', gap: '6px' }}>
+        <div className="flex flex-col sm:flex-row" style={{ padding: '8px 12px', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
           <FilePdf size={12} weight="regular" style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
           <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
             {item.content?.title || 'Document.pdf'}

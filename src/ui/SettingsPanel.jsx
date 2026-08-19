@@ -269,6 +269,11 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
           .lg-settings-section input[type="range"]::-webkit-slider-thumb { margin-top: -6px; }
           .lg-settings-section input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--color-border); }
           .lg-settings-section input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--color-accent, #8B5CF6); border: 2px solid var(--glass-frost); box-shadow: 0 2px 8px var(--glass-cast-shadow); cursor: pointer; }
+          /* MOBILE-UI-STANDARD: stack rows & enforce full-width below 640px */
+          @media (max-width: 640px) {
+            .lg-settings-section > div { flex-wrap: wrap; }
+            .lg-settings-section div[style*="justify-content: space-between"] { flex-wrap: wrap; gap: 8px; }
+          }
         `}</style>
 
         {/* Header */}
@@ -277,7 +282,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
             <GearSix size={18} weight="regular" style={{ color: 'var(--text-primary)' }} />
             <span style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.08em' }}>SETTINGS</span>
           </div>
-          <button onClick={onClose} aria-label="Close settings" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', minWidth: '44px', minHeight: '44px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+          <button onClick={onClose} aria-label="Close settings" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
             <X size={16} weight="regular" />
           </button>
         </div>
@@ -298,7 +303,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
               <SettingsSection title="MODE">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={sLabel}>{dark ? 'Dark Mode' : 'Light Mode'}</span>
-                  <button onClick={handleThemeToggle} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', minWidth: '44px', minHeight: '44px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <button onClick={handleThemeToggle} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>
                     {dark ? <Sun size={16} /> : <Moon size={16} />}
                   </button>
                 </div>
@@ -413,7 +418,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                   {fontDropShadow && (
                     <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <ColorRow label="Shadow Color" value={fontShadowColor} onChange={v => { setFontShadowColor(v); preview({ fontShadowColor: v }); }} />
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <div style={{ flex: 1 }}><SliderRow label="Offset X" value={`${fontShadowOffsetX}px`}><input type="range" min="0" max="6" step="1" value={fontShadowOffsetX} onChange={e => { const v = parseInt(e.target.value); setFontShadowOffsetX(v); preview({ fontShadowOffsetX: v }); }} /></SliderRow></div>
                         <div style={{ flex: 1 }}><SliderRow label="Offset Y" value={`${fontShadowOffsetY}px`}><input type="range" min="0" max="6" step="1" value={fontShadowOffsetY} onChange={e => { const v = parseInt(e.target.value); setFontShadowOffsetY(v); preview({ fontShadowOffsetY: v }); }} /></SliderRow></div>
                       </div>
@@ -488,7 +493,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
               <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', padding: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', flexWrap: 'wrap', overflowX: 'auto' }}>
                 {Object.entries(getProviders()).map(([pid, p]) => (
                   <button key={pid} onClick={() => { setAiProvider(pid); setAiModel(getProviders()[pid].models[0]); setCustomModel(''); }}
-                    style={{ flex: '1 0 auto', minHeight: '44px', minWidth: '44px', background: pid === aiProvider ? 'rgba(255,255,255,0.10)' : 'none', border: 'none', borderRadius: '9px', padding: '5px 6px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: '10px', fontWeight: pid === aiProvider ? 600 : 400, color: pid === aiProvider ? 'rgba(238,238,248,0.90)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    style={{ flex: '1 1 40%', minHeight: '44px', minWidth: '44px', background: pid === aiProvider ? 'rgba(255,255,255,0.10)' : 'none', border: 'none', borderRadius: '9px', padding: '5px 6px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: '10px', fontWeight: pid === aiProvider ? 600 : 400, color: pid === aiProvider ? 'rgba(238,238,248,0.90)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     {p.icon}{p.name}
                   </button>
                 ))}

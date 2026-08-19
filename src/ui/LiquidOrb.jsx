@@ -844,6 +844,7 @@ export default function LiquidOrb() {
           onClick={handleOrbTap}
           onTouchStart={(e) => { e.preventDefault(); handleOrbTap(e); }}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOrbTap(e); }}
+          style={{ minHeight: 44, minWidth: 44 }}
         >
           <div className="lg-orb-glow" />
           <div className="lg-orb-glass lg-orb-glass-surf">
@@ -975,7 +976,7 @@ export default function LiquidOrb() {
         <div
           className="lg-orb-setup-overlay"
           style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
+            position: 'fixed', top: 0, left: 0, right: 0, height: '100dvh', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'rgba(0,0,0,0.50)',
             backdropFilter: 'blur(4px)',
@@ -1191,6 +1192,7 @@ export default function LiquidOrb() {
                 flex: 1, background: 'var(--color-accent, #8B5CF6)', color: '#fff',
                 border: 'none', borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
                 fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 500,
+                minHeight: 44, minWidth: 44,
               }} onClick={handleSaveSetup}>
                 Save & Continue
               </button>
@@ -1198,6 +1200,7 @@ export default function LiquidOrb() {
                 background: 'transparent', color: 'var(--text-secondary)',
                 border: '1px solid var(--color-border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
                 fontFamily: "'DM Sans',sans-serif", fontSize: 13,
+                minHeight: 44, minWidth: 44,
               }} onClick={() => setShowSetup(false)}>
                 Later
               </button>
@@ -1243,6 +1246,7 @@ export default function LiquidOrb() {
                     fontFamily: "'DM Sans',sans-serif", fontSize: 10, fontWeight: active ? 600 : 400,
                     color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                     transition: 'all 0.15s', whiteSpace: 'nowrap',
+                    minHeight: 44,
                   }} onClick={() => {
                     setCfgProvider(pid);
                     setCfgModel(getProviders()[pid].models[0]);
@@ -1254,11 +1258,13 @@ export default function LiquidOrb() {
                     <button
                       onClick={(e) => { e.stopPropagation(); handleRemoveProvider(pid); }}
                       style={{
-                        position: 'absolute', top: -4, right: -4, width: 16, height: 16,
+                        position: 'absolute', top: -4, right: -4,
+                        width: 44, height: 44,
                         borderRadius: '50%', border: 'none', background: 'rgba(255,60,60,0.6)',
                         color: '#fff', fontSize: 10, cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         lineHeight: 1, padding: 0, zIndex: 10,
+                        minWidth: 44, minHeight: 44,
                       }}
                       title={`Remove ${p.name}`}
                     >×</button>
@@ -1338,11 +1344,13 @@ export default function LiquidOrb() {
               flex: 1, background: 'var(--color-accent, #8B5CF6)', color: '#fff',
               border: 'none', borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
               fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 500,
+              minHeight: 44, minWidth: 44,
             }} onClick={handleSaveSettings}>Save</button>
             <button style={{
               background: 'rgba(255,80,80,0.10)', color: 'rgba(255,100,100,0.75)',
               border: '1px solid rgba(255,80,80,0.18)', borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
               fontFamily: "'DM Sans',sans-serif", fontSize: 12,
+              minHeight: 44, minWidth: 44,
             }} onClick={handleClearKey}>Clear</button>
           </div>
 
@@ -1377,7 +1385,7 @@ export default function LiquidOrb() {
       {showDebugLog && (
         <div
           style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
+            position: 'fixed', top: 0, left: 0, right: 0, height: '100dvh', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'rgba(0,0,0,0.55)',
             backdropFilter: 'blur(4px)',

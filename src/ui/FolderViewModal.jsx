@@ -273,6 +273,9 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
                     fontWeight: 600,
                     color: 'var(--text-primary)',
                     cursor: 'text',
+                    minHeight: '44px',
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
                   {folder.content?.title || 'Folder name'}
@@ -308,6 +311,9 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
                     color: folder.content?.description ? 'var(--text-secondary)' : 'var(--text-disabled)',
                     marginTop: '4px',
                     cursor: 'text',
+                    minHeight: '44px',
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
                   {folder.content?.description || 'Add a description…'}

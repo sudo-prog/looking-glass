@@ -41,7 +41,8 @@ initErrorTelemetry();
 
 const container = document.getElementById('app');
 // Mobile-safe root container (MOBILE-UI-STANDARD)
-container.style.height = '100dvh'; /* fallback: 100vh */
+container.style.height = '100vh';
+container.style.height = '100dvh';
 container.style.width = '100%';
 container.style.maxWidth = '100%';
 container.style.overflowX = 'hidden';

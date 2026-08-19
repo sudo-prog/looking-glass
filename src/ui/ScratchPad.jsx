@@ -195,7 +195,7 @@ export function ScratchPad() {
              auto-focused textarea clears the on-screen keyboard, and lift it
              off the iOS home indicator. Desktop keeps the centered modal.
              !important beats the inline styles above (top/left/width/transform). */
-          @media (max-width: 767px) {
+          @media (max-width: 640px) {
             .lg-scratch-pad {
               top: auto !important;
               left: calc(12px + env(safe-area-inset-left, 0px)) !important;

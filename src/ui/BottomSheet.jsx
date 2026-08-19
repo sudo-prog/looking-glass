@@ -109,8 +109,12 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
           left:       0,
           right:      0,
           bottom:     0,
-          // Respect device safe-area so sheet content isn't hidden behind home indicator
+          // Respect device safe-area so sheet content isn't hidden behind the home
+          // indicator or clipped by top/side insets (notched devices, landscape phones)
+          paddingTop:    'env(safe-area-inset-top, 0px)',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingLeft:   'env(safe-area-inset-left, 0px)',
+          paddingRight:  'env(safe-area-inset-right, 0px)',
           // Use transform instead of top so bottom:0 doesn't stretch the element
           transform:  `translateY(${translateY})`,
           transition: isDragging.current
@@ -125,7 +129,7 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
         aria-modal="true"
       >
         <div
-          className="bottom-sheet__handle"
+          className="bottom-sheet__handle min-h-[44px]"
           style={{ width: 48, height: 48, minWidth: 48, minHeight: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', background: 'transparent', cursor: 'grab', touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}

@@ -80,7 +80,7 @@ export class ErrorBoundary extends React.Component {
             style={{
               fontSize: '11px',
               opacity: 0.4,
-              maxWidth: '90vw',
+              maxWidth: '100%',
               overflow: 'auto',
               whiteSpace: 'pre-wrap',
               textAlign: 'left',

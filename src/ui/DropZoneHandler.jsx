@@ -325,7 +325,7 @@ export function DropZoneHandler({ children, viewport, onDrop }) {
 
   return (
     <div
-      style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0, minHeight: 0, overflowX: 'hidden' }}
+      style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0, minHeight: '44px', overflowX: 'hidden' }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}

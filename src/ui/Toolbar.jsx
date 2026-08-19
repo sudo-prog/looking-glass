@@ -99,7 +99,7 @@ export function Toolbar({
         .toolbar-btn:disabled:hover { background: transparent; }
         .toolbar-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.12); margin: 0 2px; flex-shrink: 0; }
         .toolbar-zoom { font-family: var(--font-mono, monospace); font-size: 11px; color: var(--text-secondary, #999); min-width: 40px; text-align: center; flex-shrink: 0; }
-        .toolbar-group { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+        .toolbar-group { display: flex; align-items: center; gap: 2px; flex-shrink: 0; flex-wrap: wrap; }
 
         /* Mobile: dock toolbar at bottom with adequate touch targets */
         @media (max-width: 767px) {
@@ -118,7 +118,8 @@ export function Toolbar({
           font-size: 12px;
           color: var(--text-primary, #e0e0e0);
           outline: none;
-          width: 140px;
+          max-width: 140px;
+          width: 100%;
           font-family: var(--font-ui);
           touch-action: manipulation;
         }
@@ -175,26 +176,30 @@ export function Toolbar({
       <div className="toolbar-sep toolbar-hide-mobile" />
 
       {/* Undo / Redo */}
-      <button className="toolbar-btn toolbar-hide-mobile" title="Undo (Ctrl+Z)" aria-label="Undo" onClick={onUndo} disabled={!canUndo}>
-        <ArrowUUpLeft size={16} weight="regular" />
-      </button>
-      <button className="toolbar-btn toolbar-hide-mobile" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" onClick={onRedo} disabled={!canRedo}>
-        <ArrowUUpRight size={16} weight="regular" />
-      </button>
+      <div className="toolbar-group" style={{flexWrap: 'wrap'}}>
+        <button className="toolbar-btn toolbar-hide-mobile" title="Undo (Ctrl+Z)" aria-label="Undo" onClick={onUndo} disabled={!canUndo}>
+          <ArrowUUpLeft size={16} weight="regular" />
+        </button>
+        <button className="toolbar-btn toolbar-hide-mobile" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" onClick={onRedo} disabled={!canRedo}>
+          <ArrowUUpRight size={16} weight="regular" />
+        </button>
+      </div>
 
       <div className="toolbar-sep" />
 
       {/* Zoom controls */}
-      <button className="toolbar-btn" title="Zoom out" aria-label="Zoom out" onClick={onZoomOut}>
-        <Minus size={14} weight="regular" />
-      </button>
-      <span className="toolbar-zoom">{Math.round((zoom || 1) * 100)}%</span>
-      <button className="toolbar-btn" title="Zoom in" aria-label="Zoom in" onClick={onZoomIn}>
-        <Plus size={14} weight="regular" />
-      </button>
-      <button className="toolbar-btn toolbar-hide-mobile" title="Fit to view" aria-label="Fit to view" onClick={onFit}>
-        <ArrowsOut size={14} weight="regular" />
-      </button>
+      <div className="toolbar-group" style={{flexWrap: 'wrap'}}>
+        <button className="toolbar-btn" title="Zoom out" aria-label="Zoom out" onClick={onZoomOut}>
+          <Minus size={14} weight="regular" />
+        </button>
+        <span className="toolbar-zoom">{Math.round((zoom || 1) * 100)}%</span>
+        <button className="toolbar-btn" title="Zoom in" aria-label="Zoom in" onClick={onZoomIn}>
+          <Plus size={14} weight="regular" />
+        </button>
+        <button className="toolbar-btn toolbar-hide-mobile" title="Fit to view" aria-label="Fit to view" onClick={onFit}>
+          <ArrowsOut size={14} weight="regular" />
+        </button>
+      </div>
 
       <div className="toolbar-sep toolbar-hide-mobile" />
 
@@ -210,7 +215,7 @@ export function Toolbar({
 
       {/* Search toggle */}
       {searchOpen ? (
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
           <input
             type="text"
             value={localQuery}
@@ -228,7 +233,8 @@ export function Toolbar({
               fontSize: '12px',
               color: 'var(--text-primary, #e0e0e0)',
               outline: 'none',
-              width: '140px',
+              maxWidth: '140px',
+              width: '100%',
               fontFamily: 'var(--font-ui)',
               touchAction: 'manipulation',
             }}

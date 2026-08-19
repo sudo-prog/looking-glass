@@ -374,6 +374,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
   return (
     <>
       <style>{`
+        .lg-sidebar-fab,
         .lg-sidebar__nav-item,
         .lg-sidebar__flyout-item,
         .lg-sidebar__flyout-close,
@@ -399,6 +400,9 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
         .lg-sidebar--expanded {
           min-height: 100dvh !important;
           padding-bottom: env(safe-area-inset-bottom) !important;
+        }
+        .lg-sidebar__flyout {
+          overflow-x: auto !important;
         }
       `}</style>
       {/* Click-outside backdrop (shown on mobile while the bottom nav is open) */}\n      <div

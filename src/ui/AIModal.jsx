@@ -128,7 +128,7 @@ export default function AIModal({ isOpen, onClose }) {
       >
         {/* Header */}
         <div className="lg-ai-modal__header" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-          <div className="lg-ai-modal__title-row">
+          <div className="lg-ai-modal__title-row" style={{ flexWrap: 'wrap' }}>
             <Sparkle size={16} weight="regular" className="lg-ai-modal__title-icon" />
             <h2 id="ai-modal-title" className="lg-ai-modal__title">AI ASSISTANT</h2>
           </div>
@@ -141,7 +141,7 @@ export default function AIModal({ isOpen, onClose }) {
         <div className="lg-ai-modal__divider" />
 
         {/* Body */}
-        <div className="lg-ai-modal__body">
+        <div className="lg-ai-modal__body" style={{ overflowX: 'auto' }}>
           {/* Provider select */}
           <div className="lg-ai-modal__field">
             <label className="lg-ai-modal__label" htmlFor="ai-provider">PROVIDER</label>
@@ -196,7 +196,7 @@ export default function AIModal({ isOpen, onClose }) {
           {/* API key input */}
           <div className="lg-ai-modal__field">
             <label className="lg-ai-modal__label" htmlFor="ai-key">API KEY</label>
-            <div className="lg-ai-modal__key-wrap">
+            <div className="lg-ai-modal__key-wrap" style={{ overflowX: 'auto' }}>
               <input
                 ref={inputRef}
                 id="ai-key"
@@ -222,7 +222,7 @@ export default function AIModal({ isOpen, onClose }) {
               </button>
             </div>
             {/* Security notice */}
-            <p className="lg-ai-modal__notice">
+            <p className="lg-ai-modal__notice" style={{ flexWrap: 'wrap' }}>
               <Warning size={12} weight="regular" />
               STORED CLIENT-SIDE ONLY · SHARED WITH ORB & ALL AI FEATURES
             </p>

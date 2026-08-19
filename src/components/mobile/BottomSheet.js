@@ -53,6 +53,11 @@ export class BottomSheet {
     this._sheet.className = 'bs-sheet';
     this._sheet.setAttribute('role', 'dialog');
     this._sheet.setAttribute('aria-modal', 'true');
+    this._sheet.style.maxHeight = 'calc(100dvh - env(safe-area-inset-bottom))';
+    this._sheet.style.paddingBottom = 'env(safe-area-inset-bottom)';
+    this._sheet.style.display = 'flex';
+    this._sheet.style.flexDirection = 'column';
+    this._sheet.style.flexWrap = 'wrap';
 
     // Drag handle
     this._handle = document.createElement('div');
@@ -73,6 +78,10 @@ export class BottomSheet {
     this._wrapper = document.createElement('div');
     this._wrapper.className = 'bs-wrapper';
     this._wrapper.style.display = 'none';
+    this._wrapper.style.height = '100dvh';
+    this._wrapper.style.paddingBottom = 'env(safe-area-inset-bottom)';
+    this._wrapper.style.flexDirection = 'column';
+    this._wrapper.style.flexWrap = 'wrap';
     this._wrapper.appendChild(this._backdrop);
     this._wrapper.appendChild(this._sheet);
   }

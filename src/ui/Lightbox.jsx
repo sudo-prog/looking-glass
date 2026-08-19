@@ -251,6 +251,7 @@ export function Lightbox({ item, onClose, onColor }) {
             flexShrink: 0,
             minWidth: '0',
             maxWidth: '160px',
+            overflowX: 'auto',
           }}
         >
           {[
@@ -358,6 +359,7 @@ const lightboxBtnStyle = {
   justifyContent: 'center',
   width: '44px',
   height: '44px',
+  minHeight: '44px',
   borderRadius: '10px',
   border: 'none',
   background: 'transparent',

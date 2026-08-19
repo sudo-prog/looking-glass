@@ -124,7 +124,7 @@ export function BlockTypeMenu({ editor }) {
   // (MOBILE-UI-STANDARD S-3 / S-1: mobile menus dock as a full-width sheet
   // with safe-area padding instead of an inline popup that can overflow).
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
+    const mq = window.matchMedia('(max-width: 640px)');
     const update = () => setIsMobile(mq.matches);
     update();
     mq.addEventListener('change', update);
@@ -152,8 +152,9 @@ export function BlockTypeMenu({ editor }) {
         left: 0,
         right: 0,
         bottom: 0,
-        width: 'auto',
-        maxHeight: '70dvh',
+        width: '100%',
+        height: '100dvh',
+        maxHeight: '100dvh',
         borderRadius: '16px 16px 0 0',
         background: 'rgba(18,18,18,0.98)',
         backdropFilter: 'blur(24px) saturate(120%)',

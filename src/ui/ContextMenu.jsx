@@ -277,7 +277,9 @@ export function ContextMenu({
           'inset 0 1px 0 rgba(255,255,255,0.10), 0 16px 48px rgba(0,0,0,0.75), 0 4px 12px rgba(0,0,0,0.40)',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        overflowY: 'auto',
+        maxHeight: 'calc(100dvh - 16px)',
         animation: 'ctx-appear 0.15s cubic-bezier(0.34,1.56,0.64,1) both',
       }}
     >

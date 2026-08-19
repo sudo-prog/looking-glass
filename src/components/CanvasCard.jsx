@@ -263,7 +263,7 @@ function GroupCard({ item, isSelected, onSelect, onDragStart, children }) {
         <span className="card-handle" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⠿</span>
         <span className="card-title">{escapeHtml(item.content.title || 'Group')}</span>
       </div>
-      <div className="group-children">
+      <div className="group-children" style={{ overflowX: 'auto' }}>
         {children}
       </div>
     </div>
@@ -595,6 +595,7 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave, onOpen })
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
+            overflowX: 'auto',
             gap: '8px',
             marginTop: '12px',
           }}

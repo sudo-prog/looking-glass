@@ -545,6 +545,14 @@ export function Canvas({
           width: '100%',
           boxSizing: 'border-box',
           zIndex: 'var(--z-canvas-ui)',
+          /* MOBILE-UI-STANDARD (2): the wide SelectionToolbar (color/stack/
+             folder/arrange/copy/delete/clear) can exceed the 390px viewport on
+             small phones, so this docked ancestor is an overflow-x-auto scroller.
+             The standard excludes overflow-x:auto ancestors from per-element
+             horizontal-overflow checks — the toolbar stays reachable, never
+             clipped, and the rest of the layout is untouched. */
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
           /* S-1: bottom-docked UI honours the safe-area insets (never bare
              bottom:0) so the toolbar clears the home indicator / notches. */
           paddingBottom: 'env(safe-area-inset-bottom)',

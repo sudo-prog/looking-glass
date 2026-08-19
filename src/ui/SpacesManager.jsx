@@ -179,7 +179,7 @@ export function SpacesManager({ isOpen, onClose }) {
         </div>
 
         {/* Space list */}
-        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 8px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '8px 8px' }}>
           {spaces.map((space) => {
             const isActive  = space.id === activeSpaceId;
             const isEditing = space.id === editingId;
@@ -231,7 +231,6 @@ export function SpacesManager({ isOpen, onClose }) {
                     }}
                     style={{
                       flex: 1,
-                      height: '32px',
                       minHeight: '44px',
                       border: '1px solid var(--color-border-active)',
                       borderRadius: '6px',
@@ -252,7 +251,6 @@ export function SpacesManager({ isOpen, onClose }) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      height: '36px',
                       minHeight: '44px',
                       padding: '0 4px',
                       border: 'none',
@@ -341,7 +339,6 @@ export function SpacesManager({ isOpen, onClose }) {
                 placeholder="Space name…"
                 style={{
                   flex: 1,
-                  height: '32px',
                   minHeight: '44px',
                   border: '1px solid var(--color-border-active)',
                   borderRadius: '6px',

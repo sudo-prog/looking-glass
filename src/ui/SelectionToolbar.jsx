@@ -150,7 +150,7 @@ export function SelectionToolbar({
           from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.95); }
           to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1); }
         }
-        @media (max-width: 767px) {
+        @media (max-width: 640px) {
           [aria-label="Selection actions"] {
             bottom: calc(72px + env(safe-area-inset-bottom)) !important;
           }

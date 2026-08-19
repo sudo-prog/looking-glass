@@ -182,7 +182,7 @@ export function Minimap({ items = [], viewport, onViewportChange }) {
 
   return (
     <div
-      className="minimap-wrap"
+      className="minimap-wrap flex-wrap"
       aria-label="Canvas minimap"
       role="img"
       style={{
@@ -205,7 +205,7 @@ export function Minimap({ items = [], viewport, onViewportChange }) {
         aria-label={visible ? 'Hide minimap' : 'Show minimap'}
         aria-pressed={visible}
         onClick={() => setVisible((v) => !v)}
-        className="minimap-toggle"
+        className="minimap-toggle min-h-[44px] min-w-[44px]"
         style={{
           minWidth: 44,
           minHeight: 44,
@@ -227,7 +227,7 @@ export function Minimap({ items = [], viewport, onViewportChange }) {
       </button>
       {/* L-1/L-4: contain wide content in a self-scrolling, viewport-capped wrapper */}
       <div
-        className="minimap-canvas-wrap"
+        className="minimap-canvas-wrap overflow-x-auto"
         style={{
           display: visible ? 'block' : 'none',
           maxWidth: '100%',
