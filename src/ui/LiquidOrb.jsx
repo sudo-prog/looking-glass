@@ -1420,6 +1420,7 @@ export default function LiquidOrb() {
                     background: 'rgba(255,255,255,0.06)', border: '1px solid var(--color-border)',
                     borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
                     color: 'var(--text-secondary)', fontSize: 10, fontFamily: "'DM Sans',sans-serif",
+                    minHeight: 44, minWidth: 44,
                   }}
                   title="Copy as Markdown"
                 >📋 Copy</button>
@@ -1429,6 +1430,7 @@ export default function LiquidOrb() {
                     background: 'rgba(80,200,120,0.10)', border: '1px solid rgba(80,200,120,0.25)',
                     borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
                     color: 'rgba(80,200,120,0.75)', fontSize: 10, fontFamily: "'DM Sans',sans-serif",
+                    minHeight: 44, minWidth: 44,
                   }}
                   title="Download as .md file"
                 >⬇ Download</button>
@@ -1438,6 +1440,7 @@ export default function LiquidOrb() {
                     background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.18)',
                     borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
                     color: 'rgba(255,100,100,0.65)', fontSize: 10, fontFamily: "'DM Sans',sans-serif",
+                    minHeight: 44, minWidth: 44,
                   }}
                   title="Clear all entries"
                 >✕ Clear</button>
