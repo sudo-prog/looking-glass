@@ -178,4 +178,40 @@ absent: `looking-glass-eta` still aliased a 6h-old build).
 New-item spawn used a DESKTOP-ASSUMED coordinate (400,300). On mobile the card was
 created off-screen, so it was never tappable/long-pressable — but the app still "built"
 and rendered fine on desktop, so layout-only audits passed. Proven only by reading
-`getBoundingClientRect()` at runtime on a phone viewport.
+proven only by reading `getBoundingClientRect()` at runtime on a phone viewport.
+
+---
+
+## Phase 9 — Bookmark / Import Feature Gaps (audit 2026-08-20)
+
+Audited `src/ui/BookmarksPanel.jsx`, `src/ui/DropZoneHandler.jsx`, `src/components/App.jsx`,
+`src/utils/*` for the three requested feature areas. Status below reflects **shipped code**, not roadmap intent.
+
+### 1. Immich integration — ❌ NOT IMPLEMENTED (already tracked in Phase 8 above)
+No client code exists (`src/utils/immich.js` absent; zero `immich` references outside this roadmap).
+The Phase 8 Immich item already covers this; no new entry needed. Re-link for visibility:
+- [ ] **Immich integration** (Phase 8) — browse/link/back-up photos from a self-hosted Immich server (`/api/album`, `/api/asset`). See Phase 8 block for full sub-tasks.
+
+### 2. Drag-and-drop bookmarks — ⚠️ PARTIAL (reordering MISSING)
+- [x] **URL-drop-to-create** — EXISTS. Canvas `DropZoneHandler` → `App.handleDrop` accepts a dropped
+      URL and creates a BOOKMARK / WebClip card. No change needed.
+- [ ] **Drag-and-drop bookmark REORDERING** — MISSING. `BookmarksPanel` lists bookmarks with no
+      sortable/reorder UI; there is no `@dnd-kit` / `react-dnd` dependency anywhere in the app.
+      Existing "drag to reorder" code is only for the sidebar menu-icon pool (`LiquidGlassSidebar.jsx`,
+      `SettingsPanel.jsx`), NOT bookmarks.
+  - [ ] Implement `@dnd-kit` (`@dnd-kit/core` + `@dnd-kit/sortable`) in `BookmarksPanel` for
+        folder/item reordering.
+  - [ ] Persist new order to the store (Zustand `useStore`) so reorders survive reload / IndexedDB write.
+
+### 3. Auto-import bookmarks from browsers/apps — ⚠️ PARTIAL (GitHub MISSING)
+- [x] **Safari / Firefox / Chrome / Edge HTML import** — EXISTS. `parseBrowserBookmarksHTML()` in
+      `BookmarksPanel.jsx` parses Netscape-format bookmark exports (covers Safari + Firefox). No change needed.
+- [x] **Twitter / X.com import (URL paste)** — EXISTS. `handleTwitterImport()` adds a pasted
+      x.com / twitter.com URL as a bookmark card.
+- [ ] **Twitter / X.com archive import** — MISSING (only URL paste done). `dev roadmap.md` tracks this:
+  - [ ] Parse X/Twitter `bookmarks.js` / `bookmarks.json` data export → extract, dedupe (URL hash),
+        bulk-create bookmark cards.
+- [ ] **GitHub stars auto-import** — MISSING (no GitHub import code anywhere in `src`).
+  - [ ] Add "Import from GitHub" to `BookmarksPanel`: OAuth PAT or `GET /user/starred` fetch →
+        map starred repos (name, html_url, description) to bookmark cards; dedupe by URL.
+  - [ ] Alternate: parse GitHub "stars" HTML/export if API auth is undesired (lower fidelity).

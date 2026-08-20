@@ -47,6 +47,8 @@ export class BottomSheet {
     this._backdrop = document.createElement('div');
     this._backdrop.className = 'bs-backdrop';
     this._backdrop.setAttribute('aria-hidden', 'true');
+    this._backdrop.style.height = '100dvh';
+    this._backdrop.style.paddingBottom = 'env(safe-area-inset-bottom)';
 
     // Sheet container
     this._sheet = document.createElement('div');
@@ -62,6 +64,8 @@ export class BottomSheet {
     // Drag handle
     this._handle = document.createElement('div');
     this._handle.className = 'bs-handle';
+    this._handle.style.minHeight = '44px';
+    this._handle.style.touchAction = 'none';
     const handleBar = document.createElement('div');
     handleBar.className = 'bs-handle-bar';
     this._handle.appendChild(handleBar);
@@ -69,6 +73,9 @@ export class BottomSheet {
     // Content area
     this._contentEl = document.createElement('div');
     this._contentEl.className = 'bs-content';
+    this._contentEl.style.overflowX = 'auto';
+    this._contentEl.style.flex = '1';
+    this._contentEl.style.minHeight = '0';
     this._contentEl.innerHTML = this._content;
 
     this._sheet.appendChild(this._handle);
