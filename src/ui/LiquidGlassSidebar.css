@@ -259,6 +259,97 @@
   opacity: 1;
 }
 
+/* ── Desktop-only modifier ─────────────────── */
+.lg-sidebar--desktop {
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ── Mobile bottom-bar header ──────────────── */
+.lg-sidebar__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 16px 4px;
+  border-top: 1px solid var(--color-border);
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Drag handle ───────────────────────────── */
+.lg-sidebar__handle {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  width: 100%;
+}
+
+.lg-sidebar__handle:active {
+  cursor: grabbing;
+}
+
+.lg-sidebar__handle-bar {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--color-handle, rgba(255, 255, 255, 0.25));
+  transition: background 0.15s;
+}
+
+.lg-sidebar__handle:hover .lg-sidebar__handle-bar,
+.lg-sidebar__handle:active .lg-sidebar__handle-bar {
+  background: var(--color-handle-active, rgba(255, 255, 255, 0.45));
+}
+
+/* ── Wordmark (app name in mobile bottom bar) ─ */
+.lg-sidebar__wordmark {
+  font-family: var(--font-ui, 'Space Grotesk', system-ui, sans-serif);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--text-tertiary, #888);
+  text-align: center;
+}
+
+/* ── Section label (category header) ────────── */
+.lg-sidebar__section-label {
+  font-family: var(--font-ui, 'Space Grotesk', system-ui, sans-serif);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-quaternary, #666);
+  padding: 4px 0 2px;
+}
+
+/* ── AI input (mobile bottom bar search) ────── */
+.lg-sidebar__ai-input {
+  width: 100%;
+  padding: 6px 12px;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--color-border, rgba(255,255,255,0.08));
+  background: var(--glass-frost, rgba(255,255,255,0.04));
+  color: var(--text-primary, #e0e0e0);
+  font-family: var(--font-ui, 'Space Grotesk', system-ui, sans-serif);
+  font-size: 13px;
+  line-height: 1.4;
+  outline: none;
+  transition: border-color 120ms var(--ease-out);
+  box-sizing: border-box;
+}
+
+.lg-sidebar__ai-input::placeholder {
+  color: var(--text-quaternary, #666);
+}
+
+.lg-sidebar__ai-input:focus {
+  border-color: var(--color-accent, #D71921);
+}
+
 /* ── Section flyout panel (opens on icon click) ─ */
 .lg-sidebar__flyout {
   position: absolute;

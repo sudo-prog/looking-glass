@@ -20,10 +20,18 @@ import './styles/responsive.css';
 import './styles/a11y.css';
 import './components/mobile/BottomSheet.css';
 
-// Glass tier is detected by the inline script in index.html (runs before hydration).
-// Log the final tier after page load for debugging.
-window.addEventListener('load', function () {
-  var tier = document.documentElement.dataset.glassTier || '?';
+async function detectGlassTier() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return 3;
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    if (adapter) return 1;
+  } catch (_) {}
+  if (CSS.supports('backdrop-filter', 'blur(1px)') ||
+      CSS.supports('-webkit-backdrop-filter', 'blur(1px)')) return 2;
+  return 3;
+}
+detectGlassTier().then((tier) => {
+  document.documentElement.dataset.glassTier = String(tier);
   console.info('[Looking Glass] Glass tier: ' + tier);
 });
 
