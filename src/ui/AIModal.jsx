@@ -124,7 +124,7 @@ export default function AIModal({ isOpen, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-modal-title"
-        style={{ maxHeight: 'calc(100dvh - 16px)' }}
+        style={{ maxHeight: '100dvh', paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {/* Header */}
         <div className="lg-ai-modal__header" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>

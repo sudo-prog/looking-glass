@@ -122,9 +122,10 @@ export function SelectionToolbar({
     <div
       role="toolbar"
       aria-label="Selection actions"
+      className="flex flex-wrap"
       style={{
         position: 'absolute',
-        bottom: 'calc(28px + env(safe-area-inset-bottom))',
+        bottom: 'calc(100dvh - 100vh + 28px + env(safe-area-inset-bottom))',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 'var(--z-canvas-ui)',
@@ -152,7 +153,10 @@ export function SelectionToolbar({
         }
         @media (max-width: 640px) {
           [aria-label="Selection actions"] {
-            bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+            bottom: calc(100dvh - 100vh + 72px + env(safe-area-inset-bottom)) !important;
+            flex-direction: column;
+            gap: 6px;
+            padding: 8px 12px;
           }
         }
       `}</style>
@@ -201,7 +205,7 @@ export function SelectionToolbar({
               animation: 'sel-toolbar-in 0.15s cubic-bezier(0.34,1.56,0.64,1) both',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', maxWidth: 'calc(100vw - 32px)', padding: '0 4px' }}>
+            <div className="overflow-x-auto" style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: 'calc(100vw - 32px)', padding: '0 4px' }}>
             <button
               onClick={() => handlePickColor(null)}
               title="Remove color"

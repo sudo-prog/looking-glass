@@ -160,7 +160,7 @@ export function CommandPalette({
             aria-label="Search"
           />
           <button
-            className="command-palette__close"
+            className="command-palette__close flex-shrink-0"
             style={{ minWidth: '44px', minHeight: '44px' }}
             onClick={() => { onClearSearch?.(); onClose(); }}
             type="button"
@@ -171,7 +171,7 @@ export function CommandPalette({
         </div>
 
         {/* Results */}
-        <div className="command-palette__results" ref={resultsRef} role="listbox">
+        <div className="command-palette__results overflow-x-auto" ref={resultsRef} role="listbox">
           <div className="command-palette__section">ACTIONS</div>
           {selectableItems.map((item, idx) => {
             const Icon     = item.icon;

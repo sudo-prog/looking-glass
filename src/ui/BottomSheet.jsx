@@ -138,7 +138,7 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
         >
           <div style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.20)', borderRadius: 2 }} />
         </div>
-        <div className="bottom-sheet__content overflow-x-auto">{children}</div>
+        <div className="bottom-sheet__content overflow-x-auto flex-wrap">{children}</div>
       </div>
     </div>,
     document.body

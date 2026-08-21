@@ -153,6 +153,7 @@ export function Toolbar({
           [role="toolbar"] {
             flex-direction: column !important;
             align-items: center !important;
+            justify-content: flex-start !important;
             gap: 8px !important;
           }
         }
