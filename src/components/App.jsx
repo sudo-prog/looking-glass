@@ -18,6 +18,7 @@ import { AISummarisePanel } from '../ui/AISummarisePanel.jsx';
 import { fetchMetadata } from '../utils/meta-fetcher.js';
 import { SmartContextMenu } from '../components/ContextMenu.jsx';
 import { TagFilterBar, TagsPanel } from '../ui/TagsSystem.jsx';
+import { RatingFilterBar, RatingPanel } from '../ui/RatingSystem.jsx';
 import { CommandPalette } from '../ui/CommandPalette.jsx';
 import { SpacesManager } from '../ui/SpacesManager.jsx';
 import { FolderViewModal } from '../ui/FolderViewModal.jsx';
@@ -74,6 +75,9 @@ export function App() {
     activeTagFilters,
     toggleTagFilter,
     clearTagFilters,
+    ratingFilter,
+    setRatingFilter,
+    clearRatingFilter,
     spaces,
     activeSpaceId,
   } = useStore();
@@ -83,6 +87,7 @@ export function App() {
   const [aiSummarise, setAiSummarise] = useState(null);
   const [spacesOpen, setSpacesOpen] = useState(false);
   const [showTags, setShowTags] = useState(false);
+  const [showRatings, setShowRatings] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [openFolderId, setOpenFolderId] = useState(null);
   const [ficharioStyleTargetId, setFicharioStyleTargetId] = useState(null);
@@ -602,6 +607,7 @@ export function App() {
       <LiquidGlassSidebar
         onSpacesOpen={() => setSpacesOpen(true)}
         onTagsOpen={() => setShowTags(true)}
+        onRatingsOpen={() => setShowRatings(true)}
         onAIOrganise={handleAIOrganise}
         onAISummarise={handleAISummarise}
         onSearch={search}
@@ -616,6 +622,10 @@ export function App() {
               activeTagFilters={activeTagFilters}
               onToggleTag={toggleTagFilter}
               onClearTags={clearTagFilters}
+            />
+            <RatingFilterBar
+              ratingFilter={ratingFilter}
+              onClear={clearRatingFilter}
             />
           </div>
           <Canvas
@@ -765,6 +775,37 @@ export function App() {
               activeTagFilters={activeTagFilters}
               onToggleTag={toggleTagFilter}
               onClearTags={clearTagFilters}
+            />
+          </aside>
+        </div>
+      )}
+
+      {/* Ratings Panel slide-over */}
+      {showRatings && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 'calc(var(--z-toolbar) + 1)', display: 'flex' }}>
+          <div onClick={() => setShowRatings(false)} style={{ flex: 1, background: 'rgba(0,0,0,0.25)' }} />
+          <aside style={{
+            width: '280px',
+            height: '100%',
+            background: 'var(--glass-frost)',
+            backdropFilter: 'blur(var(--glass-blur-xl)) saturate(120%)',
+            WebkitBackdropFilter: 'blur(var(--glass-blur-xl)) saturate(120%)',
+            borderLeft: '1px solid var(--color-border)',
+            boxShadow: '-4px 0 32px rgba(0,0,0,0.50)',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            paddingBottom: 'env(safe-area-inset-bottom)'
+          }}>
+            <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>RATINGS</span>
+              <button onClick={() => setShowRatings(false)} style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', minWidth: '44px', minHeight: '44px' }}>✕</button>
+            </div>
+            <RatingPanel
+              items={items}
+              ratingFilter={ratingFilter}
+              onSetRating={setRatingFilter}
+              onClear={clearRatingFilter}
             />
           </aside>
         </div>

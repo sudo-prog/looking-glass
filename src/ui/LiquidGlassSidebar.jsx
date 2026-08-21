@@ -33,6 +33,7 @@ const ICON_MAP = {
   library:  FolderOpen,
   spaces:   Compass,
   tags:     Tag,
+  ratings:  Star,
   saved:    BookmarkSimple,
   starred:  Star,
   archive:  Archive,
@@ -50,6 +51,7 @@ const ICON_LABELS = {
   library:  'Library',
   spaces:   'Spaces',
   tags:     'Tags',
+  ratings:  'Ratings',
   saved:    'Bookmarks',
   starred:  'Starred',
   archive:  'Archive',
@@ -113,6 +115,17 @@ const SECTION_FLYOUTS = {
       },
     ],
   },
+  ratings: {
+    title: 'Ratings',
+    icon: Star,
+    sections: [
+      {
+        items: [
+          { id: 'ratings', label: 'Filter by Rating', Icon: Star },
+        ],
+      },
+    ],
+  },
   saved: {
     title: 'Bookmarks',
     icon: BookmarkSimple,
@@ -148,7 +161,7 @@ const SECTION_FLYOUTS = {
   },
 };
 
-export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrganise, onAISummarise, onSearch, onAddNote, onAddUrl, onExport }) {
+export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onRatingsOpen, onAIOrganise, onAISummarise, onSearch, onAddNote, onAddUrl, onExport }) {
   const [collapsed, setCollapsed] = useState(true);
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const [activeItem, setActiveItem] = useState('canvas');
@@ -243,12 +256,13 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     else if (id === 'search')       onSearch?.();
     else if (id === 'library')      onSearch?.();
     else if (id === 'tags')         onTagsOpen?.();
+    else if (id === 'ratings')      onRatingsOpen?.();
     else if (id === 'note')         onAddNote?.();
     else if (id === 'url')          onAddUrl?.('https://');
     else if (id === 'export')       onExport?.();
     else if (id === 'home')         onSpacesOpen?.();
     else if (id === 'settings')     setShowSettings(true);
-  }, [onSpacesOpen, onTagsOpen, onSearch, onAddNote, onAddUrl, onExport]);
+  }, [onSpacesOpen, onTagsOpen, onRatingsOpen, onSearch, onAddNote, onAddUrl, onExport]);
 
   const handleFlyoutClick = useCallback((id) => {
     handleNavClick(id);

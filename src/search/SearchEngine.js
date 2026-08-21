@@ -27,6 +27,7 @@ export class SearchEngine {
         { name: 'content.text', weight: 0.2 },
         { name: 'meta.tags', weight: 0.1 },
         { name: 'meta.domain', weight: 0.05 },
+        { name: 'meta.rating', weight: 0.05 },
       ],
     });
   }

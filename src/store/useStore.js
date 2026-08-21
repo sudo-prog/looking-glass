@@ -466,6 +466,12 @@ export const useStore = create((set, get) => ({
   },
   clearTagFilters: () => set({ activeTagFilters: new Set() }),
 
+  // Rating filter state (1-5, null = no filter)
+  ratingFilter: null,
+  setRatingFilter: (n) => set({ ratingFilter: n }),
+  clearRatingFilter: () => set({ ratingFilter: null }),
+  toggleRatingFilter: (n) => set((s) => ({ ratingFilter: s.ratingFilter === n ? null : n })),
+
   // Filtering
   toggleFilter: (filter) => {
     set((s) => {
@@ -496,6 +502,11 @@ export const useStore = create((set, get) => ({
         ];
         return [...state.activeTagFilters].every((tf) => itemTags.includes(tf));
       });
+    }
+
+    // Rating filtering (single scalar 1-5; null = unrated excluded unless no filter)
+    if (state.ratingFilter != null) {
+      items = items.filter((i) => (i.meta?.rating ?? null) === state.ratingFilter);
     }
 
     return items;

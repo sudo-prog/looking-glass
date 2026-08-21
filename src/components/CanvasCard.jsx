@@ -17,7 +17,7 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
-import { FolderOpen } from '@phosphor-icons/react';
+import { FolderOpen, Star } from '@phosphor-icons/react';
 import { ITEM_TYPES } from '../data/schema.js';
 import { VideoCard } from './VideoCard.jsx';
 import { AudioMemoCard } from './AudioMemoCard.jsx';
@@ -26,6 +26,7 @@ import { WebClipScreenshotCard } from './WebClipScreenshotCard.jsx';
 import { FicharioCard } from './FicharioCard.jsx';
 import { BlockTypeMenu } from '../ui/BlockTypeMenu.jsx';
 import { TagEditor } from '../ui/TagsSystem.jsx';
+import { StarRating } from '../ui/RatingSystem.jsx';
 
 // ── Utils ──────────────────────────────────────────────────
 
@@ -711,6 +712,12 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
     onSave?.({ meta: { tags: newTags } });
   }, [onSave]);
 
+  // Rating on this item (null = unrated)
+  const itemRating = item.meta?.rating ?? null;
+  const handleRatingChange = useCallback((r) => {
+    onSave?.({ meta: { rating: r } });
+  }, [onSave]);
+
   return (
     <div
       onContextMenu={handleContextMenu}
@@ -722,6 +729,31 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
     >
       {card}
       <TagEditor tags={itemTags} onChange={handleTagsChange} compact />
+      <StarRating value={itemRating} onChange={handleRatingChange} />
+
+      {/* Read-only ★{n} badge in footer when rated */}
+      {itemRating != null && (
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '3px',
+            padding: '2px 8px',
+            borderRadius: '9999px',
+            border: '1px solid var(--color-border)',
+            background: 'rgba(255,255,255,0.06)',
+            fontFamily: 'var(--font-ui)',
+            fontSize: '10px',
+            letterSpacing: '0.04em',
+            color: 'var(--accent-rating, #F5A623)',
+            margin: '0 16px 8px',
+            width: 'fit-content',
+          }}
+        >
+          <Star size={11} weight="fill" style={{ flexShrink: 0 }} />
+          <span>{itemRating}</span>
+        </div>
+      )}
 
       {/* Kebab: opens the card menu on touch / always-visible-but-small.
           Positioned in the canvas coordinate space (the wrapper uses
