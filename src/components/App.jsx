@@ -23,6 +23,7 @@ import { SpacesManager } from '../ui/SpacesManager.jsx';
 import { FolderViewModal } from '../ui/FolderViewModal.jsx';
 import { FicharioStyleEditor } from '../ui/FicharioStyleEditor.jsx';
 import LiquidOrb from '../ui/LiquidOrb.jsx';
+import ScenesWorkspace from '../ui/ScenesWorkspace.jsx';
 
 export function App() {
   const initialized = useRef(false);
@@ -83,6 +84,7 @@ export function App() {
   const [aiSummarise, setAiSummarise] = useState(null);
   const [spacesOpen, setSpacesOpen] = useState(false);
   const [showTags, setShowTags] = useState(false);
+  const [showScenes, setShowScenes] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [openFolderId, setOpenFolderId] = useState(null);
   const [ficharioStyleTargetId, setFicharioStyleTargetId] = useState(null);
@@ -608,6 +610,7 @@ export function App() {
         onAddNote={addNote}
         onAddUrl={addUrl}
         onExport={handleExport}
+        onScenesOpen={() => setShowScenes(true)}
       />
       <div data-main-content style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <DropZoneHandler viewport={viewport} onDrop={handleDrop}>
@@ -783,6 +786,11 @@ export function App() {
       )}
       {/* AI Orb — bottom center */}
       <LiquidOrb />
+
+      {/* Scenes workspace (Phase 3) — full-screen overlay, gated by showScenes */}
+      {showScenes && (
+        <ScenesWorkspace onClose={() => setShowScenes(false)} />
+      )}
     </div>
   );
 }

@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
   List,
+  FilmStrip,
 } from '@phosphor-icons/react';
 import { SettingsPanel } from './SettingsPanel.jsx';
 import { BookmarksPanel } from './BookmarksPanel.jsx';
@@ -41,6 +42,7 @@ const ICON_MAP = {
   note:     NotePencil,
   bookmark: BookmarkSimple,
   url:      Globe,
+  scenes:   FilmStrip,
   settings: GearSix,
 };
 
@@ -55,9 +57,10 @@ const ICON_LABELS = {
   archive:  'Archive',
   home:     'Home',
   export:   'Export',
-  note:     'New Note',
+  note:      'New Note',
   bookmark: 'New Bookmark',
   url:      'Add URL',
+  scenes:   'Scenes',
   settings: 'Settings',
 };
 
@@ -124,6 +127,17 @@ const SECTION_FLYOUTS = {
       },
     ],
   },
+  scenes: {
+    title: 'Scenes',
+    icon: FilmStrip,
+    sections: [
+      {
+        items: [
+          { id: 'scenes', label: 'Open Scenes', Icon: FilmStrip },
+        ],
+      },
+    ],
+  },
   search: {
     title: 'Search',
     icon: MagnifyingGlass,
@@ -148,7 +162,7 @@ const SECTION_FLYOUTS = {
   },
 };
 
-export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrganise, onAISummarise, onSearch, onAddNote, onAddUrl, onExport }) {
+export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onScenesOpen, onAIOrganise, onAISummarise, onSearch, onAddNote, onAddUrl, onExport }) {
   const [collapsed, setCollapsed] = useState(true);
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const [activeItem, setActiveItem] = useState('canvas');
@@ -239,6 +253,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     setActiveFlyout(id);
 
     if (id === 'spaces')            onSpacesOpen?.();
+    else if (id === 'scenes')        onScenesOpen?.();
     else if (id === 'saved' || id === 'bookmark') setShowBookmarks(true);
     else if (id === 'search')       onSearch?.();
     else if (id === 'library')      onSearch?.();
