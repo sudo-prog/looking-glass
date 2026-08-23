@@ -14,12 +14,14 @@ import {
   Plus,
   Trash,
   X,
+  Rows,
 } from '@phosphor-icons/react';
 
 export function Toolbar({
   zoom,
   searchQuery,
   onAddNote,
+  onAddFichario,
   onDelete,
   onUndo,
   onRedo,
@@ -161,6 +163,10 @@ export function Toolbar({
       {/* Primary actions (always visible) */}
       <button className="toolbar-btn" title="Add note (N)" aria-label="Add note" onClick={onAddNote}>
         <Plus size={16} weight="regular" />
+      </button>
+
+      <button className="toolbar-btn" title="Add Fichário (binder)" aria-label="Add Fichário" onClick={onAddFichario}>
+        <Rows size={16} weight="regular" />
       </button>
 
       <button

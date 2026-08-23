@@ -23,6 +23,7 @@ import { VideoCard } from './VideoCard.jsx';
 import { AudioMemoCard } from './AudioMemoCard.jsx';
 import { PDFViewerCard } from './PDFViewerCard.jsx';
 import { WebClipScreenshotCard } from './WebClipScreenshotCard.jsx';
+import { FicharioCard } from './FicharioCard.jsx';
 import { BlockTypeMenu } from '../ui/BlockTypeMenu.jsx';
 import { TagEditor } from '../ui/TagsSystem.jsx';
 
@@ -698,6 +699,8 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
       card = <PDFViewerCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} />; break;
     case ITEM_TYPES.VIDEO:
       card = <VideoCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} onLightbox={onLightbox} />; break;
+    case ITEM_TYPES.FICHARIO:
+      card = <FicharioCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onDelete={onDelete} />; break;
     default:
       card = <BookmarkCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />; break;
   }

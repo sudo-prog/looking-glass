@@ -35,6 +35,7 @@ export function Canvas({
   onAddToStack,
   onCreateFolder,
   onAddToFolder,
+  onAddToFichario,
   onContextMenu,
   onOpenFolder,
   onColorSelected,
@@ -266,12 +267,13 @@ export function Canvas({
         dragItem.current.style.pointerEvents = '';
 
         const target = el?.closest('.canvas-card');
-        document.querySelectorAll('.drop-target-stack, .drop-target-folder').forEach((el) => {
-          el.classList.remove('drop-target-stack', 'drop-target-folder');
+        document.querySelectorAll('.drop-target-stack, .drop-target-folder, .drop-target-fichario').forEach((el) => {
+          el.classList.remove('drop-target-stack', 'drop-target-folder', 'drop-target-fichario');
         });
         if (target && target !== dragItem.current) {
           const t = target.dataset.type;
-          if (t === ITEM_TYPES.FOLDER)      target.classList.add('drop-target-folder');
+          if (t === ITEM_TYPES.FICHARIO && dragItem.current.dataset.type === ITEM_TYPES.FICHARIO) target.classList.add('drop-target-fichario');
+          else if (t === ITEM_TYPES.FOLDER)      target.classList.add('drop-target-folder');
           else if (t === ITEM_TYPES.STACK)  target.classList.add('drop-target-stack');
           else                              target.classList.add('drop-target-folder');
         }
@@ -325,8 +327,8 @@ export function Canvas({
     }
 
     // Clear all drop highlights
-    document.querySelectorAll('.drop-target-stack, .drop-target-folder').forEach((el) => {
-      el.classList.remove('drop-target-stack', 'drop-target-folder');
+    document.querySelectorAll('.drop-target-stack, .drop-target-folder, .drop-target-fichario').forEach((el) => {
+      el.classList.remove('drop-target-stack', 'drop-target-folder', 'drop-target-fichario');
     });
 
     const wasBoxSelecting = isBoxSelecting.current;
@@ -366,8 +368,14 @@ export function Canvas({
       if (target && target !== dragItem.current) {
         const targetId   = target.dataset.id;
         const targetType = target.dataset.type;
+        const draggedType = dragItem.current.dataset.type;
 
-        if (targetType === ITEM_TYPES.FOLDER) {
+        if (targetType === ITEM_TYPES.FICHARIO && draggedType === ITEM_TYPES.FICHARIO) {
+          onAddToFichario?.(draggedId, targetId);
+          dragItem.current = null;
+          hasMoved.current = false;
+          return;
+        } else if (targetType === ITEM_TYPES.FOLDER) {
           onAddToFolder?.(draggedId, targetId);
           dragItem.current = null;
           hasMoved.current = false;
@@ -400,7 +408,7 @@ export function Canvas({
 
     dragItem.current = null;
     hasMoved.current = false;
-  }, [selectBox, finishBoxSelect, onViewportChange, onItemMove, onAddToStack, onAddToFolder, onClearSelection]);
+  }, [selectBox, finishBoxSelect, onViewportChange, onItemMove, onAddToStack, onAddToFolder, onAddToFichario, onClearSelection]);
 
   // ── Card drag start ────────────────────────────────────────────────────
 

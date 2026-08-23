@@ -14,6 +14,7 @@ import './styles/reset.css';
 import './styles/canvas.css';
 import './styles/tiptap.css';
 import './styles/stack-folder.css';
+import './styles/fichario.css';
 import './styles/glass-fallback.css';
 import './styles/ui-chrome.css';
 import './styles/responsive.css';

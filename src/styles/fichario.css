@@ -1,0 +1,741 @@
+/* ════════════════════════════════════════════════
+   LOOKING GLASS — FICHÁRIO (BINDER)
+   Rebuilt from a real frame-by-frame audit of the source demo.
+   Monospace/markdown-literal content, full per-page recolor, tab
+   rail only past 1 page, corner-bracket focus, two-stage extraction.
+   Only the canvas/app chrome around it stays Looking Glass's own
+   dark theme — the binder cards themselves match the source video.
+   ════════════════════════════════════════════════ */
+
+.card-fichario {
+  min-height: 320px;
+  padding: 18px 20px;
+  border-radius: var(--fichario-radius, 14px);
+  background: var(--fichario-bg, #B8D9BA);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.40);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: box-shadow var(--duration-fast) var(--ease-out), width 0.26s var(--ease-out), height 0.26s var(--ease-out), background 0.2s var(--ease-out);
+}
+
+.card-fichario:has(.fichario-tab-rail) {
+  padding-right: 38px; /* clear the tab rail */
+}
+
+/* Corner-bracket focus indicator (matches source demo) instead of a ring */
+.card-fichario.selected {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+.card-fichario .fichario-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: #4285F4;
+  border-style: solid;
+  border-width: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.card-fichario.selected .fichario-corner {
+  opacity: 1;
+}
+
+.fichario-corner-tl { top: -6px; left: -6px; border-top-width: 2px; border-left-width: 2px; border-radius: 4px 0 0 0; }
+.fichario-corner-tr { top: -6px; right: -6px; border-top-width: 2px; border-right-width: 2px; border-radius: 0 4px 0 0; }
+.fichario-corner-bl { bottom: -6px; left: -6px; border-bottom-width: 2px; border-left-width: 2px; border-radius: 0 0 0 4px; }
+.fichario-corner-br { bottom: -6px; right: -6px; border-bottom-width: 2px; border-right-width: 2px; border-radius: 0 0 4px 0; }
+
+/* ── Collapsed extraction preview ────────────────── */
+
+.card-fichario.collapsed {
+  overflow: hidden;
+  cursor: default;
+}
+
+.fichario-collapsed-preview {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  animation: fichario-collapse-in 0.18s var(--ease-out) both;
+}
+
+@keyframes fichario-collapse-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.fichario-collapsed-title {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fichario-fg, #17281A);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fichario-collapsed-meta {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  color: var(--fichario-muted, #3E5C42);
+}
+
+/* ── Page flip ────────────────────────────────────── */
+
+.fichario-stack {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.fichario-stack.flipping .fichario-page-body {
+  animation: fichario-flip 320ms var(--ease-out);
+}
+
+@keyframes fichario-flip {
+  0%   { opacity: 0.25; transform: scale(0.985) translateY(2px); }
+  55%  { opacity: 1;    transform: scale(1.012); }
+  100% { opacity: 1;    transform: scale(1); }
+}
+
+/* ── Page body — monospace, markdown-literal ─────── */
+
+.fichario-page-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: default;
+  font-family: var(--font-ui);
+  color: var(--fichario-fg, #17281A);
+}
+
+.fichario-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.fichario-title-cursor {
+  width: 2px;
+  align-self: stretch;
+  background: currentColor;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.fichario-title {
+  font-family: var(--font-ui);
+  font-size: var(--fichario-heading-size, 18px);
+  font-weight: var(--fichario-heading-weight, 700);
+  color: var(--fichario-heading-color, inherit);
+  text-transform: var(--fichario-heading-transform, none);
+  font-style: var(--fichario-heading-style, normal);
+  line-height: 1.3;
+}
+
+.fichario-title-input {
+  font-family: var(--font-ui);
+  font-size: var(--fichario-heading-size, 18px);
+  font-weight: var(--fichario-heading-weight, 700);
+  color: var(--fichario-heading-color, inherit);
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed currentColor;
+  outline: none;
+  padding: 0 0 2px;
+  width: 100%;
+}
+
+.fichario-meta {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--fichario-fg, inherit);
+  opacity: 0.85;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.fichario-meta-dot {
+  opacity: 0.6;
+}
+
+.fichario-description {
+  font-family: var(--font-ui);
+  font-size: var(--fichario-body-size, 13px);
+  font-style: var(--fichario-body-style, normal);
+  line-height: 1.5;
+  color: var(--fichario-body-color, inherit);
+  white-space: pre-wrap;
+}
+
+.fichario-code {
+  background: rgba(0, 0, 0, 0.14);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-family: var(--font-ui);
+}
+
+.fichario-section-label {
+  font-family: var(--font-ui);
+  font-size: var(--fichario-body-size, 13px);
+  font-weight: 700;
+  color: var(--fichario-body-color, inherit);
+  margin-bottom: 4px;
+}
+
+.fichario-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fichario-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-size: var(--fichario-body-size, 13px);
+  font-style: var(--fichario-body-style, normal);
+  color: var(--fichario-body-color, inherit);
+  cursor: pointer;
+  line-height: 1.45;
+}
+
+.fichario-check-marker {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.fichario-checklist li.checked {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.fichario-checklist li:not(.checked) {
+  font-weight: 600;
+}
+
+.fichario-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fichario-log li {
+  font-family: var(--font-ui);
+  font-size: calc(var(--fichario-body-size, 13px) - 2px);
+  color: var(--fichario-body-color, inherit);
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+/* ── Tab rail — hidden until a binder holds 2+ pages ─ */
+
+.fichario-tab-rail {
+  position: absolute;
+  right: -1px;
+  top: 14px;
+  bottom: 14px;
+  width: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.fichario-tab-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.fichario-tab {
+  position: relative;
+  flex-shrink: 0;
+  min-height: 46px;
+  width: 26px;
+  border-radius: 0 6px 6px 0;
+  background: var(--tab-bg, #EFE3B8);
+  color: var(--tab-fg, #17281A);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-left: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--duration-instant) var(--ease-out), width var(--duration-instant) var(--ease-out);
+  box-shadow: -2px 0 6px rgba(0, 0, 0, 0.15);
+}
+
+.fichario-tab:hover {
+  transform: translateX(-2px);
+}
+
+.fichario-tab.active {
+  width: 30px;
+  transform: translateX(-4px);
+  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.30);
+  z-index: 1;
+}
+
+.fichario-tab-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-ui);
+  font-size: var(--fichario-tab-size, 10px);
+  font-weight: var(--fichario-tab-weight, 600);
+  text-transform: var(--fichario-tab-transform, none);
+  color: var(--tab-fg, inherit);
+  max-height: calc(100% - 6px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 4px 0;
+}
+
+.fichario-tab-extract {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.fichario-tab:hover .fichario-tab-extract {
+  display: flex;
+}
+
+.fichario-tab-add {
+  min-height: 24px;
+  opacity: 0.85;
+}
+
+.fichario-tab-add:hover {
+  opacity: 1;
+}
+
+/* Single-page binder: no rail, small floating "+" instead */
+
+.fichario-add-page-fab {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--fichario-fg, inherit);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-instant) var(--ease-out);
+}
+
+.card-fichario:hover .fichario-add-page-fab {
+  opacity: 0.8;
+}
+
+.fichario-add-page-fab:hover {
+  opacity: 1 !important;
+  background: rgba(0, 0, 0, 0.20);
+}
+
+/* ── Sticky note page ─────────────────────────────── */
+
+.fichario-sticky {
+  height: 100%;
+}
+
+.fichario-sticky-textarea {
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: calc(var(--fichario-body-size, 13px) + 2px);
+  line-height: 1.6;
+  color: var(--fichario-fg, inherit);
+}
+
+.fichario-sticky-textarea::placeholder {
+  color: var(--fichario-fg, inherit);
+  opacity: 0.5;
+}
+
+/* ── Todo page ────────────────────────────────────── */
+
+.fichario-todo-list li {
+  align-items: center;
+}
+
+.fichario-todo-remove {
+  margin-left: auto;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.fichario-todo-list li:hover .fichario-todo-remove {
+  opacity: 0.6;
+}
+
+.fichario-todo-remove:hover {
+  opacity: 1 !important;
+}
+
+.fichario-todo-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  opacity: 0.85;
+}
+
+.fichario-todo-add input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed currentColor;
+  outline: none;
+  font-family: var(--font-ui);
+  font-size: var(--fichario-body-size, 13px);
+  color: inherit;
+  padding: 2px 0;
+}
+
+/* ── Image page ───────────────────────────────────── */
+
+.fichario-image-page {
+  height: 100%;
+  gap: 8px !important;
+}
+
+.fichario-image {
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+.fichario-image-placeholder {
+  width: 100%;
+  height: 160px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.fichario-image-caption {
+  font-family: var(--font-ui);
+  font-size: var(--fichario-body-size, 13px);
+  outline: none;
+  border-bottom: 1px dashed transparent;
+}
+
+.fichario-image-caption:focus {
+  border-bottom-color: currentColor;
+}
+
+/* ── Add-page kind picker ────────────────────────── */
+
+.fichario-add-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-dropdown) - 1);
+}
+
+.fichario-add-menu {
+  position: absolute;
+  bottom: 40px;
+  right: 8px;
+  z-index: var(--z-dropdown);
+  display: flex;
+  flex-direction: column;
+  background: rgba(16, 16, 16, 0.98);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  padding: 4px;
+  min-width: 150px;
+  animation: fss-appear 0.14s var(--ease-out) both;
+}
+
+.fichario-add-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.fichario-add-menu button:hover {
+  background: var(--state-hover);
+}
+
+.drop-target-fichario {
+  outline: 2px dashed #4285F4;
+  outline-offset: 4px;
+  transform: scale(1.02);
+}
+
+/* ════════════════════════════════════════════════
+   FICHÁRIO STYLE EDITOR (popup panel)
+   ════════════════════════════════════════════════ */
+
+.fss-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) - 1);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.fss-panel {
+  position: fixed;
+  top: 50%;
+  right: 24px;
+  transform: translateY(-50%);
+  z-index: var(--z-modal);
+  width: 280px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  background: rgba(16, 16, 16, 0.98);
+  backdrop-filter: blur(32px) saturate(120%);
+  -webkit-backdrop-filter: blur(32px) saturate(120%);
+  border: 1px solid var(--color-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 16px 48px rgba(0, 0, 0, 0.75);
+  animation: fss-appear 0.18s var(--ease-out) both;
+}
+
+@keyframes fss-appear {
+  from { opacity: 0; transform: translateY(-50%) translateX(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(-50%) translateX(0) scale(1); }
+}
+
+@media (max-width: 640px) {
+  .fss-panel {
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 12px;
+    transform: none;
+    width: auto;
+    max-height: 70vh;
+  }
+  @keyframes fss-appear {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
+
+.fss-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  background: rgba(16, 16, 16, 0.98);
+  z-index: 1;
+}
+
+.fss-title {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fss-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.fss-icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.fss-icon-btn:hover {
+  background: var(--state-hover);
+  color: var(--text-primary);
+}
+
+.fss-body {
+  padding: 6px 16px 18px;
+}
+
+.fss-section-label {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+  margin: 16px 0 8px;
+}
+
+.fss-section-label:first-child {
+  margin-top: 10px;
+}
+
+.fss-row {
+  margin-bottom: 12px;
+}
+
+.fss-row-label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.fss-swatch-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fss-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-active);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fss-swatch.active {
+  border: 2px solid var(--text-primary);
+}
+
+.fss-swatch-none {
+  width: 2px;
+  height: 14px;
+  background: var(--color-border-active);
+  transform: rotate(45deg);
+}
+
+.fss-color-input {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--color-border-active);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.fss-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fss-slider {
+  flex: 1;
+  accent-color: var(--color-accent);
+}
+
+.fss-slider-value {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--text-secondary);
+  min-width: 34px;
+  text-align: right;
+}
+
+.fss-weight-row,
+.fss-toggle-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fss-weight-btn,
+.fss-toggle {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-raised);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.fss-toggle.italic {
+  font-style: italic;
+}
+
+.fss-weight-btn.active,
+.fss-toggle.active {
+  border-color: var(--color-border-focus);
+  color: var(--text-primary);
+  background: var(--state-hover);
+}

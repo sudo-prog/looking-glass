@@ -64,6 +64,11 @@ import {
   X,
   MinusCircle,
   Eraser,
+  Plus,
+  ArrowUpRight,
+  SignIn,
+  Sliders,
+  Copy,
 } from '@phosphor-icons/react';
 
 // ─────────────────────────────────────────────────────────────
@@ -245,6 +250,8 @@ export function ContextMenu({
   const hasUrl        = !!item.content?.url;
   const isFolder       = item.type === 'folder';
   const isStack        = item.type === 'stack';
+  const isFichario     = item.type === 'fichario';
+  const ficharioPageCount = isFichario ? (item.content?.pages?.length || 1) : 0;
   const multiSelected = selectedIds.size > 1;
   const hasAI         = !!(() => {
     try { return JSON.parse(localStorage.getItem('lg-ai-config') || '{}').key; } catch { return false; }
@@ -280,6 +287,42 @@ export function ContextMenu({
           to   { opacity: 1; transform: scale(1)    translateY(0);    }
         }
       `}</style>
+
+      {/* ── Section 0a: Fichário specific ── */}
+      {isFichario && (
+        <>
+          <div style={{ paddingTop: '4px' }}>
+            <MenuItem
+              icon={Plus}
+              label="Add Page"
+              onClick={() => act('fichario-add-page')}
+            />
+            <MenuItem
+              icon={Copy}
+              label="Duplicate Page"
+              onClick={() => act('fichario-duplicate-page')}
+            />
+            {ficharioPageCount > 1 && (
+              <MenuItem
+                icon={ArrowUpRight}
+                label="Extract Front Page"
+                onClick={() => act('fichario-extract-page')}
+              />
+            )}
+            <MenuItem
+              icon={SignIn}
+              label="Place in Fichário"
+              onClick={() => act('fichario-place')}
+            />
+            <MenuItem
+              icon={Sliders}
+              label="Style…"
+              onClick={() => act('fichario-style')}
+            />
+          </div>
+          <Divider />
+        </>
+      )}
 
       {/* ── Section 0: Folder / Stack specific ── */}
       {(isFolder || isStack) && (
@@ -339,7 +382,7 @@ export function ContextMenu({
             onClick={() => act('copy-link')}
           />
         )}
-        {!hasUrl && !isFolder && !isStack && (
+        {!hasUrl && !isFolder && !isStack && !isFichario && (
           <MenuItem
             icon={PencilSimple}
             label="Rename"
@@ -500,6 +543,8 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
   const hasUrl        = !!item.content?.url;
   const isFolder       = item.type === 'folder';
   const isStack        = item.type === 'stack';
+  const isFichario     = item.type === 'fichario';
+  const ficharioPageCount = isFichario ? (item.content?.pages?.length || 1) : 0;
   const multiSelected = selectedIds.size > 1;
 
   return (
@@ -556,6 +601,12 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
 
         {/* Actions */}
         <div style={{ padding: '8px 0' }}>
+          {isFichario && <MenuItem icon={Plus} label="Add Page" onClick={() => act('fichario-add-page')} />}
+          {isFichario && <MenuItem icon={Copy} label="Duplicate Page" onClick={() => act('fichario-duplicate-page')} />}
+          {isFichario && ficharioPageCount > 1 && <MenuItem icon={ArrowUpRight} label="Extract Front Page" onClick={() => act('fichario-extract-page')} />}
+          {isFichario && <MenuItem icon={SignIn} label="Place in Fichário" onClick={() => act('fichario-place')} />}
+          {isFichario && <MenuItem icon={Sliders} label="Style…" onClick={() => act('fichario-style')} />}
+          {isFichario && <Divider />}
           {isFolder && <MenuItem icon={FolderOpen} label="Open Folder" onClick={() => act('open-folder')} />}
           {isStack && <MenuItem icon={ArrowsOutCardinal} label="Break Stack" onClick={() => act('unstack')} />}
           {isFolder && <MenuItem icon={MinusCircle} label="Remove from Folder" onClick={() => act('remove-from-folder')} />}

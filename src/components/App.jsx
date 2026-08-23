@@ -21,6 +21,7 @@ import { TagFilterBar, TagsPanel } from '../ui/TagsSystem.jsx';
 import { CommandPalette } from '../ui/CommandPalette.jsx';
 import { SpacesManager } from '../ui/SpacesManager.jsx';
 import { FolderViewModal } from '../ui/FolderViewModal.jsx';
+import { FicharioStyleEditor } from '../ui/FicharioStyleEditor.jsx';
 import LiquidOrb from '../ui/LiquidOrb.jsx';
 
 export function App() {
@@ -84,6 +85,7 @@ export function App() {
   const [showTags, setShowTags] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [openFolderId, setOpenFolderId] = useState(null);
+  const [ficharioStyleTargetId, setFicharioStyleTargetId] = useState(null);
 
   // Initialize
   useEffect(() => {
@@ -444,6 +446,36 @@ export function App() {
       case 'edit-tags':
         // Tag editor is inline on card — no-op at app level
         break;
+      case 'fichario-add-page':
+        useStore.getState().ficharioAddPage(item.id);
+        break;
+      case 'fichario-style':
+        setFicharioStyleTargetId(item.id);
+        break;
+      case 'fichario-duplicate-page': {
+        const activeId = item.content?.activePageId;
+        if (activeId) useStore.getState().ficharioDuplicatePage(item.id, activeId);
+        break;
+      }
+      case 'fichario-extract-page': {
+        const activeId = item.content?.activePageId;
+        if (activeId) useStore.getState().ficharioExtractPage(item.id, activeId);
+        break;
+      }
+      case 'fichario-place': {
+        // Dock this (usually single-page) Fichário onto the nearest other Fichário.
+        const state = useStore.getState();
+        const binders = state.items.filter((i) => i.type === 'fichario' && i.id !== item.id);
+        if (binders.length === 0) break;
+        let nearest = binders[0];
+        let best = Infinity;
+        for (const b of binders) {
+          const d = Math.hypot(b.x - item.x, b.y - item.y);
+          if (d < best) { best = d; nearest = b; }
+        }
+        state.ficharioMergeInto(item.id, nearest.id);
+        break;
+      }
       case 'color-none':
         updateItem(item.id, { meta: { color: null } });
         break;
@@ -485,7 +517,11 @@ export function App() {
     }
   }, [addToFolder]);
 
-  // Drop handler for DropZoneHandler
+  const handleAddToFichario = useCallback(async (sourceId, targetId) => {
+    await useStore.getState().ficharioMergeInto(sourceId, targetId);
+  }, []);
+
+  // filteredItems must be computed before any useCallback that references it
   const handleDrop = useCallback(async (drops) => {
     for (const drop of drops) {
       switch (drop.kind) {
@@ -597,6 +633,7 @@ export function App() {
             onAddToStack={handleAddToStack}
             onCreateFolder={createFolder}
             onAddToFolder={handleAddToFolder}
+            onAddToFichario={handleAddToFichario}
             onContextMenu={(item, x, y) => setContextMenu({ item, x, y })}
             onOpenFolder={setOpenFolderId}
             onColorSelected={handleColorSelected}
@@ -611,6 +648,7 @@ export function App() {
           zoom={viewport.scale}
           searchQuery={searchQuery}
           onAddNote={addNote}
+          onAddFichario={() => useStore.getState().addFichario()}
           onDelete={handleDeleteSelected}
           onUndo={handleUndo}
           onRedo={handleRedo}
@@ -652,6 +690,18 @@ export function App() {
           onDescription={(desc) => updateFolderDescription(openFolder.id, desc)}
         />
       )}
+
+      {/* Fichário style editor */}
+      {ficharioStyleTargetId && (() => {
+        const target = items.find((i) => i.id === ficharioStyleTargetId);
+        if (!target) return null;
+        return (
+          <FicharioStyleEditor
+            item={target}
+            onClose={() => setFicharioStyleTargetId(null)}
+          />
+        );
+      })()}
 
       {/* ScratchPad overlay */}
       <ScratchPad />
