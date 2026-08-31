@@ -1,6 +1,18 @@
 # Agent Notes — Looking Glass
 **Last updated:** 2026-08-31
-**Status:** Single-path AI landed on branch `sudo-prog/lg-ai-single-path`. AI config consolidated to the side panel (orb = chat only), providers cut to OmniRoute + OpenRouter(free), duplicate sidebar Settings removed, mobile Settings reachability fixed, orb click-blocking + debug-log bugs fixed. Verified: `pnpm build` clean, 19/19 E2E + 15/15 debug-mode suite (34/34), live AI round-trip through the real gateway.
+**Status:** Single-path AI landed on branch `sudo-prog/lg-ai-single-path` + a mobile-UI pass (commit 76e653f3). AI config consolidated to the side panel (orb = chat only), providers = OmniRoute + OpenRouter free, orb bugs fixed, and the mobile viewport (390x844) gate is 8/8 (welcome card + kebab on-screen, orb chat safe-area). PR #1 open, awaiting review/merge.
+
+---
+
+## Change Log — 2026-08-31 (mobile UI pass, commit 76e653f3)
+
+Ran a Playwright mobile gate at 390x844 touch (`_verify_mobile.cjs`, **8/8 gates**), guided by `quality/mobile-ui-verification-standard`. Visual inspection via agent-browser screenshots + DOM hit-tests.
+
+- `src/ui/spacesSlice.js` — seeded welcome card moved to `x:24` (was `x:200`); its right edge was 480px, clipped off a 390px phone. Now 304px, fully on-screen.
+- `src/components/CanvasCard.jsx` — the card kebab (... Card actions) clamped to BOTH viewport edges (`Math.max(8, min(cardRight-34, innerWidth-46))`) so it can never be unreachable on mobile at default zoom.
+- `src/ui/LiquidOrb.css` — orb chat panel gets `env(safe-area-inset-bottom)` to clear the notch/home-indicator on notched phones.
+
+Method: applied via headless VS Code + `delegate_task` subagent (auto/coding:free) per the NEVER-self-code rule; the previous opencode attempt stalled so it was not used. Independently re-verified: `git diff --stat` + `pnpm build` clean + gate 8/8.
 
 ---
 

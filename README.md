@@ -37,6 +37,10 @@ pnpm install && pnpm run dev
 - Dark/light theme with glass aesthetic
 - PWA with service worker
 
+## Mobile UI
+
+Verified on a 390x844 touch viewport against `quality/mobile-ui-verification-standard` (screenshots + DOM hit-tests, not just a build). The seeded welcome card and its overflow menu stay inside the viewport; the orb chat clears the safe-area (`env(safe-area-inset-bottom)`). Gate harness: `_verify_mobile.cjs` (`node _verify_mobile.cjs`, `LG_URL=...`). Whenever you touch the orb, sidebar, bottom toolbar, or canvas cards, keep the MOBILE-UI-STANDARD rules: tap targets >=44x44px, no `tap-swallow`, no horizontal overflow, safe-area on docked UI.
+
 ## AI Provider
 
 AI is configured in **one place only**: the **side panel → Settings → AI Assistant**. The orb is chat-only and reads that same shared config — there is no second setup flow inside the orb.
