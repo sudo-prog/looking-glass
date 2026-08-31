@@ -42,8 +42,10 @@ export function spacesSlice(set, get) {
         const seedItem = createItem({
           canvas_id: defaultCanvas.id,
           type: ITEM_TYPES.NOTE,
-          x: 200,
-          y: 200,
+          // Top-left so the welcome card is fully on-screen even on a 390px phone
+          // (previous x:200/width:280 put its right edge at 480px -> clipped on mobile).
+          x: 24,
+          y: 140,
           width: 280,
           content: { title: 'Welcome', text: 'Welcome to Looking Glass!' },
         });

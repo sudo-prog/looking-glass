@@ -736,9 +736,11 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
         onClick={handleKebab}
         style={{
           position: 'absolute',
-          left: Math.min(
-            (item.x + (item.width || 280)) - 34,
-            window.innerWidth - 46
+          // Clamp within the viewport on both edges so the kebab is always
+          // reachable on mobile (canvas world-coords == screen coords at scale 1).
+          left: Math.max(
+            8,
+            Math.min((item.x + (item.width || 280)) - 34, window.innerWidth - 46)
           ),
           top: item.y + 6,
           width: 44,

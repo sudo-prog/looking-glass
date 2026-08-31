@@ -181,7 +181,7 @@
   transition:opacity 0.3s var(--orb-out),transform 0.36s var(--orb-spring);
 }
 .lg-orb-chat.visible{opacity:1;transform:translateX(-50%) translateY(0) scale(1);pointer-events:auto}
-.lg-orb-chat-inner{border-radius:26px;position:relative;overflow:hidden}
+.lg-orb-chat-inner{border-radius:26px;position:relative;overflow:hidden;padding-bottom:env(safe-area-inset-bottom)}
 .lg-orb-chat-sheen{position:absolute;top:0;left:0;right:0;height:1px;z-index:5;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,0.10) 25%,rgba(255,255,255,0.18) 50%,rgba(255,255,255,0.10) 75%,transparent);pointer-events:none}
 .lg-orb-chat-rim{position:absolute;inset:0;border-radius:inherit;
