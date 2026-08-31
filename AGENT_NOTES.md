@@ -1,6 +1,35 @@
 # Agent Notes — Looking Glass
-**Last updated:** 2026-07-24
-**Status:** Full audit verified, mobile UI fixed, AI 502 upstream error fixed, main-branch audit remediation (LG-1..LG-7) applied 2026-07-14, deployed to Vercel (looking-glass-eta). 2026-07-24: Team A mobile audit merged to main + Celine orb/AI-chat fixes confirmed in main code + Vercel prod deploy Ready.
+**Last updated:** 2026-08-31
+**Status:** Single-path AI landed on branch `sudo-prog/lg-ai-single-path`. AI config consolidated to the side panel (orb = chat only), providers cut to OmniRoute + OpenRouter(free), duplicate sidebar Settings removed, mobile Settings reachability fixed, orb click-blocking + debug-log bugs fixed. Verified: `pnpm build` clean, 19/19 E2E + 15/15 debug-mode suite (34/34), live AI round-trip through the real gateway.
+
+---
+
+## Change Log — 2026-08-31 (single-path AI + orb fixes)
+
+Delivered on branch `sudo-prog/lg-ai-single-path`. All items independently verified in a real headless browser against the live OmniRoute gateway — not self-reported by the agents that wrote them.
+
+**Single AI path**
+- `src/utils/aiConfig.js` — `BUILTIN_PROVIDERS` cut from 11 providers to **2**: `omniroute` (default) + `openrouter` (free). Removed anthropic, openai, google, groq, ollama, litellm, gemini-web2api, nous, opencode. Added `resolveEndpoint()` and `testConnection()`. Default model `openrouter/free`. Stale saved providers migrate to `omniroute`.
+- `src/ui/LiquidOrb.jsx` — **−654 lines**: the entire in-orb provider setup UI removed. Orb is now chat-only and consumes the shared config.
+- `src/ui/SettingsPanel.jsx` — the single AI config surface (AI Assistant section) with a working **Test connection** button.
+- `api/chat.js` — provider resolution reworked; removed the dead paid-model map.
+
+**Bugs fixed (each reproduced before fixing)**
+- **SSE crash.** The gateway streams by default and returns `data: {...}` SSE, so browser `response.json()` threw `Unexpected token 'd', "data: {"id"... is not valid JSON` on *every* orb reply. Fixed by sending `"stream": false` from all three client call sites. `api/chat.js` already did this.
+- **Orb entirely unclickable.** `.lg-orb-bd` backdrop (`z-index:90`, `pointer-events:auto` when open) covered the chat panel, which had no z-index — `elementFromPoint()` at each button's centre returned the backdrop. Edit UI never flipped mode; the Debug Log never opened. Fixed with `.lg-orb-chat { z-index:95 }`.
+- **Built-in debug log was permanently empty.** `logMut()` only pushed 4-second React toasts and never called `addDebugEntry()`, so the Debug Log viewer and its markdown export were useless. Now persists mutations, `/debug` toggles, and AI call failures (`orb.callAI`).
+- **Duplicate Settings in the sidebar.** `settings` was in the default `menuIconOrder` *and* rendered as a dedicated footer gear. The nav copy was also absent from `ICON_POOL`, so it was a phantom the user couldn't reorder or remove. Footer gear kept as the single entry; existing users migrated by filtering `settings` out of the saved order.
+- **Mobile: Settings was unreachable (pre-existing, not a regression — confirmed on `main`).** The bottom canvas toolbar becomes `flex-direction: column` under 640px, grows tall, and covered the sidebar menu FAB at the same `z-index:100`. A real touch tap did nothing while a direct `.click()` worked, proving an overlay not a handler bug. Fixed with `z-index: calc(var(--z-toolbar) + 2)` on the mobile FAB rule.
+- **Tap target.** `.lg-orb-tool` was 34px → now 44px (MOBILE-UI-STANDARD).
+
+**Verification (real, not self-reported)**
+- `pnpm build` clean.
+- `lg_ai_e2e.cjs` — **19/19**: no duplicate Settings, only the 2 providers, free/auto-only model list, live OmniRoute connection `{"ok":true}`, OpenRouter keyless 401 handled readably, stale-provider migration, orb has no config UI, mobile FAB on top + Settings reachable, zero console errors.
+- `probe_debugmode.cjs` — **15/15**, using the app's *own* debug log as the oracle: `/debug` on/off logged, live AI reply `PONG` in debug mode, gateway 200, **no SSE/JSON error**, edit-mode mutation really applied (`--bg → #001f3f`) and logged, Debug Log viewer count matches the live log, markdown export works.
+
+**Known caveats**
+- `openrouter/free` round-robins across the free OpenRouter pool; some routed models ignore the JSON-ops contract, so edit-mode occasionally returns prose instead of ops. The app handles this gracefully (falls back to showing the text). The test retries up to 3×. This is model variance, not an app bug.
+- The OmniRoute gateway is **local-only**. On HTTPS Vercel, a browser cannot call `http://127.0.0.1:20128` (mixed content). Deployed AI needs a tunnel/hosted endpoint or must proxy via `api/chat.js`. Unchanged by this work.
 
 ---
 
@@ -162,16 +191,20 @@ looking-glass/           — main app (not in artifacts/ sub-dir)
 ---
 
 ## AI Configuration
-- **Default Provider:** `gemini-web2api` (model: `gemini-3.5-flash`) — runs locally via gemini-web2api proxy at `/api/chat`
-- **Fallback Provider:** `openrouter` — uses `OPENROUTER_API_KEY` env var, defaults to `openrouter/free` model
-- **Self-Heal:** `src/utils/ai-self-heal.js` — provides DOM snapshot, EVAL, FIX_NOTIFICATIONS, and CLEAR_STALE operations
-- **Provider Fallback Order:** `gemini-web2api` → `openrouter` → `nous` (Hermes)
+**Rewritten 2026-08-31 — single-path AI. Everything below supersedes the older gemini-web2api notes further down this file.**
+- **Single config surface:** side panel → Settings → AI Assistant. The orb is **chat-only** and reads the same shared config via `loadAIConfig()`. The orb's old in-orb setup flow was removed.
+- **Only two providers:** `omniroute` (default) and `openrouter` (free tier). anthropic / openai / google / groq / ollama / litellm / gemini-web2api / nous / opencode were all removed from `BUILTIN_PROVIDERS`.
+- **Default model:** `openrouter/free`. Also offered: `auto/best-free`, `auto/coding:free`, `auto/best-chat`, `auto/best-coding-fast`. No paid models.
+- **Migration:** `loadAIConfig()` maps any saved-but-removed provider back to `omniroute` so existing users don't get a broken config.
+- **`stream: false` is REQUIRED** on every client call — the OmniRoute gateway streams SSE (`data: {...}`) by default, which breaks `response.json()`. Present in `LiquidOrb.jsx`, `aiConfig.js` (`testConnection`), `AISummarisePanel.jsx` and `api/chat.js`. Do not remove.
+- **Self-Heal:** `src/utils/ai-self-heal.js` — DOM snapshot, EVAL, FIX_NOTIFICATIONS, CLEAR_STALE operations.
 
 ## File Reference
 | Path | Purpose |
 |------|---------|
 | `src/utils/ai-self-heal.js` | Self-healing AI capability (DOM inspection, JS fixes, notification cleanup) |
-| `src/utils/aiConfig.js` | AI provider config (default: gemini-web2api, fallback: openrouter) |
+| `src/utils/aiConfig.js` | AI provider config — omniroute + openrouter only, default `openrouter/free`, `resolveEndpoint()` + `testConnection()` |
+| `src/utils/debugLog.js` | Built-in debug log — captures window errors, unhandled rejections, `console.error`, orb mutations |
 | `src/main.jsx` | Entry point |
 | `src/App.jsx` | Main layout, undo/redo, keyboard handlers |
 | `src/canvas/Canvas.jsx` | Infinite canvas, drag, drop, selection, pinch-to-zoom |

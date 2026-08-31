@@ -10,132 +10,6 @@ const CUSTOM_PROVIDERS_KEY = 'lg-custom-providers';
 
 // ── Built-in provider definitions ──────────────────────────────────────────────
 const BUILTIN_PROVIDERS = {
-  openrouter: {
-    name: 'OpenRouter',
-    icon: '⇄',
-    keyPlaceholder: 'sk-or-v1-…',
-    keyLabel: 'OpenRouter API Key',
-    baseURL: 'https://openrouter.ai/api/v1/chat/completions',
-    models: [
-      'anthropic/claude-sonnet-4-5',
-      'anthropic/claude-3.5-sonnet',
-      'openai/gpt-4o',
-      'openai/gpt-4o-mini',
-      'google/gemini-2.5-flash',
-      'meta-llama/llama-3.3-70b-instruct',
-      'mistralai/mistral-large',
-      'openrouter/auto',
-      'meta-llama/llama-3.3-70b-instruct:free',
-      'google/gemma-4-26b-a4b-it:free',
-      'tencent/hy3:free',
-      'nousresearch/hermes-3-llama-3.1-405b:free',
-      'deepseek/deepseek-r1-distill-llama-70b:free',
-      'openrouter:free',
-    ],
-    needsKey: true,
-    showBaseURL: false,
-    builtin: true,
-  },
-  anthropic: {
-    name: 'Anthropic',
-    icon: '◆',
-    keyPlaceholder: 'sk-ant-api03-…',
-    keyLabel: 'Anthropic API Key',
-    baseURL: 'https://api.anthropic.com/v1/messages',
-    models: [
-      'claude-sonnet-4-5',
-      'claude-sonnet-4-20250514',
-      'claude-3-5-sonnet-20241022',
-      'claude-3-haiku-20240307',
-    ],
-    needsKey: true,
-    showBaseURL: false,
-    builtin: true,
-  },
-  openai: {
-    name: 'OpenAI',
-    icon: '◎',
-    keyPlaceholder: 'sk-proj-…',
-    keyLabel: 'OpenAI API Key',
-    baseURL: 'https://api.openai.com/v1/chat/completions',
-    models: [
-      'gpt-4o',
-      'gpt-4o-mini',
-      'gpt-4.1',
-      'gpt-4-turbo',
-      'o3',
-      'o4-mini',
-    ],
-    needsKey: true,
-    showBaseURL: false,
-    builtin: true,
-  },
-  google: {
-    name: 'Gemini',
-    icon: '✦',
-    keyPlaceholder: 'AIza…',
-    keyLabel: 'Google AI API Key',
-    baseURL: 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
-    models: [
-      'gemini-3.5-flash',
-      'gemini-3.5-flash-thinking',
-      'gemini-3.1-pro',
-      'gemini-auto',
-      'gemini-3.5-flash-thinking-lite',
-      'gemini-flash-lite',
-    ],
-    needsKey: true,
-    showBaseURL: false,
-    builtin: true,
-  },
-  groq: {
-    name: 'Groq',
-    icon: '⚡',
-    keyPlaceholder: 'gsk_…',
-    keyLabel: 'Groq API Key',
-    baseURL: 'https://api.groq.com/openai/v1/chat/completions',
-    models: [
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant',
-      'mixtral-8x7b-32768',
-      'gemma2-9b-it',
-    ],
-    needsKey: true,
-    showBaseURL: false,
-    builtin: true,
-  },
-  ollama: {
-    name: 'Ollama',
-    icon: '🦙',
-    keyPlaceholder: '(no key needed)',
-    keyLabel: 'API Key (optional)',
-    baseURL: 'http://localhost:11434/v1/chat/completions',
-    models: [
-      'llama3.2',
-      'mistral',
-      'qwen2.5',
-      'phi4',
-      'gemma3',
-    ],
-    needsKey: false,
-    showBaseURL: true,
-    builtin: true,
-  },
-  litellm: {
-    name: 'LiteLLM',
-    icon: '⚗',
-    keyPlaceholder: 'Bearer …',
-    keyLabel: 'Bearer Token (optional)',
-    baseURL: 'http://localhost:4000/v1/chat/completions',
-    models: [
-      'claude-3-5-sonnet-20241022',
-      'gpt-4o',
-      'gemini/gemini-2.0-flash',
-    ],
-    needsKey: false,
-    showBaseURL: true,
-    builtin: true,
-  },
   omniroute: {
     name: 'OmniRoute',
     icon: '⚡',
@@ -143,66 +17,31 @@ const BUILTIN_PROVIDERS = {
     keyLabel: 'OmniRoute API Key',
     baseURL: 'http://127.0.0.1:20128/v1/chat/completions',
     models: [
+      'openrouter/free',
+      'auto/best-free',
+      'auto/coding:free',
+      'auto/best-chat',
       'auto/best-coding-fast',
-      'auto/best-coding',
-      'auto/best-reasoning',
-      'gemini-3.5-flash',
-      'gemini-3.5-flash-thinking',
-      'gemini-3.1-pro',
-      'gemini-auto',
-      'gemini-3.5-flash-thinking-lite',
-      'gemini-flash-lite',
-      'gpt-4o-mini',
-      'claude-sonnet-4-5',
-      'tencent/hy3',
-      'hy3',
     ],
     needsKey: true,
     showBaseURL: true,
     builtin: true,
   },
-  'gemini-web2api': {
-    name: 'Gemini Web2API',
-    icon: '✧',
-    keyPlaceholder: '(no key needed)',
-    keyLabel: 'API Key (optional)',
-    baseURL: '/api/chat',
+  openrouter: {
+    name: 'OpenRouter (free)',
+    icon: '⇄',
+    keyPlaceholder: 'sk-or-v1-…',
+    keyLabel: 'OpenRouter API Key',
+    baseURL: 'https://openrouter.ai/api/v1/chat/completions',
     models: [
-      'gemini-3.5-flash',
-      'gemini-3.5-flash-thinking',
-      'gemini-3.1-pro',
-      'gemini-auto',
-      'gemini-3.5-flash-thinking-lite',
-      'gemini-flash-lite',
+      'z-ai/glm-5.2:free',
+      'minimax/minimax-m3:free',
+      'poolside/laguna-s-2.1:free',
+      'nvidia/nemotron-3-super-120b-a12b:free',
+      'google/gemma-4-31b-it:free',
+      'thinkingmachines/inkling:free',
     ],
-    needsKey: false,
-    showBaseURL: true,
-    builtin: true,
-  },
-  nous: {
-    name: 'Hermes',
-    icon: '✦',
-    keyPlaceholder: '(managed)',
-    keyLabel: 'Nous API Key',
-    baseURL: 'https://inference-api.nousresearch.com/v1/chat/completions',
-    models: [
-      'openrouter/owl-alpha',
-      'openrouter/anthropic/claude-3.5-sonnet',
-      'openrouter/openai/gpt-4o',
-      'openrouter/google/gemini-2.0-flash-001',
-    ],
-    needsKey: false,
-    showBaseURL: false,
-    builtin: true,
-  },
-  opencode: {
-    name: 'OpenCode Zen',
-    icon: '⌁',
-    keyPlaceholder: '(optional — free models need no key)',
-    keyLabel: 'OpenCode Zen API Key (optional)',
-    baseURL: 'https://opencode.ai/zen/v1/chat/completions',
-    models: ['big-pickle', 'minimax-m2.5-free', 'deepseek-v4-flash-free', 'nemotron-3-super-free'],
-    needsKey: false,
+    needsKey: true,
     showBaseURL: false,
     builtin: true,
   },
@@ -296,19 +135,27 @@ const obfuscate = (key) => btoa(key.split('').reverse().join(''));
 const deobfuscate = (enc) => { try { return atob(enc).split('').reverse().join(''); } catch { return ''; } };
 
 // ── Config accessors ────────────────────────────────────────────────────────
+const DEFAULT_CONFIG = { provider: 'omniroute', model: 'openrouter/free', key: 'omniroute', endpoint: '' };
+
 export function loadAIConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { provider: 'omniroute', model: 'auto/best-coding-fast', key: 'omniroute' };
+    if (!raw) return { ...DEFAULT_CONFIG };
     const parsed = JSON.parse(raw);
+    const storedProvider = parsed.provider;
+    // Migrate any stored provider that is not one of the two remaining builtins.
+    // Unknown/deleted providers (not in the current builtins) fall
+    // back to the omniroute default. Keep the user's key only if the provider still matches.
+    const isValid = storedProvider === 'omniroute' || storedProvider === 'openrouter';
+    if (!isValid) return { ...DEFAULT_CONFIG };
     return {
-      provider: parsed.provider || 'omniroute',
-      model:    parsed.model    || 'auto/best-coding-fast',
+      provider: storedProvider,
+      model:    parsed.model    || 'openrouter/free',
       key:      parsed.key ? deobfuscate(parsed.key) : 'omniroute',
       endpoint: parsed.endpoint || '',
     };
   } catch {
-    return { provider: 'omniroute', model: 'auto/best-coding-fast', key: 'omniroute' };
+    return { ...DEFAULT_CONFIG };
   }
 }
 
@@ -322,15 +169,14 @@ export function saveAIConfig({ provider, model, key, endpoint }) {
 }
 
 export function getProviderDef(pid) {
-  return PROVIDERS[pid] || PROVIDERS['gemini-web2api'];
+  return PROVIDERS[pid] || BUILTIN_PROVIDERS.omniroute;
 }
 
 // ── Model aliases ──────────────────────────────────────────────────
 // Maps user-friendly pseudo-model IDs to real provider model IDs.
-// e.g. 'openrouter:free' is OpenRouter's UI shorthand but NOT a valid
-// API slug — alias it to a real free-tier model so it doesn't 404.
+// Kept as an identity-safe passthrough for backward compatibility — no
+// fake slugs are aliased any more. Other files import this function.
 export const MODEL_ALIASES = {
-  'openrouter:free': 'meta-llama/llama-3.3-70b-instruct:free',
   'openrouter/auto': 'openrouter/auto',
 };
 
@@ -344,7 +190,7 @@ export function resolveModelAlias(model) {
  * Always starts with the preferred provider, then alternates through fallbacks.
  */
 export function getProviderFallbackOrder(preferred) {
-  const all = ['omniroute', 'openrouter', 'nous'];
+  const all = ['omniroute', 'openrouter'];
   if (!preferred) return all;
   // Put preferred first, then the rest in order
   const rest = all.filter(p => p !== preferred);
@@ -360,8 +206,95 @@ export function resolveAPIKey(pid) {
   const cfg = loadAIConfig();
   if (cfg.provider === pid && cfg.key) return cfg.key;
   // Legacy fallbacks
-  if (pid === 'anthropic') {
-    return localStorage.getItem('lg-api-key') || localStorage.getItem('lg-key-anthropic') || '';
-  }
   return localStorage.getItem(`lg-key-${pid}`) || '';
+}
+
+/**
+ * Resolve the chat-completions endpoint for a provider.
+ * - openrouter → its absolute baseURL.
+ * - omniroute  → '/api/chat' (same-origin serverless proxy) when the page is
+ *                served over HTTPS (avoids mixed-content blocking); otherwise
+ *                the local gateway URL. A user-entered custom Base URL is
+ *                honoured when saved. Endpoint is computed from the provider
+ *                definition, never read straight from baseURL by callers.
+ * Always returns a string.
+ */
+export function resolveEndpoint(pid, providerDef) {
+  const def = providerDef || getProviderDef(pid);
+  if (pid === 'openrouter') {
+    return def?.baseURL || 'https://openrouter.ai/api/v1/chat/completions';
+  }
+  // omniroute (and any custom via saved endpoint)
+  const cfg = loadAIConfig();
+  if (cfg.endpoint) return cfg.endpoint;
+  if (typeof location !== 'undefined' && location.protocol === 'https:') {
+    return '/api/chat';
+  }
+  return def?.baseURL || 'http://127.0.0.1:20128/v1/chat/completions';
+}
+
+/**
+ * Send a tiny 1-token "ping" chat request to verify the connection.
+ * Never throws — always resolves { ok:true, model } or
+ * { ok:false, status, message } with a readable message for the common
+ * failure modes (mixed content, 401, 404, 429, network errors).
+ */
+export async function testConnection({ provider, model, key, endpoint }) {
+  try {
+    // Guard: browser-side calls from an HTTPS page must not hit a plain-http
+    // absolute endpoint (mixed content) — surface a readable error instead.
+    if (
+      typeof location !== 'undefined' &&
+      location.protocol === 'https:' &&
+      endpoint &&
+      endpoint.startsWith('http://')
+    ) {
+      return { ok: false, status: 0, message: 'Blocked by the browser as mixed content (HTTPS page cannot call http://). Use the built-in /api/chat proxy.' };
+    }
+
+    const url = endpoint || '/api/chat';
+    const headers = { 'Content-Type': 'application/json' };
+    if (key) headers['Authorization'] = `Bearer ${key}`;
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model,
+        provider,
+        max_tokens: 1,
+        temperature: 0,
+        stream: false,
+        messages: [{ role: 'user', content: 'ping' }],
+      }),
+    });
+
+    if (resp.ok) {
+      return { ok: true, model };
+    }
+
+    let detail = resp.statusText;
+    try {
+      const data = await resp.json();
+      detail = data?.error?.message || data?.error || detail;
+    } catch {
+      /* keep statusText */
+    }
+
+    let message;
+    const status = resp.status;
+    if (status === 401 || status === 403) {
+      message = 'Invalid or missing API key (401). Check the key and try again.';
+    } else if (status === 404) {
+      message = `Model or endpoint not found (404). Verify the model ID${detail ? `: ${detail}` : ''}.`;
+    } else if (status === 429) {
+      message = 'Rate limited (429). Retry shortly.';
+    } else {
+      message = `Upstream error ${status}${detail ? `: ${detail}` : ''}`;
+    }
+
+    return { ok: false, status, message };
+  } catch (err) {
+    return { ok: false, status: 0, message: err?.message || String(err) };
+  }
 }

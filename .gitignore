@@ -32,3 +32,7 @@ lg_probe.mjs
 lg_verify_mobile.mjs
 test_omniroute.js
 lg-verify-report.json
+
+# agent verification probes (local only, not shipped)
+probe_*.cjs
+lg_ai_e2e.cjs

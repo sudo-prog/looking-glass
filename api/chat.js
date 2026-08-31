@@ -27,21 +27,20 @@ function newRequestId() {
 // Map the app's short model names to OmniRoute virtual models.
 // Every value uses OmniRoute's auto-routing models — no paid model is ever selected.
 const OMNIRUTE_MODEL_MAP = {
+  'auto/best-free': 'auto/best-free',
+  'auto/coding:free': 'auto/coding:free',
+  'auto/best-chat': 'auto/best-chat',
   'auto/best-coding-fast': 'auto/best-coding-fast',
   'auto/best-coding': 'auto/best-coding',
   'auto/best-reasoning': 'auto/best-reasoning',
-  'gemini-3.5-flash': 'auto/best-coding-fast',
-  'gemini-3.5-flash-thinking': 'auto/best-reasoning',
-  'gemini-3.1-pro': 'auto/best-reasoning',
-  'gemini-auto': 'auto/best-coding',
-  'gemini-3.5-flash-thinking-lite': 'auto/best-coding-fast',
-  'gemini-flash-lite': 'auto/best-coding-fast',
-  'gpt-4o-mini': 'auto/best-coding-fast',
-  'claude-sonnet-4-5': 'auto/best-reasoning',
-  'tencent/hy3': 'auto/best-coding-fast',
-  'hy3': 'auto/best-coding-fast',
 };
-const DEFAULT_OMNIRUTE_MODEL = 'auto/best-coding-fast';
+const DEFAULT_OMNIRUTE_MODEL = 'auto/best-free';
+
+// OpenRouter free-tier model map — only valid :free slugs. Paid models are
+// never sent upstream. If the model is already a valid :free slug it passes
+// through unchanged.
+const OPENROUTER_MODEL_MAP = {};
+const DEFAULT_FREE_MODEL = 'z-ai/glm-5.2:free';
 
 export default function handler(req, res) {
   const requestId = req.headers?.['x-request-id'] || newRequestId();
@@ -61,7 +60,7 @@ export default function handler(req, res) {
       return res.status(400).json({ error: 'Invalid JSON body' });
     }
 
-    const { model, messages } = body || {};
+    const { model, messages, provider: bodyProvider } = body || {};
     if (!model) {
       return res.status(400).json({ error: 'Missing model' });
     }
@@ -70,42 +69,49 @@ export default function handler(req, res) {
     }
 
     // Resolve upstream. Priority order (all env-driven, server-side only):
-    //   1. OmniRoute (LLM_BASE_URL + LLM_API_KEY) — primary, local gateway
-    //   2. OpenRouter (OPENROUTER_API_KEY) — fallback
-    //   3. Google native OpenAI-compat (GEMINI_API_KEY)
-    //   4. Legacy cookie-scraper web2api (GEMINI_WEB2API_URL)
+    //   1. If the client explicitly requests openrouter, route there (if key exists).
+    //   2. OmniRoute (LLM_BASE_URL + LLM_API_KEY) — primary, local gateway
+    //   3. OpenRouter (OPENROUTER_API_KEY) — fallback
     const omnirouteUrl = process.env.LLM_BASE_URL;
     const omnirouteKey = process.env.LLM_API_KEY;
     const openrouterKey = process.env.OPENROUTER_API_KEY;
-    const geminiKey = process.env.GEMINI_API_KEY;
-    const web2apiUrl = process.env.GEMINI_WEB2API_URL;
-    const web2apiKey = process.env.GEMINI_WEB2API_KEY;
 
     let endpoint;
     let authHeader = null;
     const extraHeaders = {};
     let modelForRequest = model;
-    
+    let resolvedProvider = null;
+
+    // 0. Client-explicit openrouter upstream
+    if (bodyProvider === 'openrouter' && openrouterKey) {
+      endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+      authHeader = `Bearer ${openrouterKey}`;
+      extraHeaders['HTTP-Referer'] = 'https://looking-glass-eta.vercel.app';
+      extraHeaders['X-Title'] = 'Looking Glass AI';
+      // Only allow valid :free slugs or auto-map — never paid models
+      modelForRequest = model?.endsWith(':free') || model?.startsWith('auto/')
+        ? model
+        : (OPENROUTER_MODEL_MAP[model] || DEFAULT_FREE_MODEL);
+      resolvedProvider = 'openrouter';
     // 1. OmniRoute (primary)
-    if (omnirouteUrl && omnirouteKey) {
+    } else if (omnirouteUrl && omnirouteKey) {
       endpoint = omnirouteUrl;
       authHeader = `Bearer ${omnirouteKey}`;
       modelForRequest = model?.startsWith('auto/') ? model : (OMNIRUTE_MODEL_MAP[model] || DEFAULT_OMNIRUTE_MODEL);
+      resolvedProvider = 'omniroute';
+    // 2. OpenRouter (fallback)
     } else if (openrouterKey) {
       endpoint = 'https://openrouter.ai/api/v1/chat/completions';
       authHeader = `Bearer ${openrouterKey}`;
       extraHeaders['HTTP-Referer'] = 'https://looking-glass-eta.vercel.app';
       extraHeaders['X-Title'] = 'Looking Glass AI';
-      modelForRequest = model?.endsWith(':free') ? model : (OPENROUTER_MODEL_MAP[model] || DEFAULT_FREE_MODEL);
-    } else if (geminiKey) {
-      endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-      authHeader = `Bearer ${geminiKey}`;
-    } else if (web2apiUrl) {
-      endpoint = `${web2apiUrl.replace(/\/$/, '')}/v1/chat/completions`;
-      if (web2apiKey) authHeader = `Bearer ${web2apiKey}`;
+      modelForRequest = model?.endsWith(':free') || model?.startsWith('auto/')
+        ? model
+        : (OPENROUTER_MODEL_MAP[model] || DEFAULT_FREE_MODEL);
+      resolvedProvider = 'openrouter';
     } else {
       logError('ai_chat_no_upstream', requestId, new Error('No AI upstream configured'), {});
-      return res.status(503).json({ error: 'AI not configured (set LLM_BASE_URL and LLM_API_KEY for OmniRoute)' });
+      return res.status(503).json({ error: 'AI not configured (set LLM_BASE_URL and LLM_API_KEY for OmniRoute, or OPENROUTER_API_KEY for OpenRouter)' });
     }
 
     const headers = {
@@ -130,19 +136,29 @@ export default function handler(req, res) {
       }).then(async (r) => {
         if (!r.ok) {
           const detail = await r.text().catch(() => '');
-          // 429 (rate-limit) / 5xx are often transient on the free Gemini web endpoint.
+          // 429 / 5xx may be transient — retry up to retriesLeft times
           if ((r.status === 429 || r.status >= 500) && retriesLeft > 0) {
             await new Promise((res) => setTimeout(res, 1200));
             return callUpstream(retriesLeft - 1);
           }
+          // Surface real upstream status + readable error to the client
+          let readableError;
+          try {
+            const parsed = JSON.parse(detail);
+            readableError = parsed?.error?.message || parsed?.error || detail || r.statusText;
+          } catch {
+            readableError = detail || r.statusText;
+          }
           logError('ai_chat_upstream_error', requestId, new Error('upstream non-2xx'), {
             status: r.status,
+            provider: resolvedProvider,
             detailLength: detail?.length ?? 0,
-            model,
+            model: modelForRequest,
           });
-          return res.status(r.status === 429 ? 502 : r.status).json({
-            error: r.status === 429 ? 'AI provider rate-limited (retry shortly)' : 'Gemini Web2API error',
+          return res.status(r.status).json({
+            error: `${resolvedProvider || 'upstream'} error ${r.status}: ${readableError}`,
             status: r.status,
+            provider: resolvedProvider,
           });
         }
         return r.json();

@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, GearSix, Sun, Moon, Trash, Download, Sparkle, Palette, Eye, Image, TextT, Upload } from '@phosphor-icons/react';
 import { toggleTheme, isDark } from '../utils/theme';
-import { getProviders, loadAIConfig, saveAIConfig, getProviderDef } from '../utils/aiConfig.js';
+import { loadAIConfig, saveAIConfig, getProviderDef, resolveEndpoint, testConnection } from '../utils/aiConfig.js';
 import { loadThemeConfig, saveThemeConfig, applyThemeConfig, THEME_DEFAULTS, getThicknessRadius } from '../utils/themeConfig.js';
 
 const ICON_POOL = [
@@ -27,11 +27,13 @@ const ICON_POOL = [
 
 export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
   const [dark, setDark] = useState(isDark());
-  const [aiProvider, setAiProvider] = useState('openai');
+  const [aiProvider, setAiProvider] = useState('omniroute');
   const [aiKey, setAiKey] = useState('');
   const [aiEndpoint, setAiEndpoint] = useState('');
   const [aiModel, setAiModel] = useState('');
   const [customModel, setCustomModel] = useState('');
+  const [testStatus, setTestStatus] = useState('idle'); // 'idle' | 'pending' | 'ok' | 'error'
+  const [testResult, setTestResult] = useState(null);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState('theme');
 
@@ -123,6 +125,8 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
     setRemovedIcons(tc.removedIcons || []);
     setDark(isDark());
     setSaved(false);
+    setTestStatus('idle');
+    setTestResult(null);
   }, [isOpen]);
 
   // ── Save all ──
@@ -211,6 +215,33 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
       location.reload();
     }
   }, []);
+
+  // ── Test connection handler ──
+  const handleTestConnection = useCallback(async () => {
+    const p = getProviderDef(aiProvider);
+    const modelToTest = aiModel === 'custom' || (!p.models.includes(aiModel)) ? customModel : aiModel;
+    const endpoint = resolveEndpoint(aiProvider, p);
+    setTestStatus('pending');
+    setTestResult(null);
+    try {
+      const result = await testConnection({
+        provider: aiProvider,
+        model: modelToTest || p.models[0],
+        key: aiKey,
+        endpoint,
+      });
+      if (result.ok) {
+        setTestStatus('ok');
+        setTestResult({ model: result.model });
+      } else {
+        setTestStatus('error');
+        setTestResult({ status: result.status, message: result.message });
+      }
+    } catch (err) {
+      setTestStatus('error');
+      setTestResult({ status: 0, message: err.message });
+    }
+  }, [aiProvider, aiModel, aiKey, customModel]);
 
   const handleExportAll = useCallback(() => {
     window.dispatchEvent(new CustomEvent('lg-export'));
@@ -490,25 +521,35 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
 
           {activeTab === 'ai' && (
             <SettingsSection title="AI ASSISTANT">
+              {/* Provider selector — exactly two choices */}
               <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', padding: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', flexWrap: 'wrap', overflowX: 'auto' }}>
-                {Object.entries(getProviders()).map(([pid, p]) => (
-                  <button key={pid} onClick={() => { setAiProvider(pid); setAiModel(getProviders()[pid].models[0]); setCustomModel(''); }}
-                    style={{ flex: '1 1 40%', minHeight: '44px', minWidth: '44px', background: pid === aiProvider ? 'rgba(255,255,255,0.10)' : 'none', border: 'none', borderRadius: '9px', padding: '5px 6px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: '10px', fontWeight: pid === aiProvider ? 600 : 400, color: pid === aiProvider ? 'rgba(238,238,248,0.90)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {p.icon}{p.name}
+                {[
+                  { id: 'omniroute', label: 'OmniRoute' },
+                  { id: 'openrouter', label: 'OpenRouter (free)' },
+                ].map(({ id, label }) => (
+                  <button key={id} onClick={() => { setAiProvider(id); setAiModel(getProviderDef(id).models[0]); setCustomModel(''); setTestStatus('idle'); setTestResult(null); }}
+                    style={{ flex: '1 1 40%', minHeight: '44px', minWidth: '44px', background: id === aiProvider ? 'rgba(255,255,255,0.10)' : 'none', border: 'none', borderRadius: '9px', padding: '5px 6px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: '10px', fontWeight: id === aiProvider ? 600 : 400, color: id === aiProvider ? 'rgba(238,238,248,0.90)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {label}
                   </button>
                 ))}
               </div>
+
+              {/* Model select */}
               <div style={{ marginTop: '8px' }}><span style={sLabel}>Model</span>
-                <select value={aiModel} onChange={e => { setAiModel(e.target.value); if (e.target.value === 'custom') setCustomModel(''); }} style={selStyle}>
+                <select value={aiModel} onChange={e => { setAiModel(e.target.value); if (e.target.value === 'custom') setCustomModel(''); setTestStatus('idle'); setTestResult(null); }} style={selStyle}>
                   {(providerDef?.models || []).map(m => <option key={m} value={m}>{m}</option>)}
                   <option value="custom">Custom model ID…</option>
                 </select>
               </div>
+
+              {/* Custom model input */}
               {(aiModel === 'custom' || (providerDef && !providerDef.models.includes(aiModel))) && (
                 <div style={{ marginTop: '8px' }}><span style={sLabel}>Custom model ID</span>
-                  <input type="text" placeholder="e.g. llama-3.3-70b-versatile" value={customModel} onChange={e => setCustomModel(e.target.value)} style={textInputStyle} />
+                  <input type="text" placeholder="e.g. z-ai/glm-5.2:free" value={customModel} onChange={e => setCustomModel(e.target.value)} style={textInputStyle} />
                 </div>
               )}
+
+              {/* API Key */}
               {providerDef?.needsKey !== false && (
                 <div style={{ marginTop: '10px' }}><span style={sLabel}>{providerDef?.keyLabel || 'API Key'}</span>
                   <input type="password" value={aiKey} onChange={e => setAiKey(e.target.value)} placeholder={providerDef?.keyPlaceholder || 'Enter API key'} style={textInputStyle} />
@@ -517,11 +558,48 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                   </div>
                 </div>
               )}
-              {aiProvider === 'ollama' && (
-                <div style={{ marginTop: '10px' }}><span style={sLabel}>Endpoint</span>
-                  <input type="text" value={aiEndpoint} onChange={e => setAiEndpoint(e.target.value)} placeholder="http://localhost:11434" style={textInputStyle} />
+
+              {/* Base URL (omniroute only) */}
+              {providerDef?.showBaseURL && (
+                <div style={{ marginTop: '10px' }}><span style={sLabel}>Base URL</span>
+                  <input type="text" value={aiEndpoint} onChange={e => setAiEndpoint(e.target.value)} placeholder="http://127.0.0.1:20128/v1/chat/completions" style={textInputStyle} />
+                  <div style={{ fontSize: '10px', color: '#888', marginTop: '4px' }}>
+                    Leave blank for default. On HTTPS sites, calls are proxied through /api/chat automatically.
+                  </div>
                 </div>
               )}
+
+              {/* Test connection */}
+              <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button
+                  onClick={handleTestConnection}
+                  disabled={testStatus === 'pending'}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    minHeight: '44px', minWidth: '44px', padding: '8px 16px',
+                    borderRadius: '10px', border: '1px solid var(--color-border)',
+                    background: testStatus === 'pending' ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.06)',
+                    color: 'var(--text-primary)', cursor: testStatus === 'pending' ? 'wait' : 'pointer',
+                    fontFamily: "'DM Sans',sans-serif", fontSize: '12px', fontWeight: 500,
+                  }}
+                >
+                  {testStatus === 'pending' ? (
+                    <><span className="lg-orb-dots" style={{ display: 'inline-flex', gap: 3 }}><span /><span /><span /></span> Testing…</>
+                  ) : (
+                    <>⚡ Test connection</>
+                  )}
+                </button>
+                {testStatus === 'ok' && testResult && (
+                  <div style={{ fontSize: '11px', color: '#22c55e', padding: '6px 10px', borderRadius: '8px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                    ✓ Connected · {testResult.model}
+                  </div>
+                )}
+                {testStatus === 'error' && testResult && (
+                  <div style={{ fontSize: '11px', color: '#ef4444', padding: '6px 10px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    ✗ {testResult.status ? `${testResult.status} ` : ''}{testResult.message}
+                  </div>
+                )}
+              </div>
             </SettingsSection>
           )}
 

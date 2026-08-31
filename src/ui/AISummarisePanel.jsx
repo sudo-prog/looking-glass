@@ -53,7 +53,7 @@ import {
 // AI API CALL
 // ─────────────────────────────────────────────────────────────
 
-import { loadAIConfig, getProviderDef, resolveModelAlias } from '../utils/aiConfig.js';
+import { loadAIConfig, getProviderDef, resolveModelAlias, resolveEndpoint } from '../utils/aiConfig.js';
 
 // ─────────────────────────────────────────────────────────────
 // AI API CALL
@@ -70,54 +70,7 @@ async function callAI(messages, { signal } = {}) {
     throw new Error(`No API key found for ${provider.name}. Open Settings → AI Assistant.`);
   }
 
-  // ── Anthropic Messages API ──────────────────────────────────────
-  if (config.provider === 'anthropic') {
-    const resp = await fetch(provider.baseURL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1024,
-        system: 'You are a concise assistant that summarises and organises saved web items.',
-        messages,
-      }),
-      signal,
-    });
-    if (!resp.ok) {
-      const err = await resp.text().catch(() => resp.statusText);
-      throw new Error(`AI API error ${resp.status}: ${err}`);
-    }
-    const data = await resp.json();
-    return data.content?.[0]?.text || '';
-  }
-
-  // ── Google Gemini ───────────────────────────────────────────────
-  if (config.provider === 'google') {
-    const url = provider.baseURL.replace('{model}', model) + (key ? `?key=${key}` : '');
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: 'You are a concise assistant that summarises and organises saved web items.' }] },
-        contents: messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
-        generationConfig: { maxOutputTokens: 1024, temperature: 0.3 },
-      }),
-      signal,
-    });
-    if (!resp.ok) {
-      const err = await resp.text().catch(() => resp.statusText);
-      throw new Error(`AI API error ${resp.status}: ${err}`);
-    }
-    const data = await resp.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  }
-
-  // ── OpenAI-compatible (OpenRouter / OpenAI / Ollama / LiteLLM / Nous / gemini-web2api) ──
+  // ── OpenAI-compatible path (omniroute and openrouter) ──────────
   const headers = { 'Content-Type': 'application/json' };
   if (key) headers['Authorization'] = `Bearer ${key}`;
   if (config.provider === 'openrouter') {
@@ -125,10 +78,11 @@ async function callAI(messages, { signal } = {}) {
     headers['X-Title'] = 'Looking Glass';
   }
 
-  const resp = await fetch(provider.baseURL, {
+  const url = resolveEndpoint(config.provider, provider);
+  const resp = await fetch(url, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ model, max_tokens: 1024, temperature: 0.3, messages }),
+    body: JSON.stringify({ model, max_tokens: 1024, temperature: 0.3, stream: false, messages }),
     signal,
   });
 

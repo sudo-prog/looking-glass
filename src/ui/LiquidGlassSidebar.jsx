@@ -169,7 +169,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
   useEffect(() => {
     const cfg = loadThemeConfig();
     const order = cfg.menuIconOrder || [];
-    setMenuIcons(order);
+    setMenuIcons(order.filter(id => id !== 'settings'));
   }, []);
 
   // Listen for theme changes

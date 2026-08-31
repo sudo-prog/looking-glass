@@ -1,15 +1,13 @@
 /**
  * LOOKING GLASS — Liquid AI Orb
  * A floating glass orb at the bottom center of the screen.
- * First click shows centered floating setup dialog (API key + model).
  * After setup, opens the pill then full AI chat.
  * Uses the shared AI config from aiConfig.js (same key as SettingsPanel).
- * Supports ALL providers: OpenRouter, Anthropic, OpenAI, Gemini, Groq, Ollama, LiteLLM
- * + custom model IDs for any provider.
+ * Chat-only: all provider/model/key configuration lives in SettingsPanel.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getProviders, loadAIConfig, saveAIConfig, getProviderDef, addCustomProvider, removeCustomProvider, refreshProviders, resolveModelAlias } from '../utils/aiConfig.js';
-import { initDebugLog, addDebugEntry, getDebugLog, clearDebugLog, downloadDebugLog, copyDebugLog, onDebugLogChange } from '../utils/debugLog.js';
+import { loadAIConfig, getProviderDef, resolveModelAlias, resolveEndpoint } from '../utils/aiConfig.js';
+import { initDebugLog, getDebugLog, clearDebugLog, downloadDebugLog, copyDebugLog, onDebugLogChange, addDebugEntry } from '../utils/debugLog.js';
 import './LiquidOrb.css';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -58,7 +56,7 @@ EVAL — execute JavaScript in the page context to fix any issue:
   Use for: removing stuck elements, fixing state, clearing timers, resetting UI.
 
 PATCH_SOURCE — commit a source code fix to GitHub (permanent fix):
-  {"type":"PATCH_SOURCE","file":"src/ui/LiquidOrb.jsx","find":"const [logs, setLogs] = useState([])","replace":"const [logs, setLogs] = useState([]);\n  // Auto-clear logs after 5s\n  useEffect(() => { const t = setInterval(()=>setLogs(p=>p.slice(0,2)), 5000); return ()=>clearInterval(t); }, []);"}
+  {"type":"PATCH_SOURCE","file":"src/ui/LiquidOrb.jsx","find":"const [logs, setLogs] = useState([])","replace":"const [logs, setLogs] = useState([]);\\n  // Auto-clear logs after 5s\\n  useEffect(() => { const t = setInterval(()=>setLogs(p=>p.slice(0,2)), 5000); return ()=>clearInterval(t); }, []);"}
   repo: "sudo-prog/looking-glass" (default). Supports: LiquidOrb.jsx, aiConfig.js, etc.
 
 ━━━ RULES ━━━
@@ -73,13 +71,11 @@ PATCH_SOURCE — commit a source code fix to GitHub (permanent fix):
 
 // ═══════════════════════════════════════════════════════════════════
 //  CHAT MODE SYSTEM PROMPT — general conversational assistant
-//  Used when the user toggles out of "edit UI" mode. No JSON mutation
-//  plans; just natural-language help.
 // ═══════════════════════════════════════════════════════════════════
 const SYS_CHAT = `You are the AI assistant for "Looking Glass" — a visual bookmarking and note-taking app. Help the user with general questions, explanations, and advice about their saved items, the app, or anything else they ask. Respond in natural, helpful prose. Do NOT emit JSON mutation plans or rewrite the UI unless the user explicitly asks you to. Be concise and friendly.`;
 
 // ═══════════════════════════════════════════════════════════════════
-//  MULTI-PROVIDER AI CALLER
+//  MULTI-PROVIDER AI CALLER (omniroute + openrouter only)
 // ═══════════════════════════════════════════════════════════════════
 async function callAI(userMsg, snapshot, mode) {
   const cfg = loadAIConfig();
@@ -89,8 +85,8 @@ async function callAI(userMsg, snapshot, mode) {
   const model = resolveModelAlias(cfg.model);
   const systemPrompt = mode === 'chat' ? SYS_CHAT : SYS;
 
-  if (!model) throw new Error(`No model selected — configure AI in settings`);
-  if (p.needsKey && !key) throw new Error(`No API key — add your ${p.name} key in settings`);
+  if (!model) throw new Error(`No model selected — configure AI in Settings → AI Assistant`);
+  if (p.needsKey && !key) throw new Error(`No API key — add your ${p.name} key in Settings → AI Assistant`);
 
   const prompt = mode === 'chat'
     ? userMsg
@@ -107,41 +103,8 @@ async function callAI(userMsg, snapshot, mode) {
     }
   };
 
-  // ── Anthropic Messages API ───────────────────────────────────────
-  if (pid === 'anthropic') {
-    const r = await fetch(p.baseURL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({ model, max_tokens: 2000, system: systemPrompt, messages: [{ role: 'user', content: prompt }] })
-    });
-    if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text().catch(() => ''))}`);
-    const d = await r.json();
-    return finalize(d.content?.map(b => b.text || '').join('') || '');
-  }
-
-  // ── Google Gemini ────────────────────────────────────────────────
-  if (pid === 'google') {
-    const url = p.baseURL.replace('{model}', model) + `?key=${key}`;
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 2000, temperature: 0.3 },
-      })
-    });
-    if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text().catch(() => ''))}`);
-    const d = await r.json();
-    return finalize(d.candidates?.[0]?.content?.parts?.[0]?.text || '');
-  }
-
-  // ── OpenAI-compatible: OpenAI / Groq / OpenRouter / Ollama / LiteLLM ────
+  // ── OpenAI-compatible: OmniRoute / OpenRouter ───────────────────
+  const endpoint = resolveEndpoint(pid, p);
   const headers = { 'Content-Type': 'application/json' };
   if (key) headers['Authorization'] = `Bearer ${key}`;
   if (pid === 'openrouter') {
@@ -149,13 +112,14 @@ async function callAI(userMsg, snapshot, mode) {
     headers['X-Title'] = 'Looking Glass';
   }
 
-  const r = await fetch(p.baseURL, {
+  const r = await fetch(endpoint, {
     method: 'POST',
     headers,
     body: JSON.stringify({
       model,
       max_tokens: 2000,
       temperature: 0.3,
+      stream: false,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt },
@@ -305,29 +269,19 @@ const ORB_LENS = {
 
 export default function LiquidOrb() {
   const [phase, setPhase] = useState('orb'); // 'orb' | 'pill' | 'chat'
-  const [showSetup, setShowSetup] = useState(false); // centered setup dialog
   const [thinking, setThinking] = useState(false);
   const [thinkLabel, setThinkLabel] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [mutPreview, setMutPreview] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [activeAction, setActiveAction] = useState(null);
-  const [chatMode, setChatMode] = useState('chat'); // 'edit' | 'chat' — default conversational so users can ask questions; toggle to Edit UI for fixes
+  const [chatMode, setChatMode] = useState('chat'); // 'edit' | 'chat'
   const [draft, setDraft] = useState('');
   const [debugMode, setDebugMode] = useState(false);
   const [logs, setLogs] = useState([]);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [showDebugLog, setShowDebugLog] = useState(false);
   const [dbgEntries, setDbgEntries] = useState([]);
 
-
-  // Settings state — read from shared config
-  const [cfgProvider, setCfgProvider] = useState('openrouter');
-  const [cfgModel, setCfgModel] = useState('');
-  const [cfgKey, setCfgKey] = useState('');
-  const [customModel, setCustomModel] = useState('');
-  const [showKey, setShowKey] = useState(false);
-  const [cfgStatus, setCfgStatus] = useState('');
   const [isConfigured, setIsConfigured] = useState(() => {
     try {
       const cfg = loadAIConfig();
@@ -335,13 +289,6 @@ export default function LiquidOrb() {
       return !!(cfg.provider && cfg.model && (!p.needsKey || cfg.key));
     } catch { return false; }
   });
-  // Custom provider add form
-  const [showAddProvider, setShowAddProvider] = useState(false);
-  const [newProviderName, setNewProviderName] = useState('');
-  const [newProviderIcon, setNewProviderIcon] = useState('');
-  const [newProviderURL, setNewProviderURL] = useState('');
-  const [newProviderModels, setNewProviderModels] = useState('');
-  const [newProviderNeedsKey, setNewProviderNeedsKey] = useState(true);
 
   const orbRef = useRef(null);
   const fdefsRef = useRef(null);
@@ -404,19 +351,12 @@ export default function LiquidOrb() {
   // ── Load shared config on mount & check if configured ────────────
   useEffect(() => {
     const cfg = loadAIConfig();
-    setCfgProvider(cfg.provider);
-    setCfgModel(cfg.model);
-    setCfgKey(cfg.key);
-    setCustomModel(cfg.model);
-    // Check if we have a model and key (if needed)
     const p = getProviderDef(cfg.provider);
-    const hasConfig = !!cfg.model && (!p.needsKey || !!cfg.key);
-    setIsConfigured(hasConfig);
+    setIsConfigured(!!cfg.model && (!p.needsKey || !!cfg.key));
   }, []);
 
   // ── Mutation log helper ──────────────────────────────────────────
   const logMut = useCallback((type, text) => {
-    // Suppress "No element" noise from AI trying to patch non-existent selectors
     if (text.startsWith('No element:')) return;
 
     const icons = { add: '✦', rm: '✕', fix: '⬡', sty: '◈', info: '◎' };
@@ -426,10 +366,11 @@ export default function LiquidOrb() {
       return next.slice(0, 4);
     });
 
-    // Auto-dismiss after 4 seconds
     setTimeout(() => {
       setLogs(prev => prev.filter(l => l.id !== id));
     }, 4000);
+
+    addDebugEntry(type === 'info' ? 'info' : 'mutation', 'orb', text);
   }, []);
 
   // ── Orb tap handler ──────────────────────────────────────────────
@@ -445,9 +386,9 @@ export default function LiquidOrb() {
     springRef.current.target = 0;
     setTimeout(() => { springRef.current.target = ORB_LENS.depth; }, 80);
 
-    // Check if configured — if not, show setup dialog
     if (!isConfigured) {
-      setTimeout(() => setShowSetup(true), 200);
+      // Show chat with inline "not configured" message — no settings UI
+      setTimeout(() => setPhase('pill'), 200);
     } else {
       setTimeout(() => setPhase('pill'), 200);
     }
@@ -464,85 +405,6 @@ export default function LiquidOrb() {
     }
   }, []);
 
-  // ── Setup save handler ───────────────────────────────────────────────
-  const handleSaveSetup = useCallback(() => {
-    const p = getProviderDef(cfgProvider);
-    const modelToSave = cfgModel === 'custom' || (!p.models.includes(cfgModel) && cfgModel !== p.models[0])
-      ? customModel
-      : cfgModel;
-    const finalModel = modelToSave || p.models[0];
-    saveAIConfig({ provider: cfgProvider, model: finalModel, key: cfgKey });
-    setCfgModel(finalModel);
-    setCfgStatus(`✓ ${p.name} · ${finalModel}`);
-    logMut('fix', `${p.name} settings saved`);
-    setIsConfigured(true);
-    setShowSetup(false);
-    // Open the pill after setup
-    setTimeout(() => setPhase('pill'), 200);
-  }, [cfgProvider, cfgModel, cfgKey, customModel, logMut]);
-
-  const handleClearKey = useCallback(() => {
-    setCfgKey('');
-    saveAIConfig({ provider: cfgProvider, model: cfgModel, key: '' });
-    setIsConfigured(false);
-    logMut('rm', `Key cleared`);
-  }, [cfgProvider, cfgModel, logMut]);
-
-  // ── Add custom provider handler ──
-  const handleAddCustomProvider = useCallback(() => {
-    if (!newProviderName.trim() || !newProviderURL.trim()) return;
-    const models = newProviderModels.split(',').map(s => s.trim()).filter(Boolean);
-    const id = addCustomProvider({
-      name: newProviderName.trim(),
-      icon: newProviderIcon.trim() || '⊕',
-      baseURL: newProviderURL.trim(),
-      models: models.length > 0 ? models : ['custom-model'],
-      needsKey: newProviderNeedsKey,
-      showBaseURL: true,
-    });
-    // Refresh providers and switch to the new one
-    refreshProviders();
-    setCfgProvider(id);
-    setCfgModel(models.length > 0 ? models[0] : 'custom-model');
-    setCustomModel('');
-    setShowAddProvider(false);
-    setNewProviderName('');
-    setNewProviderIcon('');
-    setNewProviderURL('');
-    setNewProviderModels('');
-    setNewProviderNeedsKey(true);
-    logMut('add', `Added provider: ${newProviderName}`);
-  }, [newProviderName, newProviderIcon, newProviderURL, newProviderModels, newProviderNeedsKey, logMut]);
-
-  // ── Remove custom provider handler ──
-  const handleRemoveProvider = useCallback((pid) => {
-    if (!confirm(`Remove "${getProviders()[pid]?.name}"? This will remove it from the list.`)) return;
-    removeCustomProvider(pid);
-    // If we removed the active provider, switch to openrouter
-    if (cfgProvider === pid) {
-      setCfgProvider('gemini-web2api');
-      setCfgModel('gemini-3.5-flash');
-      setCfgKey('');
-      setCustomModel('');
-    }
-    logMut('rm', `Removed provider: ${getProviders()[pid]?.name || pid}`);
-  }, [cfgProvider, logMut]);
-
-  // ── Settings panel (in-orb) ──────────────────────────────
-  const handleSaveSettings = useCallback(() => {
-    const p = getProviderDef(cfgProvider);
-    const modelToSave = cfgModel === 'custom' || (!p.models.includes(cfgModel) && cfgModel !== p.models[0])
-      ? customModel
-      : cfgModel;
-    const finalModel = modelToSave || p.models[0];
-    saveAIConfig({ provider: cfgProvider, model: finalModel, key: cfgKey });
-    setCfgModel(finalModel);
-    setCfgStatus(`✓ ${p.name} · ${finalModel}`);
-    logMut('fix', `${p.name} settings saved`);
-    setIsConfigured(true);
-    setSettingsOpen(false);
-  }, [cfgProvider, cfgModel, cfgKey, customModel, logMut]);
-
   // ── DOM Snapshot builder ─────────────────────────────────────────
   const buildSnapshot = useCallback(() => {
     const cs = getComputedStyle(document.documentElement);
@@ -551,7 +413,6 @@ export default function LiquidOrb() {
       cssVars[v] = cs.getPropertyValue(v).trim();
     });
 
-    // Build DOM tree snapshot — list all elements with id/tag/classes
     const domTree = [];
     const walk = (el, depth) => {
       if (depth > 4) return;
@@ -564,11 +425,9 @@ export default function LiquidOrb() {
         classes: el.className && typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : undefined,
         text: el.children?.length === 0 ? (el.textContent || '').slice(0, 60) : undefined,
       };
-      // Only include if it has an id or classes (useful for targeting)
       if (entry.id || entry.classes?.length) {
         domTree.push(entry);
       }
-      // Walk children
       for (const child of el.children || []) {
         walk(child, depth + 1);
       }
@@ -588,7 +447,6 @@ export default function LiquidOrb() {
     const txt = draft.trim();
     if (!txt && attachments.length === 0) return;
 
-    // /debug toggles debug mode instead of sending
     if (/^\/debug\b/i.test(txt)) {
       setDebugMode(m => !m);
       setDraft('');
@@ -596,12 +454,11 @@ export default function LiquidOrb() {
       return;
     }
 
-    setDraft(''); // clear immediately — fixes the "text stays in box" bug
+    setDraft('');
 
     const cfg = loadAIConfig();
     if (!cfg.key && getProviderDef(cfg.provider).needsKey) {
-      setSettingsOpen(true);
-      logMut('info', `Add your ${getProviderDef(cfg.provider).name} API key first (⚙ button)`);
+      setAiResponse('AI not configured — open Settings → AI Assistant.');
       return;
     }
 
@@ -616,7 +473,6 @@ export default function LiquidOrb() {
       const result = await callAI(debugMode ? `[DEBUG MODE] ${txt}` : txt, snapshot, chatMode);
 
       setThinking(false);
-      // Show mutation preview
       setMutPreview(
         `<span class="lg-orb-op-fix">${chatMode === 'chat' ? 'RESPONSE' : 'PLAN'}</span> ${esc(result.plan)}\n\n` +
         (result.ops || []).map(op => {
@@ -635,16 +491,13 @@ export default function LiquidOrb() {
         setTimeout(() => {
           setMutPreview('');
           setAiResponse(result.plan);
-          // no more auto-collapse — chat stays open so the conversation can continue
         }, totalDelay);
       }, 700);
 
     } catch (err) {
       setThinking(false);
       setAiResponse(`⚠ ${err.message}`);
-      if (err.message.includes('key') || err.message.includes('401')) {
-        setTimeout(() => setSettingsOpen(true), 400);
-      }
+      addDebugEntry('error', 'orb.callAI', err.message);
     }
   }, [draft, debugMode, attachments, logMut, goToPhase, chatMode, buildSnapshot]);
 
@@ -753,8 +606,6 @@ export default function LiquidOrb() {
         logMut('rm', `Removed: ${op.selector}`); break;
       }
       case 'EVAL': {
-        // Gate AI-returned code behind explicit user confirmation — running
-        // model output via `new Function` is a script-injection vector.
         const code = op.code || '';
         const ok = window.confirm(
           `Allow the AI to run this code on the page?\n\n${code.length > 400 ? code.slice(0, 400) + '…' : code}\n\nOnly confirm if you trust this action.`
@@ -773,10 +624,7 @@ export default function LiquidOrb() {
         break;
       }
       case 'PATCH_SOURCE': {
-        // Log source code fix suggestion + apply EVAL as hotfix immediately
         logMut('fix', `🛠 SOURCE FIX SUGGESTED: ${op.file || 'unknown file'}`);
-        // Also try to apply the fix immediately via EVAL if 'eval' is provided.
-        // Gate behind explicit user confirmation (script-injection risk).
         if (op.eval) {
           const ok = window.confirm(
             `Allow the AI to apply this hotfix code on the page?\n\n${op.eval.length > 400 ? op.eval.slice(0, 400) + '…' : op.eval}\n\nOnly confirm if you trust this action.`
@@ -788,7 +636,6 @@ export default function LiquidOrb() {
             catch (e) { logMut('info', `Hotfix error: ${e.message}`); }
           }
         }
-        // The actual source code change should be committed by the developer
         console.log('[LG AI PATCH_SOURCE]', JSON.stringify({ file: op.file, find: op.find, replace: op.replace }));
         break;
       }
@@ -798,9 +645,6 @@ export default function LiquidOrb() {
   }, [applyOrbFilter, logMut]);
 
   // ── Render ───────────────────────────────────────────────────────
-  const providerDef = getProviderDef(cfgProvider);
-  const modelOptions = [...providerDef.models, 'custom'];
-
   return (
     <>
       {/* SVG filter definitions */}
@@ -819,7 +663,7 @@ export default function LiquidOrb() {
 
       {/* Hint */}
       <div className={`lg-orb-hint ${phase !== 'orb' ? 'off' : ''}`}>
-        {isConfigured ? 'Tap the orb' : 'Tap to set up AI'}
+        {isConfigured ? 'Tap the orb' : 'Tap to open AI'}
       </div>
 
       {/* Mutation log */}
@@ -884,6 +728,20 @@ export default function LiquidOrb() {
             <div className="lg-orb-chat-sheen" />
             <div className="lg-orb-chat-rim" />
 
+            {/* Not-configured inline message */}
+            {!isConfigured && (
+              <div style={{
+                padding: '12px 14px',
+                fontSize: 12,
+                color: 'var(--text-secondary)',
+                textAlign: 'center',
+                borderBottom: '1px solid var(--color-border)',
+                lineHeight: 1.5,
+              }}>
+                AI not configured — open Settings → AI Assistant.
+              </div>
+            )}
+
             {/* Mode toggle: Edit UI vs Chat */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '8px 12px 0', justifyContent: 'center' }}>
               <button
@@ -940,7 +798,7 @@ export default function LiquidOrb() {
                 rows={1}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder={debugMode ? 'Debug mode: describe the bug…' : 'Ask AI to change the UI…'}
+                placeholder={isConfigured ? (debugMode ? 'Debug mode: describe the bug…' : 'Ask AI to change the UI…') : 'Open Settings → AI Assistant to configure'}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
                   if (e.key === 'Escape') { goToPhase('pill'); }
@@ -949,438 +807,30 @@ export default function LiquidOrb() {
             </div>
 
             {/* Toolbar */}
-                        <div className="lg-orb-toolbar" style={{ flexWrap: 'wrap' }}>
-                          <div className="lg-orb-tb-l" style={{ flexWrap: 'wrap' }}>
-                            <button className="lg-orb-tool" style={{ minHeight: 44, minWidth: 44 }} onClick={() => { setDraft(''); goToPhase('pill'); }}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
-                            </button>
-                            <button className="lg-orb-tool" style={{ minHeight: 44, minWidth: 44 }} onClick={() => setSettingsOpen(true)}>
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                            </button>
-                            <span className="lg-orb-ctx-lbl">
-                              {providerDef.name} · {cfgModel || 'no model'}
-                            </span>
-                          </div>
-                          <div className="lg-orb-tb-r" style={{ flexWrap: 'wrap' }}>
-                            <button className="lg-orb-send" style={{ minHeight: 44, minWidth: 44 }} disabled={!draft.trim() && attachments.length === 0} onClick={handleSend}>
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" /></svg>
-                            </button>
-                          </div>
-                        </div>
+            <div className="lg-orb-toolbar" style={{ flexWrap: 'wrap' }}>
+              <div className="lg-orb-tb-l" style={{ flexWrap: 'wrap' }}>
+                <button className="lg-orb-tool" style={{ minHeight: 44, minWidth: 44 }} onClick={() => { setDraft(''); goToPhase('pill'); }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                <span className="lg-orb-ctx-lbl">
+                  {isConfigured
+                    ? `${getProviderDef(loadAIConfig().provider).name} · ${loadAIConfig().model || 'no model'}`
+                    : 'Not configured'}
+                </span>
+              </div>
+              <div className="lg-orb-tb-r" style={{ flexWrap: 'wrap' }}>
+                <button className="lg-orb-tool" style={{ minHeight: 44, minWidth: 44 }} onClick={() => setShowDebugLog(true)} title="Debug Log">
+                  <span style={{ fontSize: 11 }}>⚠</span>
+                </button>
+                <button className="lg-orb-send" style={{ minHeight: 44, minWidth: 44 }} disabled={!draft.trim() && attachments.length === 0} onClick={handleSend}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" /></svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Centered Setup Dialog (first-time) ── */}
-      {showSetup && (
-        <div
-          className="lg-orb-setup-overlay"
-          style={{
-            position: 'fixed', top: 0, left: 0, right: 0, height: '100dvh', zIndex: 9999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(0,0,0,0.50)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-          }}
-          onClick={() => setShowSetup(false)}
-        >
-          <div
-            className="lg-orb-setup-dialog"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: 'min(420px, 92vw)',
-              background: 'var(--glass-frost)',
-              backdropFilter: 'blur(32px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-              border: '1px solid var(--color-border)',
-              borderRadius: '24px',
-              boxShadow: '0 24px 80px var(--glass-cast-shadow), inset 0 1px 0 var(--glass-specular)',
-              padding: '28px 24px',
-              fontFamily: "'DM Sans',system-ui,sans-serif",
-              color: 'var(--text-primary)',
-            }}
-          >
-            {/* Title */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: 20,
-            }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10, fontSize: 16, fontWeight: 600,
-                letterSpacing: '-0.01em',
-              }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" />
-                </svg>
-                AI Assistant Setup
-              </div>
-              <button
-                onClick={() => setShowSetup(false)}
-                style={{
-                  background: 'none', border: 'none', color: 'var(--text-secondary)',
-                  cursor: 'pointer', padding: 4, borderRadius: 8,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  minWidth: 44, minHeight: 44,
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
-              </button>
-            </div>
-
-            {/* Provider tabs */}
-            <div style={{
-              display: 'flex', gap: 4, marginBottom: 16, padding: 3,
-              background: 'rgba(255,255,255,0.04)', borderRadius: 12, flexWrap: 'wrap',
-            }}>
-              {Object.entries(getProviders()).map(([pid, p]) => {
-                const active = pid === cfgProvider;
-                const isCustom = !p.builtin;
-                return (
-                  <div key={pid} style={{ position: 'relative', flex: '1 0 auto' }}>
-                    <button style={{
-                      width: '100%', background: active ? 'rgba(255,255,255,0.10)' : 'none',
-                      border: 'none', borderRadius: 9, padding: '6px 8px', cursor: 'pointer',
-                      fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: active ? 600 : 400,
-                      color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                      transition: 'all 0.15s', whiteSpace: 'nowrap', minHeight: 44,
-                    }} onClick={() => {
-                      setCfgProvider(pid);
-                      setCfgModel(getProviders()[pid].models[0]);
-                      setCustomModel('');
-                    }}>
-                      <span style={{ marginRight: 4 }}>{p.icon}</span>{p.name}
-                    </button>
-                    {isCustom && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleRemoveProvider(pid); }}
-                        style={{
-                          position: 'absolute', top: -4, right: -4, width: 16, height: 16,
-                          borderRadius: '50%', border: 'none', background: 'rgba(255,60,60,0.6)',
-                          color: '#fff', fontSize: 10, cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          lineHeight: 1, padding: 0, zIndex: 10,
-                          minWidth: 44, minHeight: 44,
-                        }}
-                        title={`Remove ${p.name}`}
-                      >×</button>
-                    )}
-                  </div>
-                );
-              })}
-              <button
-                onClick={() => setShowAddProvider(v => !v)}
-                style={{
-                  flex: '0 0 auto', width: 44, height: 44,
-                  border: '1px dashed var(--color-border)', borderRadius: 9,
-                  background: 'transparent', cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)',
-                  fontSize: 14, fontFamily: "'DM Sans',sans-serif",
-                }}
-                title="Add custom LLM / API"
-              >+</button>
-            </div>
-
-            {/* Add custom provider form */}
-            {showAddProvider && (
-              <div style={{
-                marginBottom: 16, padding: '12px 14px', borderRadius: 12,
-                border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.03)',
-                display: 'flex', flexDirection: 'column', gap: 8,
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-disabled)', textTransform: 'uppercase' }}>Add Custom Provider</div>
-                <input type="text" placeholder="Provider name (e.g. Local LLM)" value={newProviderName}
-                  onChange={e => setNewProviderName(e.target.value)}
-                  style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, outline: 'none' }}
-                />
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <input type="text" placeholder="Icon (emoji, e.g. 🤖)" value={newProviderIcon} style={{ width: 50, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: 11, outline: 'none', textAlign: 'center' }} onChange={e => setNewProviderIcon(e.target.value)} />
-                  <input type="text" placeholder="API endpoint URL" value={newProviderURL} style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none' }} onChange={e => setNewProviderURL(e.target.value)} />
-                </div>
-                <input type="text" placeholder="Models (comma-separated, e.g. model-a, model-b)" value={newProviderModels}
-                  onChange={e => setNewProviderModels(e.target.value)}
-                  style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none' }}
-                />
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={newProviderNeedsKey} onChange={e => setNewProviderNeedsKey(e.target.checked)} />
-                  Requires API key
-                </label>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={handleAddCustomProvider} style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'var(--color-accent, #8B5CF6)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: "'DM Sans',sans-serif" }}>Add Provider</button>
-                  <button onClick={() => setShowAddProvider(false)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, fontFamily: "'DM Sans',sans-serif" }}>Cancel</button>
-                </div>
-              </div>
-            )}
-
-            {/* Model select */}
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Model</div>
-            <select
-              style={{
-                width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                fontFamily: "'DM Sans',sans-serif", fontSize: 12, outline: 'none',
-                marginBottom: 14, appearance: 'none', cursor: 'pointer',
-              }}
-              value={cfgModel}
-              onChange={(e) => {
-                setCfgModel(e.target.value);
-                if (e.target.value === 'custom') setCustomModel('');
-              }}
-            >
-              {providerDef.models.map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-              <option value="custom">Custom model ID…</option>
-            </select>
-
-            {/* Custom model input */}
-            {(cfgModel === 'custom' || !providerDef.models.includes(cfgModel)) && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Custom model ID</div>
-                <input type="text" placeholder="e.g. llama-3.3-70b-versatile" value={customModel}
-                  onChange={(e) => setCustomModel(e.target.value)}
-                  style={{
-                    width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                    borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                    fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
-                  }}
-                />
-              </div>
-            )}
-
-            {/* API Key */}
-            {providerDef.needsKey && (
-              <>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>{providerDef.keyLabel}</div>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14 }}>
-                  <input
-                    type={showKey ? 'text' : 'password'}
-                    placeholder={providerDef.keyPlaceholder}
-                    value={cfgKey}
-                    onChange={(e) => setCfgKey(e.target.value)}
-                    style={{
-                      flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                      borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                      fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
-                    }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSetup(); }}
-                  />
-                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: 12, opacity: 0.6, minWidth: 44, minHeight: 44 }}
-                    onClick={() => setShowKey(v => !v)}>
-                    {showKey ? '🙈' : '👁'}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {cfgProvider === 'ollama' && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Endpoint</div>
-                <input type="text" placeholder="http://localhost:11434"
-                  style={{
-                    width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                    borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                    fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Buttons */}
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-              <button style={{
-                flex: 1, background: 'var(--color-accent, #8B5CF6)', color: '#fff',
-                border: 'none', borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
-                fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 500,
-                minHeight: 44, minWidth: 44,
-              }} onClick={handleSaveSetup}>
-                Save & Continue
-              </button>
-              <button style={{
-                background: 'transparent', color: 'var(--text-secondary)',
-                border: '1px solid var(--color-border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
-                fontFamily: "'DM Sans',sans-serif", fontSize: 13,
-                minHeight: 44, minWidth: 44,
-              }} onClick={() => setShowSetup(false)}>
-                Later
-              </button>
-            </div>
-
-            {/* Hint */}
-            <div style={{
-              marginTop: 14, fontSize: 11, color: 'var(--text-disabled)',
-              textAlign: 'center', letterSpacing: '0.02em',
-            }}>
-              You can change these anytime in the settings cog
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── In-orb Settings Panel (small floating) ── */}
-      {settingsOpen && (
-        <div
-          className="lg-orb-settings-panel visible"
-          style={{
-            position: 'fixed', top: 60, right: 18, zIndex: 900,
-            background: 'var(--glass-frost)',
-            backdropFilter: 'blur(32px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 20, padding: '20px 18px', width: 310,
-            boxShadow: '0 20px 60px var(--glass-cast-shadow), inset 0 1px 0 var(--glass-specular)',
-            fontFamily: "'DM Sans',system-ui,sans-serif",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>AI Provider</div>
-          <div style={{ display: 'flex', gap: 4, marginBottom: 16, padding: 3, background: 'rgba(255,255,255,0.04)', borderRadius: 12, flexWrap: 'wrap' }}>
-            {Object.entries(getProviders()).map(([pid, p]) => {
-              const active = pid === cfgProvider;
-              const isCustom = !p.builtin;
-              return (
-                <div key={pid} style={{ position: 'relative', flex: '1 0 auto' }}>
-                  <button style={{
-                    width: '100%', background: active ? 'rgba(255,255,255,0.10)' : 'none',
-                    border: 'none', borderRadius: 9, padding: '5px 6px', cursor: 'pointer',
-                    fontFamily: "'DM Sans',sans-serif", fontSize: 10, fontWeight: active ? 600 : 400,
-                    color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    transition: 'all 0.15s', whiteSpace: 'nowrap',
-                    minHeight: 44,
-                  }} onClick={() => {
-                    setCfgProvider(pid);
-                    setCfgModel(getProviders()[pid].models[0]);
-                    setCustomModel('');
-                  }}>
-                    <div style={{ fontSize: 13, marginBottom: 2 }}>{p.icon}</div>{p.name}
-                  </button>
-                  {isCustom && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleRemoveProvider(pid); }}
-                      style={{
-                        position: 'absolute', top: -4, right: -4,
-                        width: 44, height: 44,
-                        borderRadius: '50%', border: 'none', background: 'rgba(255,60,60,0.6)',
-                        color: '#fff', fontSize: 10, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        lineHeight: 1, padding: 0, zIndex: 10,
-                        minWidth: 44, minHeight: 44,
-                      }}
-                      title={`Remove ${p.name}`}
-                    >×</button>
-                  )}
-                </div>
-              );
-            })}
-            <button
-              onClick={() => { setSettingsOpen(false); setShowAddProvider(true); setShowSetup(true); }}
-              style={{
-                flex: '0 0 auto', width: 44, height: 44,
-                border: '1px dashed var(--color-border)', borderRadius: 9,
-                background: 'transparent', cursor: 'pointer', display: 'flex',
-                alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)',
-                fontSize: 13, fontFamily: "'DM Sans',sans-serif",
-              }}
-              title="Add custom LLM / API"
-            >+</button>
-          </div>
-
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Model</div>
-          <select
-            style={{
-              width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-              borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-              fontFamily: "'DM Sans',sans-serif", fontSize: 12, outline: 'none',
-              marginBottom: 14, appearance: 'none', cursor: 'pointer',
-            }}
-            value={cfgModel}
-            onChange={(e) => {
-              setCfgModel(e.target.value);
-              if (e.target.value === 'custom') setCustomModel('');
-            }}
-          >
-            {providerDef.models.map(m => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-            <option value="custom">Custom model ID…</option>
-          </select>
-
-          {(cfgModel === 'custom' || !providerDef.models.includes(cfgModel)) && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Custom model ID</div>
-              <input type="text" placeholder="e.g. llama-3.3-70b-versatile" value={customModel}
-                onChange={(e) => setCustomModel(e.target.value)}
-                style={{
-                  width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                  borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                  fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
-                }}
-              />
-            </div>
-          )}
-
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>{providerDef.keyLabel}</div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14 }}>
-            <input
-              type={showKey ? 'text' : 'password'}
-              placeholder={providerDef.keyPlaceholder}
-              value={cfgKey}
-              onChange={(e) => setCfgKey(e.target.value)}
-              style={{
-                flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
-              }}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSettings(); if (e.key === 'Escape') setSettingsOpen(false); }}
-            />
-            <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: 12, opacity: 0.6, minWidth: 44, minHeight: 44 }}
-              onClick={() => setShowKey(v => !v)}>
-              {showKey ? '🙈' : '👁'}
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-            <button style={{
-              flex: 1, background: 'var(--color-accent, #8B5CF6)', color: '#fff',
-              border: 'none', borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
-              fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 500,
-              minHeight: 44, minWidth: 44,
-            }} onClick={handleSaveSettings}>Save</button>
-            <button style={{
-              background: 'rgba(255,80,80,0.10)', color: 'rgba(255,100,100,0.75)',
-              border: '1px solid rgba(255,80,80,0.18)', borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
-              fontFamily: "'DM Sans',sans-serif", fontSize: 12,
-              minHeight: 44, minWidth: 44,
-            }} onClick={handleClearKey}>Clear</button>
-          </div>
-
-          <div style={{
-            fontSize: 11, color: cfgKey ? 'rgba(80,200,120,0.60)' : 'rgba(255,140,80,0.65)',
-            lineHeight: 1.55, paddingTop: 10, borderTop: '1px solid var(--color-border)',
-          }}>
-            {cfgKey
-              ? `✓ ${providerDef.name} · ${cfgModel || 'no model'}`
-              : providerDef.needsKey ? `⚠ No API key set for ${providerDef.name}` : `${providerDef.name} · no key needed`
-            }
-          </div>
-
-          {/* Debug Log */}
-          <div style={{ paddingTop: 12, borderTop: '1px solid var(--color-border)', marginTop: 12 }}>
-            <button
-              onClick={() => { setShowDebugLog(true); }}
-              style={{
-                width: '100%', background: 'rgba(255,180,60,0.08)', color: 'rgba(255,180,60,0.75)',
-                border: '1px solid rgba(255,180,60,0.18)', borderRadius: 10, padding: '9px 12px',
-                cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 500,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              }}
-            >
-              <span>⚠</span>
-              <span>Debug Log {dbgEntries.length > 0 ? `(${dbgEntries.length})` : ''}</span>
-            </button>
-          </div>
-        </div>
-      )}
       {/* ── Debug Log Viewer ── */}
       {showDebugLog && (
         <div
