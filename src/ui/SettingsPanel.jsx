@@ -51,6 +51,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
   const [bgImage, setBgImage] = useState(THEME_DEFAULTS.bgImage);
   const [bgImageMode, setBgImageMode] = useState(THEME_DEFAULTS.bgImageMode);
   const [bgImageOpacity, setBgImageOpacity] = useState(THEME_DEFAULTS.bgImageOpacity);
+  const [canvasTexture, setCanvasTexture] = useState(THEME_DEFAULTS.canvasTexture);
   const [bgOverlay1, setBgOverlay1] = useState(THEME_DEFAULTS.bgOverlay1);
   const [bgOverlay1Opacity, setBgOverlay1Opacity] = useState(THEME_DEFAULTS.bgOverlay1Opacity);
   const [bgOverlay2, setBgOverlay2] = useState(THEME_DEFAULTS.bgOverlay2);
@@ -106,6 +107,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
     setBgImage(tc.bgImage || '');
     setBgImageMode(tc.bgImageMode);
     setBgImageOpacity(tc.bgImageOpacity);
+    setCanvasTexture(tc.canvasTexture || 'dot-grid');
     setBgOverlay1(tc.bgOverlay1 || '');
     setBgOverlay1Opacity(tc.bgOverlay1Opacity);
     setBgOverlay2(tc.bgOverlay2 || '');
@@ -146,6 +148,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
     tc.bgImage = bgImage;
     tc.bgImageMode = bgImageMode;
     tc.bgImageOpacity = bgImageOpacity;
+    tc.canvasTexture = canvasTexture;
     tc.bgOverlay1 = bgOverlay1;
     tc.bgOverlay1Opacity = bgOverlay1Opacity;
     tc.bgOverlay2 = bgOverlay2;
@@ -168,7 +171,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     if (onMenuIconsChange) onMenuIconsChange(menuIcons);
-  }, [aiProvider, aiKey, aiEndpoint, aiModel, customModel, glassOpacity, glassThickness, glassBlur, glassColor, bgColor, accentColor, textPrimary, textSecondary, bgImage, bgImageMode, bgImageOpacity, bgOverlay1, bgOverlay1Opacity, bgOverlay2, bgOverlay2Opacity, fontFamily, fontImport, fontSize, fontDropShadow, fontShadowColor, fontShadowOffsetX, fontShadowOffsetY, fontShadowBlur, fontStroke, fontStrokeColor, fontStrokeWidth, menuIcons, removedIcons, onMenuIconsChange]);
+  }, [aiProvider, aiKey, aiEndpoint, aiModel, customModel, glassOpacity, glassThickness, glassBlur, glassColor, bgColor, accentColor, textPrimary, textSecondary, bgImage, bgImageMode, bgImageOpacity, canvasTexture, bgOverlay1, bgOverlay1Opacity, bgOverlay2, bgOverlay2Opacity, fontFamily, fontImport, fontSize, fontDropShadow, fontShadowColor, fontShadowOffsetX, fontShadowOffsetY, fontShadowBlur, fontStroke, fontStrokeColor, fontStrokeWidth, menuIcons, removedIcons, onMenuIconsChange]);
 
   // ── Background image upload ──
   const handleImageUpload = useCallback((e) => {
@@ -406,6 +409,16 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                   </>
                 )}
                 {!bgImage && <div style={{ fontSize: '10px', color: 'var(--text-disabled)' }}>Upload an image to use as a full-screen background.</div>}
+
+                <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-disabled)', letterSpacing: '0.08em', marginBottom: '6px', marginTop: '10px' }}>CANVAS TEXTURE</div>
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', padding: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', flexWrap: 'wrap', overflowX: 'auto' }}>
+                  {[['NONE', 'none'], ['DOTS', 'dot-grid'], ['LINEN', 'linen'], ['PAPER', 'graph-paper']].map(([label, value]) => (
+                    <button key={value} onClick={() => { setCanvasTexture(value); preview({ canvasTexture: value }); }}
+                      style={{ flex: '1 0 auto', minHeight: '44px', minWidth: '44px', padding: '4px 6px', borderRadius: '8px', border: 'none', background: canvasTexture === value ? 'rgba(255,255,255,0.10)' : 'transparent', color: canvasTexture === value ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '9px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </SettingsSection>
 
               {/* ── TYPOGRAPHY ── */}
