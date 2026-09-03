@@ -20,23 +20,32 @@ export default function AIModal({ isOpen, onClose }) {
     try {
       const cfg = loadAIConfig();
       if (cfg.provider) setProvider(cfg.provider);
-      if (cfg.model) setModel(cfg.model);
-      if (cfg.model) setCustomModel(cfg.model);
+      if (cfg.model) {
+        const p = getProviders()[cfg.provider];
+        if (p && p.models.includes(cfg.model)) {
+          setModel(cfg.model);
+          setCustomModel('');
+        } else {
+          setModel('custom');
+          setCustomModel(cfg.model);
+        }
+      }
       if (cfg.key) setApiKey(cfg.key);
     } catch {}
     // Focus first input
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [isOpen]);
 
-  // Update model default when provider changes
+  // Update model default when provider changes — but preserve a custom model
+  // the user has already typed/picked (don't wipe it on every provider switch).
   useEffect(() => {
     const p = getProviders()[provider];
-    if (p && p.models.length > 0) {
+    if (p && p.models.length > 0 && model !== 'custom' && !p.models.includes(model)) {
       setModel(p.models[0]);
-      setCustomModel('');
     }
     setStatus('idle');
     setErrorMsg('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider]);
 
   // Keyboard: Escape closes
@@ -105,20 +114,25 @@ export default function AIModal({ isOpen, onClose }) {
 
   return (
     <div className="lg-ai-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      {/* Mobile bottom-sheet drag grip (hidden on desktop via CSS) */}
+      <div className="lg-ai-modal__grip" aria-hidden="true">
+        <span className="lg-ai-modal__grip-bar" />
+      </div>
       <div
         className="lg-ai-modal"
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-modal-title"
+        style={{ maxHeight: 'calc(100dvh - 16px)' }}
       >
         {/* Header */}
-        <div className="lg-ai-modal__header">
-          <div className="lg-ai-modal__title-row">
+        <div className="lg-ai-modal__header" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+          <div className="lg-ai-modal__title-row" style={{ flexWrap: 'wrap' }}>
             <Sparkle size={16} weight="regular" className="lg-ai-modal__title-icon" />
             <h2 id="ai-modal-title" className="lg-ai-modal__title">AI ASSISTANT</h2>
           </div>
-          <button className="lg-ai-modal__close" onClick={onClose} aria-label="Close AI assistant">
+          <button className="lg-ai-modal__close" onClick={onClose} aria-label="Close AI assistant" style={{ minHeight: '44px', minWidth: '44px' }}>
             <X size={16} weight="regular" />
           </button>
         </div>
@@ -127,7 +141,7 @@ export default function AIModal({ isOpen, onClose }) {
         <div className="lg-ai-modal__divider" />
 
         {/* Body */}
-        <div className="lg-ai-modal__body">
+        <div className="lg-ai-modal__body" style={{ overflowX: 'auto' }}>
           {/* Provider select */}
           <div className="lg-ai-modal__field">
             <label className="lg-ai-modal__label" htmlFor="ai-provider">PROVIDER</label>
@@ -136,6 +150,7 @@ export default function AIModal({ isOpen, onClose }) {
               className="lg-ai-modal__select"
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
+              style={{ minHeight: '44px', minWidth: '44px' }}
             >
               {Object.entries(getProviders()).map(([pid, p]) => (
                 <option key={pid} value={pid}>{p.name}</option>
@@ -151,6 +166,7 @@ export default function AIModal({ isOpen, onClose }) {
               className="lg-ai-modal__select"
               value={model}
               onChange={(e) => { setModel(e.target.value); if (e.target.value !== 'custom') setCustomModel(''); }}
+              style={{ minHeight: '44px', minWidth: '44px' }}
             >
               {(getProviders()[provider]?.models || []).map(m => (
                 <option key={m} value={m}>{m}</option>
@@ -172,6 +188,7 @@ export default function AIModal({ isOpen, onClose }) {
                 onChange={(e) => setCustomModel(e.target.value)}
                 autoComplete="off"
                 spellCheck={false}
+                style={{ minHeight: '44px', minWidth: '44px' }}
               />
             </div>
           )}
@@ -179,12 +196,13 @@ export default function AIModal({ isOpen, onClose }) {
           {/* API key input */}
           <div className="lg-ai-modal__field">
             <label className="lg-ai-modal__label" htmlFor="ai-key">API KEY</label>
-            <div className="lg-ai-modal__key-wrap">
+            <div className="lg-ai-modal__key-wrap" style={{ overflowX: 'auto' }}>
               <input
                 ref={inputRef}
                 id="ai-key"
                 type={showKey ? 'text' : 'password'}
                 className={`lg-ai-modal__input ${status === 'error' ? 'lg-ai-modal__input--error' : ''}`}
+                style={{ paddingRight: 56, minHeight: '44px', minWidth: '44px' }}
                 value={apiKey}
                 onChange={(e) => { setApiKey(e.target.value); setStatus('idle'); setErrorMsg(''); }}
                 placeholder={currentProvider?.keyPlaceholder || 'Enter API key'}
@@ -196,6 +214,7 @@ export default function AIModal({ isOpen, onClose }) {
                 onClick={() => setShowKey(v => !v)}
                 aria-label={showKey ? 'Hide API key' : 'Show API key'}
                 type="button"
+                style={{ minHeight: '44px', minWidth: '44px' }}
               >
                 {showKey
                   ? <EyeSlash size={16} weight="regular" />
@@ -203,7 +222,7 @@ export default function AIModal({ isOpen, onClose }) {
               </button>
             </div>
             {/* Security notice */}
-            <p className="lg-ai-modal__notice">
+            <p className="lg-ai-modal__notice" style={{ flexWrap: 'wrap' }}>
               <Warning size={12} weight="regular" />
               STORED CLIENT-SIDE ONLY · SHARED WITH ORB & ALL AI FEATURES
             </p>
@@ -225,11 +244,11 @@ export default function AIModal({ isOpen, onClose }) {
         <div className="lg-ai-modal__divider" />
 
         {/* Footer actions */}
-        <div className="lg-ai-modal__footer">
-          <button className="lg-ai-modal__btn-secondary" onClick={handleTest} disabled={status === 'testing'}>
+        <div className="lg-ai-modal__footer" style={{ flexWrap: 'wrap', overflowX: 'auto' }}>
+          <button className="lg-ai-modal__btn-secondary" onClick={handleTest} disabled={status === 'testing'} style={{ minHeight: '44px', minWidth: '44px' }}>
             TEST CONNECTION
           </button>
-          <button className="lg-ai-modal__btn-primary" onClick={handleSave}>
+          <button className="lg-ai-modal__btn-primary" onClick={handleSave} style={{ minHeight: '44px', minWidth: '44px' }}>
             SAVE & CONNECT
           </button>
         </div>

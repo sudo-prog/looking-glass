@@ -1,14 +1,13 @@
 /**
  * LOOKING GLASS — Liquid AI Orb
  * A floating glass orb at the bottom center of the screen.
- * First click shows centered floating setup dialog (API key + model).
  * After setup, opens the pill then full AI chat.
  * Uses the shared AI config from aiConfig.js (same key as SettingsPanel).
- * Supports ALL providers: OpenRouter, Anthropic, OpenAI, Gemini, Groq, Ollama, LiteLLM
- * + custom model IDs for any provider.
+ * Chat-only: all provider/model/key configuration lives in SettingsPanel.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getProviders, loadAIConfig, saveAIConfig, getProviderDef, addCustomProvider, removeCustomProvider, refreshProviders } from '../utils/aiConfig.js';
+import { loadAIConfig, getProviderDef, resolveModelAlias, resolveEndpoint } from '../utils/aiConfig.js';
+import { initDebugLog, getDebugLog, clearDebugLog, downloadDebugLog, copyDebugLog, onDebugLogChange, addDebugEntry } from '../utils/debugLog.js';
 import './LiquidOrb.css';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -57,7 +56,7 @@ EVAL — execute JavaScript in the page context to fix any issue:
   Use for: removing stuck elements, fixing state, clearing timers, resetting UI.
 
 PATCH_SOURCE — commit a source code fix to GitHub (permanent fix):
-  {"type":"PATCH_SOURCE","file":"src/ui/LiquidOrb.jsx","find":"const [logs, setLogs] = useState([])","replace":"const [logs, setLogs] = useState([]);\n  // Auto-clear logs after 5s\n  useEffect(() => { const t = setInterval(()=>setLogs(p=>p.slice(0,2)), 5000); return ()=>clearInterval(t); }, []);"}
+  {"type":"PATCH_SOURCE","file":"src/ui/LiquidOrb.jsx","find":"const [logs, setLogs] = useState([])","replace":"const [logs, setLogs] = useState([]);\\n  // Auto-clear logs after 5s\\n  useEffect(() => { const t = setInterval(()=>setLogs(p=>p.slice(0,2)), 5000); return ()=>clearInterval(t); }, []);"}
   repo: "sudo-prog/looking-glass" (default). Supports: LiquidOrb.jsx, aiConfig.js, etc.
 
 ━━━ RULES ━━━
@@ -71,55 +70,41 @@ PATCH_SOURCE — commit a source code fix to GitHub (permanent fix):
 - Prefer EVAL for immediate fixes, PATCH_SOURCE for permanent ones that survive page reload.`
 
 // ═══════════════════════════════════════════════════════════════════
-//  MULTI-PROVIDER AI CALLER
+//  CHAT MODE SYSTEM PROMPT — general conversational assistant
 // ═══════════════════════════════════════════════════════════════════
-async function callAI(userMsg, snapshot) {
+const SYS_CHAT = `You are the AI assistant for "Looking Glass" — a visual bookmarking and note-taking app. Help the user with general questions, explanations, and advice about their saved items, the app, or anything else they ask. Respond in natural, helpful prose. Do NOT emit JSON mutation plans or rewrite the UI unless the user explicitly asks you to. Be concise and friendly.`;
+
+// ═══════════════════════════════════════════════════════════════════
+//  MULTI-PROVIDER AI CALLER (omniroute + openrouter only)
+// ═══════════════════════════════════════════════════════════════════
+async function callAI(userMsg, snapshot, mode) {
   const cfg = loadAIConfig();
   const pid = cfg.provider;
   const p = getProviderDef(pid);
   const key = cfg.key;
-  const model = cfg.model;
+  const model = resolveModelAlias(cfg.model);
+  const systemPrompt = mode === 'chat' ? SYS_CHAT : SYS;
 
-  if (!model) throw new Error(`No model selected — configure AI in settings`);
-  if (p.needsKey && !key) throw new Error(`No API key — add your ${p.name} key in settings`);
+  if (!model) throw new Error(`No model selected — configure AI in Settings → AI Assistant`);
+  if (p.needsKey && !key) throw new Error(`No API key — add your ${p.name} key in Settings → AI Assistant`);
 
-  const prompt = `User instruction: "${userMsg}"\n\nCurrent UI snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+  const prompt = mode === 'chat'
+    ? userMsg
+    : `User instruction: "${userMsg}"\n\nCurrent UI snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
 
-  // ── Anthropic Messages API ───────────────────────────────────────
-  if (pid === 'anthropic') {
-    const r = await fetch(p.baseURL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({ model, max_tokens: 2000, system: SYS, messages: [{ role: 'user', content: prompt }] })
-    });
-    if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text().catch(() => ''))}`);
-    const d = await r.json();
-    return parseJSON(d.content?.map(b => b.text || '').join('') || '');
-  }
+  // Finalize the raw model text into {plan, ops} based on mode.
+  const finalize = (text) => {
+    if (mode === 'chat') return { plan: text || 'No response', ops: [] };
+    try {
+      const parsed = parseJSON(text);
+      return { plan: parsed.plan || text || 'AI plan missing', ops: Array.isArray(parsed.ops) ? parsed.ops : [] };
+    } catch (e) {
+      return { plan: text || 'AI response could not be parsed', ops: [] };
+    }
+  };
 
-  // ── Google Gemini ────────────────────────────────────────────────
-  if (pid === 'google') {
-    const url = p.baseURL.replace('{model}', model) + `?key=${key}`;
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYS }] },
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 2000, temperature: 0.3 },
-      })
-    });
-    if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text().catch(() => ''))}`);
-    const d = await r.json();
-    return parseJSON(d.candidates?.[0]?.content?.parts?.[0]?.text || '');
-  }
-
-  // ── OpenAI-compatible: OpenAI / Groq / OpenRouter / Ollama / LiteLLM ────
+  // ── OpenAI-compatible: OmniRoute / OpenRouter ───────────────────
+  const endpoint = resolveEndpoint(pid, p);
   const headers = { 'Content-Type': 'application/json' };
   if (key) headers['Authorization'] = `Bearer ${key}`;
   if (pid === 'openrouter') {
@@ -127,15 +112,16 @@ async function callAI(userMsg, snapshot) {
     headers['X-Title'] = 'Looking Glass';
   }
 
-  const r = await fetch(p.baseURL, {
+  const r = await fetch(endpoint, {
     method: 'POST',
     headers,
     body: JSON.stringify({
       model,
       max_tokens: 2000,
       temperature: 0.3,
+      stream: false,
       messages: [
-        { role: 'system', content: SYS },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt },
       ]
     })
@@ -143,15 +129,7 @@ async function callAI(userMsg, snapshot) {
   if (!r.ok) throw new Error(`${p.name} ${r.status}: ${(await r.text().catch(() => ''))}`);
   const d = await r.json();
   const content = d.choices?.[0]?.message?.content || '';
-  try {
-    const parsed = parseJSON(content);
-    return {
-      plan: parsed.plan || content || 'AI plan missing',
-      ops: Array.isArray(parsed.ops) ? parsed.ops : [],
-    };
-  } catch (e) {
-    return { plan: content || 'AI response could not be parsed', ops: [] };
-  }
+  return finalize(content);
 }
 
 function parseJSON(raw) {
@@ -289,35 +267,28 @@ const ORB_LENS = {
   chroma: .18, glow: .10, edgeHighlight: .22, specularAngle: 45
 };
 
-const ACTIONS = ['Fix errors', 'Add feature', 'Change theme', 'Edit self'];
-
 export default function LiquidOrb() {
   const [phase, setPhase] = useState('orb'); // 'orb' | 'pill' | 'chat'
-  const [showSetup, setShowSetup] = useState(false); // centered setup dialog
   const [thinking, setThinking] = useState(false);
   const [thinkLabel, setThinkLabel] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [mutPreview, setMutPreview] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [activeAction, setActiveAction] = useState(null);
+  const [chatMode, setChatMode] = useState('chat'); // 'edit' | 'chat'
+  const [draft, setDraft] = useState('');
+  const [debugMode, setDebugMode] = useState(false);
   const [logs, setLogs] = useState([]);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showDebugLog, setShowDebugLog] = useState(false);
+  const [dbgEntries, setDbgEntries] = useState([]);
 
-  // Settings state — read from shared config
-  const [cfgProvider, setCfgProvider] = useState('openrouter');
-  const [cfgModel, setCfgModel] = useState('');
-  const [cfgKey, setCfgKey] = useState('');
-  const [customModel, setCustomModel] = useState('');
-  const [showKey, setShowKey] = useState(false);
-  const [cfgStatus, setCfgStatus] = useState('');
-  const [isConfigured, setIsConfigured] = useState(false);
-  // Custom provider add form
-  const [showAddProvider, setShowAddProvider] = useState(false);
-  const [newProviderName, setNewProviderName] = useState('');
-  const [newProviderIcon, setNewProviderIcon] = useState('');
-  const [newProviderURL, setNewProviderURL] = useState('');
-  const [newProviderModels, setNewProviderModels] = useState('');
-  const [newProviderNeedsKey, setNewProviderNeedsKey] = useState(true);
+  const [isConfigured, setIsConfigured] = useState(() => {
+    try {
+      const cfg = loadAIConfig();
+      const p = getProviderDef(cfg.provider);
+      return !!(cfg.provider && cfg.model && (!p.needsKey || cfg.key));
+    } catch { return false; }
+  });
 
   const orbRef = useRef(null);
   const fdefsRef = useRef(null);
@@ -367,22 +338,25 @@ export default function LiquidOrb() {
     return () => spring.cancel();
   }, [applyOrbFilter]);
 
+  // ── Init debug log capture on mount ──
+  useEffect(() => {
+    initDebugLog();
+    const unsub = onDebugLogChange((entries) => {
+      setDbgEntries(entries.slice());
+    });
+    setDbgEntries(getDebugLog());
+    return unsub;
+  }, []);
+
   // ── Load shared config on mount & check if configured ────────────
   useEffect(() => {
     const cfg = loadAIConfig();
-    setCfgProvider(cfg.provider);
-    setCfgModel(cfg.model);
-    setCfgKey(cfg.key);
-    setCustomModel(cfg.model);
-    // Check if we have a model and key (if needed)
     const p = getProviderDef(cfg.provider);
-    const hasConfig = !!cfg.model && (!p.needsKey || !!cfg.key);
-    setIsConfigured(hasConfig);
+    setIsConfigured(!!cfg.model && (!p.needsKey || !!cfg.key));
   }, []);
 
   // ── Mutation log helper ──────────────────────────────────────────
   const logMut = useCallback((type, text) => {
-    // Suppress "No element" noise from AI trying to patch non-existent selectors
     if (text.startsWith('No element:')) return;
 
     const icons = { add: '✦', rm: '✕', fix: '⬡', sty: '◈', info: '◎' };
@@ -392,10 +366,11 @@ export default function LiquidOrb() {
       return next.slice(0, 4);
     });
 
-    // Auto-dismiss after 4 seconds
     setTimeout(() => {
       setLogs(prev => prev.filter(l => l.id !== id));
     }, 4000);
+
+    addDebugEntry(type === 'info' ? 'info' : 'mutation', 'orb', text);
   }, []);
 
   // ── Orb tap handler ──────────────────────────────────────────────
@@ -411,9 +386,9 @@ export default function LiquidOrb() {
     springRef.current.target = 0;
     setTimeout(() => { springRef.current.target = ORB_LENS.depth; }, 80);
 
-    // Check if configured — if not, show setup dialog
     if (!isConfigured) {
-      setTimeout(() => setShowSetup(true), 200);
+      // Show chat with inline "not configured" message — no settings UI
+      setTimeout(() => setPhase('pill'), 200);
     } else {
       setTimeout(() => setPhase('pill'), 200);
     }
@@ -430,94 +405,60 @@ export default function LiquidOrb() {
     }
   }, []);
 
-  // ── Setup save handler ───────────────────────────────────────────────
-  const handleSaveSetup = useCallback(() => {
-    const p = getProviderDef(cfgProvider);
-    const modelToSave = cfgModel === 'custom' || (!p.models.includes(cfgModel) && cfgModel !== p.models[0])
-      ? customModel
-      : cfgModel;
-    const finalModel = modelToSave || p.models[0];
-    saveAIConfig({ provider: cfgProvider, model: finalModel, key: cfgKey });
-    setCfgModel(finalModel);
-    setCfgStatus(`✓ ${p.name} · ${finalModel}`);
-    logMut('fix', `${p.name} settings saved`);
-    setIsConfigured(true);
-    setShowSetup(false);
-    // Open the pill after setup
-    setTimeout(() => setPhase('pill'), 200);
-  }, [cfgProvider, cfgModel, cfgKey, customModel, logMut]);
-
-  const handleClearKey = useCallback(() => {
-    setCfgKey('');
-    saveAIConfig({ provider: cfgProvider, model: cfgModel, key: '' });
-    setIsConfigured(false);
-    logMut('rm', `Key cleared`);
-  }, [cfgProvider, cfgModel, logMut]);
-
-  // ── Add custom provider handler ──
-  const handleAddCustomProvider = useCallback(() => {
-    if (!newProviderName.trim() || !newProviderURL.trim()) return;
-    const models = newProviderModels.split(',').map(s => s.trim()).filter(Boolean);
-    const id = addCustomProvider({
-      name: newProviderName.trim(),
-      icon: newProviderIcon.trim() || '⊕',
-      baseURL: newProviderURL.trim(),
-      models: models.length > 0 ? models : ['custom-model'],
-      needsKey: newProviderNeedsKey,
-      showBaseURL: true,
+  // ── DOM Snapshot builder ─────────────────────────────────────────
+  const buildSnapshot = useCallback(() => {
+    const cs = getComputedStyle(document.documentElement);
+    const cssVars = {};
+    ['--bg', '--fg', '--fg2', '--glass-tint', '--glass-border'].forEach(v => {
+      cssVars[v] = cs.getPropertyValue(v).trim();
     });
-    // Refresh providers and switch to the new one
-    refreshProviders();
-    setCfgProvider(id);
-    setCfgModel(models.length > 0 ? models[0] : 'custom-model');
-    setCustomModel('');
-    setShowAddProvider(false);
-    setNewProviderName('');
-    setNewProviderIcon('');
-    setNewProviderURL('');
-    setNewProviderModels('');
-    setNewProviderNeedsKey(true);
-    logMut('add', `Added provider: ${newProviderName}`);
-  }, [newProviderName, newProviderIcon, newProviderURL, newProviderModels, newProviderNeedsKey, logMut]);
 
-  // ── Remove custom provider handler ──
-  const handleRemoveProvider = useCallback((pid) => {
-    if (!confirm(`Remove "${getProviders()[pid]?.name}"? This will remove it from the list.`)) return;
-    removeCustomProvider(pid);
-    // If we removed the active provider, switch to openrouter
-    if (cfgProvider === pid) {
-      setCfgProvider('openrouter');
-      setCfgModel('anthropic/claude-sonnet-4-5');
-      setCfgKey('');
-      setCustomModel('');
-    }
-    logMut('rm', `Removed provider: ${getProviders()[pid]?.name || pid}`);
-  }, [cfgProvider, logMut]);
+    const domTree = [];
+    const walk = (el, depth) => {
+      if (depth > 4) return;
+      if (!el || el.nodeType !== 1) return;
+      const tag = el.tagName?.toLowerCase();
+      if (!tag) return;
+      const entry = {
+        tag,
+        id: el.id || undefined,
+        classes: el.className && typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : undefined,
+        text: el.children?.length === 0 ? (el.textContent || '').slice(0, 60) : undefined,
+      };
+      if (entry.id || entry.classes?.length) {
+        domTree.push(entry);
+      }
+      for (const child of el.children || []) {
+        walk(child, depth + 1);
+      }
+    };
+    walk(document.body, 0);
 
-  // ── Settings panel (in-orb) ──────────────────────────────
-  const handleSaveSettings = useCallback(() => {
-    const p = getProviderDef(cfgProvider);
-    const modelToSave = cfgModel === 'custom' || (!p.models.includes(cfgModel) && cfgModel !== p.models[0])
-      ? customModel
-      : cfgModel;
-    const finalModel = modelToSave || p.models[0];
-    saveAIConfig({ provider: cfgProvider, model: finalModel, key: cfgKey });
-    setCfgModel(finalModel);
-    setCfgStatus(`✓ ${p.name} · ${finalModel}`);
-    logMut('fix', `${p.name} settings saved`);
-    setIsConfigured(true);
-    setSettingsOpen(false);
-  }, [cfgProvider, cfgModel, cfgKey, customModel, logMut]);
+    return {
+      cssVars,
+      lens: { ...lensRef.current },
+      injectedCSS: uiStylesRef.current?.textContent?.slice(0, 600) || '',
+      domTree,
+    };
+  }, []);
 
-// ── Send handler ─────────────────────────────────────────────────
-   const handleSend = useCallback(async () => {
-    const txt = taRef.current?.value?.trim();
+  // ── Send handler ─────────────────────────────────────────────────
+  const handleSend = useCallback(async () => {
+    const txt = draft.trim();
     if (!txt && attachments.length === 0) return;
+
+    if (/^\/debug\b/i.test(txt)) {
+      setDebugMode(m => !m);
+      setDraft('');
+      logMut('info', debugMode ? 'Debug mode off' : 'Debug mode on — AI will inspect DOM for real fixes');
+      return;
+    }
+
+    setDraft('');
 
     const cfg = loadAIConfig();
     if (!cfg.key && getProviderDef(cfg.provider).needsKey) {
-      setSettingsOpen(true);
-      logMut('info', `Add your ${getProviderDef(cfg.provider).name} API Key first (⚙ button)`);
+      setAiResponse('AI not configured — open Settings → AI Assistant.');
       return;
     }
 
@@ -527,14 +468,13 @@ export default function LiquidOrb() {
     setMutPreview('');
 
     try {
-      setThinkLabel('Planning edits…');
-      const snapshot = buildSnapshot();
-      const result = await callAI(txt, snapshot);
+      setThinkLabel(chatMode === 'chat' ? 'Thinking…' : 'Planning edits…');
+      const snapshot = chatMode === 'chat' ? null : buildSnapshot();
+      const result = await callAI(debugMode ? `[DEBUG MODE] ${txt}` : txt, snapshot, chatMode);
 
       setThinking(false);
-      // Show mutation preview
       setMutPreview(
-        `<span class="lg-orb-op-fix">PLAN</span> ${esc(result.plan)}\n\n` +
+        `<span class="lg-orb-op-fix">${chatMode === 'chat' ? 'RESPONSE' : 'PLAN'}</span> ${esc(result.plan)}\n\n` +
         (result.ops || []).map(op => {
           const cls = op.type.includes('REMOVE') ? 'lg-orb-op-rm'
             : op.type.includes('FIX') || op.type.includes('PATCH') || op.type.includes('REWRITE') ? 'lg-orb-op-fix'
@@ -551,60 +491,15 @@ export default function LiquidOrb() {
         setTimeout(() => {
           setMutPreview('');
           setAiResponse(result.plan);
-          setTimeout(() => {
-            goToPhase('orb');
-          }, 1200);
         }, totalDelay);
-      }, 400);
+      }, 700);
 
     } catch (err) {
       setThinking(false);
       setAiResponse(`⚠ ${err.message}`);
-      if (err.message.includes('key') || err.message.includes('401')) {
-        setTimeout(() => setSettingsOpen(true), 400);
-      }
+      addDebugEntry('error', 'orb.callAI', err.message);
     }
-  }, [attachments, logMut, goToPhase, buildSnapshot, execMutations, setThinking, setThinkLabel, setAiResponse, setMutPreview]);
-
-  // ── DOM Snapshot builder ─────────────────────────────────────────
-  const buildSnapshot = useCallback(() => {
-    const cs = getComputedStyle(document.documentElement);
-    const cssVars = {};
-    ['--bg', '--fg', '--fg2', '--glass-tint', '--glass-border'].forEach(v => {
-      cssVars[v] = cs.getPropertyValue(v).trim();
-    });
-
-    // Build DOM tree snapshot — list all elements with id/tag/classes
-    const domTree = [];
-    const walk = (el, depth) => {
-      if (depth > 4) return;
-      if (!el || el.nodeType !== 1) return;
-      const tag = el.tagName?.toLowerCase();
-      if (!tag) return;
-      const entry = {
-        tag,
-        id: el.id || undefined,
-        classes: el.className && typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : undefined,
-        text: el.children?.length === 0 ? (el.textContent || '').slice(0, 60) : undefined,
-      };
-      // Only include if it has an id or classes (useful for targeting)
-      if (entry.id || entry.classes?.length) {
-        domTree.push(entry);
-      }
-      // Walk children
-      for (const child of el.children || []) {
-        walk(child, depth + 1);
-      }
-    };
-    walk(document.body, 0);
-
-    return {
-      cssVars,
-      lens: { ...lensRef.current },
-      injectedCSS: uiStylesRef.current?.textContent?.slice(0, 600) || '',
-      domTree,
-    };
-  }, []);
+  }, [draft, debugMode, attachments, logMut, goToPhase, chatMode, buildSnapshot]);
 
   // ── Mutation executor ────────────────────────────────────────────
   const execMutations = useCallback((ops, delay = 220) => {
@@ -711,24 +606,36 @@ export default function LiquidOrb() {
         logMut('rm', `Removed: ${op.selector}`); break;
       }
       case 'EVAL': {
+        const code = op.code || '';
+        const ok = window.confirm(
+          `Allow the AI to run this code on the page?\n\n${code.length > 400 ? code.slice(0, 400) + '…' : code}\n\nOnly confirm if you trust this action.`
+        );
+        if (!ok) {
+          logMut('info', `EVAL cancelled by user`);
+          break;
+        }
         try {
           // eslint-disable-next-line no-new-func
-          const result = new Function(op.code)();
-          logMut('fix', `EVAL OK: ${op.code.slice(0, 60)}…`);
+          const result = new Function(code)();
+          logMut('fix', `EVAL OK: ${code.slice(0, 60)}…`);
         } catch (e) {
           logMut('info', `EVAL error: ${e.message}`);
         }
         break;
       }
       case 'PATCH_SOURCE': {
-        // Log source code fix suggestion + apply EVAL as hotfix immediately
-        logMut('fix', `� SOURCE FIX SUGGESTED: ${op.file || 'unknown file'}`);
-        // Also try to apply the fix immediately via EVAL if 'replace' is provided
+        logMut('fix', `🛠 SOURCE FIX SUGGESTED: ${op.file || 'unknown file'}`);
         if (op.eval) {
-          try { new Function(op.eval)(); logMut('fix', `Hotfix applied via EVAL`); }
-          catch (e) { logMut('info', `Hotfix error: ${e.message}`); }
+          const ok = window.confirm(
+            `Allow the AI to apply this hotfix code on the page?\n\n${op.eval.length > 400 ? op.eval.slice(0, 400) + '…' : op.eval}\n\nOnly confirm if you trust this action.`
+          );
+          if (!ok) {
+            logMut('info', `PATCH_SOURCE hotfix cancelled by user`);
+          } else {
+            try { new Function(op.eval)(); logMut('fix', `Hotfix applied via EVAL`); }
+            catch (e) { logMut('info', `Hotfix error: ${e.message}`); }
+          }
         }
-        // The actual source code change should be committed by the developer
         console.log('[LG AI PATCH_SOURCE]', JSON.stringify({ file: op.file, find: op.find, replace: op.replace }));
         break;
       }
@@ -738,9 +645,6 @@ export default function LiquidOrb() {
   }, [applyOrbFilter, logMut]);
 
   // ── Render ───────────────────────────────────────────────────────
-  const providerDef = getProviderDef(cfgProvider);
-  const modelOptions = [...providerDef.models, 'custom'];
-
   return (
     <>
       {/* SVG filter definitions */}
@@ -759,7 +663,7 @@ export default function LiquidOrb() {
 
       {/* Hint */}
       <div className={`lg-orb-hint ${phase !== 'orb' ? 'off' : ''}`}>
-        {isConfigured ? 'Tap the orb' : 'Tap to set up AI'}
+        {isConfigured ? 'Tap the orb' : 'Tap to open AI'}
       </div>
 
       {/* Mutation log */}
@@ -784,6 +688,7 @@ export default function LiquidOrb() {
           onClick={handleOrbTap}
           onTouchStart={(e) => { e.preventDefault(); handleOrbTap(e); }}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOrbTap(e); }}
+          style={{ minHeight: 44, minWidth: 44 }}
         >
           <div className="lg-orb-glow" />
           <div className="lg-orb-glass lg-orb-glass-surf">
@@ -810,21 +715,7 @@ export default function LiquidOrb() {
               <span className="lg-orb-pill-label">Looking Glass AI</span>
             </button>
             <div className="lg-orb-pill-divider" />
-            <div className="lg-orb-pill-actions">
-              {ACTIONS.map(a => (
-                <button
-                  key={a}
-                  className={`lg-orb-pill-action ${activeAction === a ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveAction(a === activeAction ? null : a);
-                    goToPhase('chat');
-                  }}
-                >
-                  {a}
-                </button>
-              ))}
-            </div>
-            <button className="lg-orb-pill-close" onClick={() => goToPhase('orb')}>
+            <button className="lg-orb-pill-close" onClick={() => goToPhase('orb')} style={{ minHeight: 44, minWidth: 44 }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
             </button>
             <div className="lg-orb-pill-sheen" />
@@ -836,6 +727,34 @@ export default function LiquidOrb() {
           <div className="lg-orb-chat-inner lg-orb-glass-surf">
             <div className="lg-orb-chat-sheen" />
             <div className="lg-orb-chat-rim" />
+
+            {/* Not-configured inline message */}
+            {!isConfigured && (
+              <div style={{
+                padding: '12px 14px',
+                fontSize: 12,
+                color: 'var(--text-secondary)',
+                textAlign: 'center',
+                borderBottom: '1px solid var(--color-border)',
+                lineHeight: 1.5,
+              }}>
+                AI not configured — open Settings → AI Assistant.
+              </div>
+            )}
+
+            {/* Mode toggle: Edit UI vs Chat */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '8px 12px 0', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setChatMode('edit')}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'edit' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'edit' ? 600 : 400, cursor: 'pointer', minHeight: '44px', minWidth: '44px' }}
+              >Edit UI</button>
+              <button
+                type="button"
+                onClick={() => setChatMode('chat')}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.10)', background: chatMode === 'chat' ? 'rgba(255,255,255,0.14)' : 'transparent', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: chatMode === 'chat' ? 600 : 400, cursor: 'pointer', minHeight: '44px', minWidth: '44px' }}
+              >Chat</button>
+            </div>
 
             {/* Thinking */}
             {thinking && (
@@ -861,11 +780,11 @@ export default function LiquidOrb() {
 
             {/* Attachments */}
             {attachments.length > 0 && (
-              <div className="lg-orb-attachments">
+              <div className="lg-orb-attachments" style={{ overflowX: 'auto' }}>
                 {attachments.map(a => (
                   <div key={a.id} className="lg-orb-att">
                     <img src={a.src} alt={a.name} />
-                    <button className="lg-orb-att-rm" onClick={() => setAttachments(prev => prev.filter(x => x.id !== a.id))}>×</button>
+                    <button className="lg-orb-att-rm" style={{ minHeight: 44, minWidth: 44 }} onClick={() => setAttachments(prev => prev.filter(x => x.id !== a.id))}>×</button>
                   </div>
                 ))}
               </div>
@@ -877,29 +796,33 @@ export default function LiquidOrb() {
                 ref={taRef}
                 className="lg-orb-ta"
                 rows={1}
-                placeholder={activeAction === 'Edit self' ? 'Describe what to change about the UI…' : 'Ask AI to change the UI…'}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder={isConfigured ? (debugMode ? 'Debug mode: describe the bug…' : 'Ask AI to change the UI…') : 'Open Settings → AI Assistant to configure'}
                 onKeyDown={(e) => {
-                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); handleSend(); }
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
                   if (e.key === 'Escape') { goToPhase('pill'); }
                 }}
               />
             </div>
 
             {/* Toolbar */}
-            <div className="lg-orb-toolbar">
-              <div className="lg-orb-tb-l">
-                <button className="lg-orb-tool" onClick={() => { taRef.current.value = ''; goToPhase('pill'); }}>
+            <div className="lg-orb-toolbar" style={{ flexWrap: 'wrap' }}>
+              <div className="lg-orb-tb-l" style={{ flexWrap: 'wrap' }}>
+                <button className="lg-orb-tool" style={{ minHeight: 44, minWidth: 44 }} onClick={() => { setDraft(''); goToPhase('pill'); }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
-                <button className="lg-orb-tool" onClick={() => setSettingsOpen(true)}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                </button>
                 <span className="lg-orb-ctx-lbl">
-                  {providerDef.name} · {cfgModel || 'no model'}
+                  {isConfigured
+                    ? `${getProviderDef(loadAIConfig().provider).name} · ${loadAIConfig().model || 'no model'}`
+                    : 'Not configured'}
                 </span>
               </div>
-              <div className="lg-orb-tb-r">
-                <button className="lg-orb-send" disabled={!taRef.current?.value?.trim()} onClick={handleSend}>
+              <div className="lg-orb-tb-r" style={{ flexWrap: 'wrap' }}>
+                <button className="lg-orb-tool" style={{ minHeight: 44, minWidth: 44 }} onClick={() => setShowDebugLog(true)} title="Debug Log">
+                  <span style={{ fontSize: 11 }}>⚠</span>
+                </button>
+                <button className="lg-orb-send" style={{ minHeight: 44, minWidth: 44 }} disabled={!draft.trim() && attachments.length === 0} onClick={handleSend}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" /></svg>
                 </button>
               </div>
@@ -908,387 +831,142 @@ export default function LiquidOrb() {
         </div>
       </div>
 
-      {/* ── Centered Setup Dialog (first-time) ── */}
-      {showSetup && (
+      {/* ── Debug Log Viewer ── */}
+      {showDebugLog && (
         <div
-          className="lg-orb-setup-overlay"
           style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
+            position: 'fixed', top: 0, left: 0, right: 0, height: '100dvh', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(0,0,0,0.50)',
+            background: 'rgba(0,0,0,0.55)',
             backdropFilter: 'blur(4px)',
             WebkitBackdropFilter: 'blur(4px)',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           }}
-          onClick={() => setShowSetup(false)}
+          onClick={() => setShowDebugLog(false)}
         >
           <div
-            className="lg-orb-setup-dialog"
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: 'min(420px, 92vw)',
+              width: 'min(560px, 94vw)',
+              maxHeight: '80vh',
               background: 'var(--glass-frost)',
               backdropFilter: 'blur(32px) saturate(180%)',
               WebkitBackdropFilter: 'blur(32px) saturate(180%)',
               border: '1px solid var(--color-border)',
-              borderRadius: '24px',
+              borderRadius: 20,
               boxShadow: '0 24px 80px var(--glass-cast-shadow), inset 0 1px 0 var(--glass-specular)',
-              padding: '28px 24px',
+              padding: '24px 20px',
               fontFamily: "'DM Sans',system-ui,sans-serif",
               color: 'var(--text-primary)',
+              display: 'flex', flexDirection: 'column',
+              overflow: 'hidden',
             }}
           >
-            {/* Title */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: 20,
-            }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10, fontSize: 16, fontWeight: 600,
-                letterSpacing: '-0.01em',
-              }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" />
-                </svg>
-                AI Assistant Setup
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
+                <span>⚠</span>
+                <span>Debug Log</span>
+                <span style={{ fontSize: 11, color: 'var(--text-disabled)', fontWeight: 400 }}>
+                  {dbgEntries.length} entries
+                </span>
               </div>
-              <button
-                onClick={() => setShowSetup(false)}
-                style={{
-                  background: 'none', border: 'none', color: 'var(--text-secondary)',
-                  cursor: 'pointer', padding: 4, borderRadius: 8,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
-              </button>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={copyDebugLog}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid var(--color-border)',
+                    borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+                    color: 'var(--text-secondary)', fontSize: 10, fontFamily: "'DM Sans',sans-serif",
+                    minHeight: 44, minWidth: 44,
+                  }}
+                  title="Copy as Markdown"
+                >📋 Copy</button>
+                <button
+                  onClick={downloadDebugLog}
+                  style={{
+                    background: 'rgba(80,200,120,0.10)', border: '1px solid rgba(80,200,120,0.25)',
+                    borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+                    color: 'rgba(80,200,120,0.75)', fontSize: 10, fontFamily: "'DM Sans',sans-serif",
+                    minHeight: 44, minWidth: 44,
+                  }}
+                  title="Download as .md file"
+                >⬇ Download</button>
+                <button
+                  onClick={() => { clearDebugLog(); }}
+                  style={{
+                    background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.18)',
+                    borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+                    color: 'rgba(255,100,100,0.65)', fontSize: 10, fontFamily: "'DM Sans',sans-serif",
+                    minHeight: 44, minWidth: 44,
+                  }}
+                  title="Clear all entries"
+                >✕ Clear</button>
+                <button
+                  onClick={() => setShowDebugLog(false)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 10,
+                    color: 'var(--text-secondary)', fontSize: 20, lineHeight: 1,
+                    minWidth: 44, minHeight: 44,
+                  }}
+                >×</button>
+              </div>
             </div>
 
-            {/* Provider tabs */}
+            {/* Log entries */}
             <div style={{
-              display: 'flex', gap: 4, marginBottom: 16, padding: 3,
-              background: 'rgba(255,255,255,0.04)', borderRadius: 12, flexWrap: 'wrap',
+              flex: 1, overflow: 'auto', minHeight: 0,
+              fontFamily: "'DM Mono',monospace", fontSize: 10, lineHeight: 1.6,
             }}>
-              {Object.entries(getProviders()).map(([pid, p]) => {
-                const active = pid === cfgProvider;
-                const isCustom = !p.builtin;
-                return (
-                  <div key={pid} style={{ position: 'relative', flex: '1 0 auto' }}>
-                    <button style={{
-                      width: '100%', background: active ? 'rgba(255,255,255,0.10)' : 'none',
-                      border: 'none', borderRadius: 9, padding: '6px 8px', cursor: 'pointer',
-                      fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: active ? 600 : 400,
-                      color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                      transition: 'all 0.15s', whiteSpace: 'nowrap',
-                    }} onClick={() => {
-                      setCfgProvider(pid);
-                      setCfgModel(getProviders()[pid].models[0]);
-                      setCustomModel('');
-                    }}>
-                      <span style={{ marginRight: 4 }}>{p.icon}</span>{p.name}
-                    </button>
-                    {isCustom && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleRemoveProvider(pid); }}
-                        style={{
-                          position: 'absolute', top: -4, right: -4, width: 16, height: 16,
-                          borderRadius: '50%', border: 'none', background: 'rgba(255,60,60,0.6)',
-                          color: '#fff', fontSize: 10, cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          lineHeight: 1, padding: 0, zIndex: 10,
-                        }}
-                        title={`Remove ${p.name}`}
-                      >×</button>
-                    )}
+              {dbgEntries.length === 0 ? (
+                <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-disabled)', fontSize: 11, fontFamily: "'DM Sans',sans-serif" }}>
+                  No errors captured yet. Reproduce the issue and check back here.
+                  <div style={{ marginTop: 8, fontSize: 10, opacity: 0.6 }}>
+                    All runtime errors (window errors, AI call failures, mutation errors) are automatically logged.
                   </div>
-                );
-              })}
-              <button
-                onClick={() => setShowAddProvider(v => !v)}
-                style={{
-                  flex: '0 0 auto', width: 32, height: 32,
-                  border: '1px dashed var(--color-border)', borderRadius: 9,
-                  background: 'transparent', cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)',
-                  fontSize: 14, fontFamily: "'DM Sans',sans-serif",
-                }}
-                title="Add custom LLM / API"
-              >+</button>
-            </div>
-
-            {/* Add custom provider form */}
-            {showAddProvider && (
-              <div style={{
-                marginBottom: 16, padding: '12px 14px', borderRadius: 12,
-                border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.03)',
-                display: 'flex', flexDirection: 'column', gap: 8,
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-disabled)', textTransform: 'uppercase' }}>Add Custom Provider</div>
-                <input type="text" placeholder="Provider name (e.g. Local LLM)" value={newProviderName}
-                  onChange={e => setNewProviderName(e.target.value)}
-                  style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Sans',sans-serif", fontSize: 11, outline: 'none' }}
-                />
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <input type="text" placeholder="Icon (emoji, e.g. 🤖)" value={newProviderIcon} style={{ width: 50, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: 11, outline: 'none', textAlign: 'center' }} onChange={e => setNewProviderIcon(e.target.value)} />
-                  <input type="text" placeholder="API endpoint URL" value={newProviderURL} style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none' }} onChange={e => setNewProviderURL(e.target.value)} />
                 </div>
-                <input type="text" placeholder="Models (comma-separated, e.g. model-a, model-b)" value={newProviderModels}
-                  onChange={e => setNewProviderModels(e.target.value)}
-                  style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none' }}
-                />
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={newProviderNeedsKey} onChange={e => setNewProviderNeedsKey(e.target.checked)} />
-                  Requires API key
-                </label>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={handleAddCustomProvider} style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'var(--color-accent, #8B5CF6)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: "'DM Sans',sans-serif" }}>Add Provider</button>
-                  <button onClick={() => setShowAddProvider(false)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, fontFamily: "'DM Sans',sans-serif" }}>Cancel</button>
-                </div>
-              </div>
-            )}
-
-            {/* Model select */}
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Model</div>
-            <select
-              style={{
-                width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                fontFamily: "'DM Sans',sans-serif", fontSize: 12, outline: 'none',
-                marginBottom: 14, appearance: 'none', cursor: 'pointer',
-              }}
-              value={cfgModel}
-              onChange={(e) => {
-                setCfgModel(e.target.value);
-                if (e.target.value === 'custom') setCustomModel('');
-              }}
-            >
-              {providerDef.models.map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-              <option value="custom">Custom model ID…</option>
-            </select>
-
-            {/* Custom model input */}
-            {(cfgModel === 'custom' || !providerDef.models.includes(cfgModel)) && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Custom model ID</div>
-                <input type="text" placeholder="e.g. llama-3.3-70b-versatile" value={customModel}
-                  onChange={(e) => setCustomModel(e.target.value)}
-                  style={{
-                    width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                    borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                    fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
-                  }}
-                />
-              </div>
-            )}
-
-            {/* API Key */}
-            {providerDef.needsKey && (
-              <>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>{providerDef.keyLabel}</div>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14 }}>
-                  <input
-                    type={showKey ? 'text' : 'password'}
-                    placeholder={providerDef.keyPlaceholder}
-                    value={cfgKey}
-                    onChange={(e) => setCfgKey(e.target.value)}
-                    style={{
-                      flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                      borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                      fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
-                    }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSetup(); }}
-                  />
-                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 4, opacity: 0.6 }}
-                    onClick={() => setShowKey(v => !v)}>
-                    {showKey ? '🙈' : '👁'}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {cfgProvider === 'ollama' && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Endpoint</div>
-                <input type="text" placeholder="http://localhost:11434"
-                  style={{
-                    width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                    borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                    fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Buttons */}
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-              <button style={{
-                flex: 1, background: 'var(--color-accent, #8B5CF6)', color: '#fff',
-                border: 'none', borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
-                fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 500,
-              }} onClick={handleSaveSetup}>
-                Save & Continue
-              </button>
-              <button style={{
-                background: 'transparent', color: 'var(--text-secondary)',
-                border: '1px solid var(--color-border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
-                fontFamily: "'DM Sans',sans-serif", fontSize: 13,
-              }} onClick={() => setShowSetup(false)}>
-                Later
-              </button>
-            </div>
-
-            {/* Hint */}
-            <div style={{
-              marginTop: 14, fontSize: 11, color: 'var(--text-disabled)',
-              textAlign: 'center', letterSpacing: '0.02em',
-            }}>
-              You can change these anytime in the settings cog
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── In-orb Settings Panel (small floating) ── */}
-      {settingsOpen && (
-        <div
-          className="lg-orb-settings-panel visible"
-          style={{
-            position: 'fixed', top: 60, right: 18, zIndex: 900,
-            background: 'var(--glass-frost)',
-            backdropFilter: 'blur(32px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 20, padding: '20px 18px', width: 310,
-            boxShadow: '0 20px 60px var(--glass-cast-shadow), inset 0 1px 0 var(--glass-specular)',
-            fontFamily: "'DM Sans',system-ui,sans-serif",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-disabled)', marginBottom: 14 }}>AI Provider</div>
-          <div style={{ display: 'flex', gap: 4, marginBottom: 16, padding: 3, background: 'rgba(255,255,255,0.04)', borderRadius: 12, flexWrap: 'wrap' }}>
-            {Object.entries(getProviders()).map(([pid, p]) => {
-              const active = pid === cfgProvider;
-              const isCustom = !p.builtin;
-              return (
-                <div key={pid} style={{ position: 'relative', flex: '1 0 auto' }}>
-                  <button style={{
-                    width: '100%', background: active ? 'rgba(255,255,255,0.10)' : 'none',
-                    border: 'none', borderRadius: 9, padding: '5px 6px', cursor: 'pointer',
-                    fontFamily: "'DM Sans',sans-serif", fontSize: 10, fontWeight: active ? 600 : 400,
-                    color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    transition: 'all 0.15s', whiteSpace: 'nowrap',
-                  }} onClick={() => {
-                    setCfgProvider(pid);
-                    setCfgModel(getProviders()[pid].models[0]);
-                    setCustomModel('');
+              ) : (
+                dbgEntries.map(e => (
+                  <div key={e.id} style={{
+                    padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    display: 'flex', gap: 6,
                   }}>
-                    <div style={{ fontSize: 13, marginBottom: 2 }}>{p.icon}</div>{p.name}
-                  </button>
-                  {isCustom && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleRemoveProvider(pid); }}
-                      style={{
-                        position: 'absolute', top: -4, right: -4, width: 16, height: 16,
-                        borderRadius: '50%', border: 'none', background: 'rgba(255,60,60,0.6)',
-                        color: '#fff', fontSize: 10, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        lineHeight: 1, padding: 0, zIndex: 10,
-                      }}
-                      title={`Remove ${p.name}`}
-                    >×</button>
-                  )}
-                </div>
-              );
-            })}
-            <button
-              onClick={() => { setSettingsOpen(false); setShowAddProvider(true); setShowSetup(true); }}
-              style={{
-                flex: '0 0 auto', width: 28, height: 28,
-                border: '1px dashed var(--color-border)', borderRadius: 9,
-                background: 'transparent', cursor: 'pointer', display: 'flex',
-                alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)',
-                fontSize: 13, fontFamily: "'DM Sans',sans-serif",
-              }}
-              title="Add custom LLM / API"
-            >+</button>
-          </div>
-
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Model</div>
-          <select
-            style={{
-              width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-              borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-              fontFamily: "'DM Sans',sans-serif", fontSize: 12, outline: 'none',
-              marginBottom: 14, appearance: 'none', cursor: 'pointer',
-            }}
-            value={cfgModel}
-            onChange={(e) => {
-              setCfgModel(e.target.value);
-              if (e.target.value === 'custom') setCustomModel('');
-            }}
-          >
-            {providerDef.models.map(m => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-            <option value="custom">Custom model ID…</option>
-          </select>
-
-          {(cfgModel === 'custom' || !providerDef.models.includes(cfgModel)) && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>Custom model ID</div>
-              <input type="text" placeholder="e.g. llama-3.3-70b-versatile" value={customModel}
-                onChange={(e) => setCustomModel(e.target.value)}
-                style={{
-                  width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                  borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                  fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
-                }}
-              />
+                    <span style={{ flexShrink: 0, width: 12 }}>
+                      {e.level === 'error' ? '🔴' : e.level === 'warn' ? '🟡' : '🔵'}
+                    </span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                        <span style={{ color: 'var(--text-disabled)', fontSize: 9 }}>
+                          {new Date(e.time).toLocaleTimeString()}
+                        </span>
+                        <span style={{
+                          color: e.level === 'error' ? 'rgba(255,100,100,0.7)' : 'rgba(255,180,60,0.6)',
+                          fontSize: 9, fontWeight: 600, textTransform: 'uppercase',
+                        }}>
+                          {e.source}
+                        </span>
+                      </div>
+                      <div style={{ color: 'var(--text-primary)', wordBreak: 'break-word', marginTop: 1 }}>
+                        {e.message}
+                      </div>
+                      {e.detail?.stack && (
+                        <div style={{ color: 'var(--text-disabled)', fontSize: 9, marginTop: 2, whiteSpace: 'pre-wrap', maxHeight: 60, overflow: 'hidden' }}>
+                          {e.detail.stack}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-          )}
 
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>{providerDef.keyLabel}</div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14 }}>
-            <input
-              type={showKey ? 'text' : 'password'}
-              placeholder={providerDef.keyPlaceholder}
-              value={cfgKey}
-              onChange={(e) => setCfgKey(e.target.value)}
-              style={{
-                flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-border)',
-                borderRadius: 10, padding: '8px 10px', color: 'var(--text-primary)',
-                fontFamily: "'DM Mono',monospace", fontSize: 11, outline: 'none',
-              }}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSettings(); if (e.key === 'Escape') setSettingsOpen(false); }}
-            />
-            <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 4, opacity: 0.6 }}
-              onClick={() => setShowKey(v => !v)}>
-              {showKey ? '🙈' : '👁'}
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-            <button style={{
-              flex: 1, background: 'var(--color-accent, #8B5CF6)', color: '#fff',
-              border: 'none', borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
-              fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 500,
-            }} onClick={handleSaveSettings}>Save</button>
-            <button style={{
-              background: 'rgba(255,80,80,0.10)', color: 'rgba(255,100,100,0.75)',
-              border: '1px solid rgba(255,80,80,0.18)', borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
-              fontFamily: "'DM Sans',sans-serif", fontSize: 12,
-            }} onClick={handleClearKey}>Clear</button>
-          </div>
-
-          <div style={{
-            fontSize: 11, color: cfgKey ? 'rgba(80,200,120,0.60)' : 'rgba(255,140,80,0.65)',
-            lineHeight: 1.55, paddingTop: 10, borderTop: '1px solid var(--color-border)',
-          }}>
-            {cfgKey
-              ? `✓ ${providerDef.name} · ${cfgModel || 'no model'}`
-              : providerDef.needsKey ? `⚠ No API key set for ${providerDef.name}` : `${providerDef.name} · no key needed`
-            }
+            {/* Footer hint */}
+            <div style={{
+              marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--color-border)',
+              fontSize: 10, color: 'var(--text-disabled)', textAlign: 'center',
+            }}>
+              Download the log as .md to share with the AI for diagnosis
+            </div>
           </div>
         </div>
       )}

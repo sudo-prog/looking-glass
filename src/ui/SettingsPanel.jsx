@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, GearSix, Sun, Moon, Trash, Download, Sparkle, Palette, Eye, Image, TextT, Upload } from '@phosphor-icons/react';
 import { toggleTheme, isDark } from '../utils/theme';
-import { getProviders, loadAIConfig, saveAIConfig, getProviderDef } from '../utils/aiConfig.js';
+import { loadAIConfig, saveAIConfig, getProviderDef, resolveEndpoint, testConnection } from '../utils/aiConfig.js';
 import { loadThemeConfig, saveThemeConfig, applyThemeConfig, THEME_DEFAULTS, getThicknessRadius } from '../utils/themeConfig.js';
 
 const ICON_POOL = [
@@ -27,11 +27,13 @@ const ICON_POOL = [
 
 export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
   const [dark, setDark] = useState(isDark());
-  const [aiProvider, setAiProvider] = useState('openai');
+  const [aiProvider, setAiProvider] = useState('omniroute');
   const [aiKey, setAiKey] = useState('');
   const [aiEndpoint, setAiEndpoint] = useState('');
   const [aiModel, setAiModel] = useState('');
   const [customModel, setCustomModel] = useState('');
+  const [testStatus, setTestStatus] = useState('idle'); // 'idle' | 'pending' | 'ok' | 'error'
+  const [testResult, setTestResult] = useState(null);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState('theme');
 
@@ -123,6 +125,8 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
     setRemovedIcons(tc.removedIcons || []);
     setDark(isDark());
     setSaved(false);
+    setTestStatus('idle');
+    setTestResult(null);
   }, [isOpen]);
 
   // ── Save all ──
@@ -212,6 +216,33 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
     }
   }, []);
 
+  // ── Test connection handler ──
+  const handleTestConnection = useCallback(async () => {
+    const p = getProviderDef(aiProvider);
+    const modelToTest = aiModel === 'custom' || (!p.models.includes(aiModel)) ? customModel : aiModel;
+    const endpoint = resolveEndpoint(aiProvider, p);
+    setTestStatus('pending');
+    setTestResult(null);
+    try {
+      const result = await testConnection({
+        provider: aiProvider,
+        model: modelToTest || p.models[0],
+        key: aiKey,
+        endpoint,
+      });
+      if (result.ok) {
+        setTestStatus('ok');
+        setTestResult({ model: result.model });
+      } else {
+        setTestStatus('error');
+        setTestResult({ status: result.status, message: result.message });
+      }
+    } catch (err) {
+      setTestStatus('error');
+      setTestResult({ status: 0, message: err.message });
+    }
+  }, [aiProvider, aiModel, aiKey, customModel]);
+
   const handleExportAll = useCallback(() => {
     window.dispatchEvent(new CustomEvent('lg-export'));
     onClose();
@@ -234,7 +265,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
   const providerDef = getProviderDef(aiProvider);
 
   const tabBtn = (id, label, Icon) => ({
-    display: 'flex', alignItems: 'center', gap: '6px',
+    display: 'flex', alignItems: 'center', gap: '6px', minHeight: '44px', minWidth: '44px',
     padding: '6px 12px', borderRadius: '10px', border: 'none',
     background: activeTab === id ? 'rgba(255,255,255,0.10)' : 'transparent',
     color: activeTab === id ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -247,7 +278,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-dropdown)', background: 'rgba(0,0,0,0.40)' }} />
       <div role="dialog" aria-label="Settings" style={{
-        position: 'fixed', top: 0, left: 0, bottom: 0,
+        position: 'fixed', top: 0, left: 0, height: '100dvh',
         width: 'min(440px, 100vw)', zIndex: 'var(--z-dropdown)',
         background: 'var(--glass-frost)', backdropFilter: 'blur(32px) saturate(120%)',
         WebkitBackdropFilter: 'blur(32px) saturate(120%)',
@@ -261,6 +292,19 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
           input[type="range"] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; background: var(--color-border); outline: none; cursor: pointer; width: 100%; }
           input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--color-accent, #8B5CF6); border: 2px solid var(--glass-frost); box-shadow: 0 2px 8px var(--glass-cast-shadow); cursor: pointer; }
           .lg-settings-section + .lg-settings-section { margin-top: 16px; }
+          /* MOBILE-UI-STANDARD: 44px touch targets + thin slider tracks, scoped to settings sections */
+          .lg-settings-section button, .lg-settings-section select, .lg-settings-section input:not([type="file"]) { min-height: 44px !important; }
+          .lg-settings-section input[type="color"] { min-width: 44px; }
+          .lg-settings-section input[type="range"] { height: 44px; background: transparent; }
+          .lg-settings-section input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--color-border); }
+          .lg-settings-section input[type="range"]::-webkit-slider-thumb { margin-top: -6px; }
+          .lg-settings-section input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--color-border); }
+          .lg-settings-section input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--color-accent, #8B5CF6); border: 2px solid var(--glass-frost); box-shadow: 0 2px 8px var(--glass-cast-shadow); cursor: pointer; }
+          /* MOBILE-UI-STANDARD: stack rows & enforce full-width below 640px */
+          @media (max-width: 640px) {
+            .lg-settings-section > div { flex-wrap: wrap; }
+            .lg-settings-section div[style*="justify-content: space-between"] { flex-wrap: wrap; gap: 8px; }
+          }
         `}</style>
 
         {/* Header */}
@@ -269,13 +313,13 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
             <GearSix size={18} weight="regular" style={{ color: 'var(--text-primary)' }} />
             <span style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.08em' }}>SETTINGS</span>
           </div>
-          <button onClick={onClose} aria-label="Close settings" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+          <button onClick={onClose} aria-label="Close settings" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
             <X size={16} weight="regular" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '2px', padding: '8px 10px', borderBottom: '1px solid var(--color-border)', overflowX: 'auto', flexShrink: 0, flexWrap: 'nowrap' }}>
+        <div style={{ display: 'flex', gap: '2px', padding: '8px 10px', borderBottom: '1px solid var(--color-border)', overflowX: 'auto', flexShrink: 0, flexWrap: 'wrap' }}>
           <button style={{ ...tabBtn('theme', 'Theme', Palette), padding: '6px 8px', fontSize: '10px', whiteSpace: 'nowrap' }} onClick={() => setActiveTab('theme')}><Palette size={10} /><span>Theme</span></button>
           <button style={{ ...tabBtn('icons', 'Icons', Eye), padding: '6px 8px', fontSize: '10px', whiteSpace: 'nowrap' }} onClick={() => setActiveTab('icons')}><Eye size={10} /><span>Icons</span></button>
           <button style={{ ...tabBtn('ai', 'AI', Sparkle), padding: '6px 8px', fontSize: '10px', whiteSpace: 'nowrap' }} onClick={() => setActiveTab('ai')}><Sparkle size={10} /><span>AI</span></button>
@@ -290,7 +334,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
               <SettingsSection title="MODE">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={sLabel}>{dark ? 'Dark Mode' : 'Light Mode'}</span>
-                  <button onClick={handleThemeToggle} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <button onClick={handleThemeToggle} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>
                     {dark ? <Sun size={16} /> : <Moon size={16} />}
                   </button>
                 </div>
@@ -325,11 +369,11 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
               {/* ── BACKGROUND IMAGE ── */}
               <SettingsSection title="BACKGROUND">
                 <div style={{ marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button onClick={() => fileInputRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '10px', border: '1px dashed var(--color-border)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '11px', flex: 1 }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button onClick={() => fileInputRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', minHeight: '44px', borderRadius: '10px', border: '1px dashed var(--color-border)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '11px', flex: 1 }}>
                       <Upload size={14} /> {bgImage ? 'Change Image' : 'Upload Image'}
                     </button>
-                    {bgImage && <button onClick={() => { setBgImage(''); preview({ bgImage: '' }); }} style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '11px', fontFamily: 'var(--font-ui)' }}>Clear</button>}
+                    {bgImage && <button onClick={() => { setBgImage(''); preview({ bgImage: '' }); }} style={{ padding: '8px 12px', minHeight: '44px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '11px', fontFamily: 'var(--font-ui)' }}>Clear</button>}
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
                 </div>
@@ -337,10 +381,10 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                 {bgImage && (
                   <>
                     {/* Mode selector */}
-                    <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', padding: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px' }}>
+                    <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', padding: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', flexWrap: 'wrap', overflowX: 'auto' }}>
                       {['cover', 'center', 'tile', 'stretch'].map(m => (
                         <button key={m} onClick={() => { setBgImageMode(m); preview({ bgImageMode: m }); }}
-                          style={{ flex: 1, padding: '4px 6px', borderRadius: '8px', border: 'none', background: bgImageMode === m ? 'rgba(255,255,255,0.10)' : 'transparent', color: bgImageMode === m ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '9px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                          style={{ flex: '1 0 auto', minHeight: '44px', minWidth: '44px', padding: '4px 6px', borderRadius: '8px', border: 'none', background: bgImageMode === m ? 'rgba(255,255,255,0.10)' : 'transparent', color: bgImageMode === m ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '9px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                           {m}
                         </button>
                       ))}
@@ -369,11 +413,11 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                 {/* Font upload */}
                 <div style={{ marginBottom: '10px' }}>
                   <div style={sLabel}>Upload Font</div>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                    <button onClick={() => fontFileInputRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '8px', border: '1px dashed var(--color-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '10px', flex: 1 }}>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                    <button onClick={() => fontFileInputRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', minHeight: '44px', borderRadius: '8px', border: '1px dashed var(--color-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '10px', flex: 1 }}>
                       <Upload size={12} /> Upload .ttf / .otf / .woff
                     </button>
-                    {fontImport && <button onClick={() => { setFontImport(''); setFontFamily(''); preview({ fontImport: '', fontFamily: '' }); }} style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '10px', fontFamily: 'var(--font-ui)' }}>Reset</button>}
+                    {fontImport && <button onClick={() => { setFontImport(''); setFontFamily(''); preview({ fontImport: '', fontFamily: '' }); }} style={{ padding: '7px 10px', minHeight: '44px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '10px', fontFamily: 'var(--font-ui)' }}>Reset</button>}
                   </div>
                   <input ref={fontFileInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" onChange={handleFontUpload} style={{ display: 'none' }} />
                 </div>
@@ -384,7 +428,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                   <input type="text" value={fontImport} onChange={e => setFontImport(e.target.value)} placeholder='@import url("https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap");' style={{
                     width: '100%', padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--color-border)',
                     background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-mono)', fontSize: '10px', outline: 'none', marginTop: '4px', boxSizing: 'border-box', resize: 'vertical', minHeight: '40px',
+                    fontFamily: 'var(--font-mono)', fontSize: '10px', outline: 'none', marginTop: '4px', boxSizing: 'border-box', resize: 'vertical', minHeight: '44px',
                   }} />
                 </div>
 
@@ -405,7 +449,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                   {fontDropShadow && (
                     <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <ColorRow label="Shadow Color" value={fontShadowColor} onChange={v => { setFontShadowColor(v); preview({ fontShadowColor: v }); }} />
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <div style={{ flex: 1 }}><SliderRow label="Offset X" value={`${fontShadowOffsetX}px`}><input type="range" min="0" max="6" step="1" value={fontShadowOffsetX} onChange={e => { const v = parseInt(e.target.value); setFontShadowOffsetX(v); preview({ fontShadowOffsetX: v }); }} /></SliderRow></div>
                         <div style={{ flex: 1 }}><SliderRow label="Offset Y" value={`${fontShadowOffsetY}px`}><input type="range" min="0" max="6" step="1" value={fontShadowOffsetY} onChange={e => { const v = parseInt(e.target.value); setFontShadowOffsetY(v); preview({ fontShadowOffsetY: v }); }} /></SliderRow></div>
                       </div>
@@ -435,7 +479,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                 <div style={{ fontSize: '10px', color: 'var(--text-disabled)', marginBottom: '8px', lineHeight: 1.5 }}>
                   Drag to reorder. Long-press in menu to remove. Drag from pool below to add back.
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', padding: '10px', borderRadius: '10px', border: '1px solid var(--color-border)', minHeight: '48px', background: 'rgba(255,255,255,0.02)' }}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', padding: '10px', borderRadius: '10px', border: '1px solid var(--color-border)', minHeight: '48px', background: 'rgba(255,255,255,0.02)', overflowX: 'auto' }}
                   onDrop={handlePoolDrop} onDragOver={handlePoolDragOver}>
                   {menuIcons.map((id) => {
                     const info = ICON_POOL.find(p => p.id === id);
@@ -445,7 +489,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                         onDragStart={e => { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; }}
                         onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                         onDrop={e => { e.preventDefault(); const fromId = e.dataTransfer.getData('text/plain'); if (!fromId || fromId === id) return; const newOrder = menuIcons.filter(x => x !== fromId); const idx = newOrder.indexOf(id); newOrder.splice(idx + (newOrder.indexOf(fromId) < idx ? 1 : 0), 0, fromId); setMenuIcons(newOrder); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.04)', cursor: 'grab', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', minHeight: '44px', minWidth: '44px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.04)', cursor: 'grab', fontSize: '11px', color: 'var(--text-secondary)' }}>
                         <span>{info.icon}</span><span>{info.label}</span>
                         <span style={{ cursor: 'pointer', opacity: 0.4, marginLeft: '2px' }} onClick={() => { setMenuIcons(prev => prev.filter(x => x !== id)); setRemovedIcons(prev => [...prev, id]); }}>✕</span>
                       </div>
@@ -455,7 +499,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                 </div>
               </SettingsSection>
               <SettingsSection title="ICON POOL">
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', overflowX: 'auto' }}>
                   {ICON_POOL.map(info => {
                     const inMenu = menuIcons.includes(info.id);
                     const inRemoved = removedIcons.includes(info.id);
@@ -464,7 +508,7 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                         onDragStart={e => { setDraggingPoolId(info.id); e.dataTransfer.setData('text/plain', info.id); e.dataTransfer.effectAllowed = 'copy'; }}
                         onDragEnd={() => setDraggingPoolId(null)}
                         onClick={() => inRemoved ? (setMenuIcons(prev => prev.includes(info.id) ? prev : [...prev, info.id]), setRemovedIcons(prev => prev.filter(i => i !== info.id))) : null}
-                        style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '8px', border: `1px solid ${inRemoved ? 'var(--color-border)' : 'rgba(255,255,255,0.04)'}`, background: inRemoved ? 'rgba(255,255,255,0.03)' : inMenu ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)', cursor: inRemoved ? 'pointer' : 'grab', fontSize: '11px', color: inRemoved ? 'var(--text-disabled)' : inMenu ? 'var(--text-primary)' : 'var(--text-secondary)', opacity: inMenu ? 0.6 : 1 }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', minHeight: '44px', minWidth: '44px', borderRadius: '8px', border: `1px solid ${inRemoved ? 'var(--color-border)' : 'rgba(255,255,255,0.04)'}`, background: inRemoved ? 'rgba(255,255,255,0.03)' : inMenu ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)', cursor: inRemoved ? 'pointer' : 'grab', fontSize: '11px', color: inRemoved ? 'var(--text-disabled)' : inMenu ? 'var(--text-primary)' : 'var(--text-secondary)', opacity: inMenu ? 0.6 : 1 }}>
                         <span>{info.icon}</span><span>{info.label}</span>
                         {inRemoved && <span style={{ fontSize: '9px', opacity: 0.5 }}>↩</span>}
                       </div>
@@ -477,25 +521,35 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
 
           {activeTab === 'ai' && (
             <SettingsSection title="AI ASSISTANT">
-              <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', padding: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', flexWrap: 'wrap' }}>
-                {Object.entries(getProviders()).map(([pid, p]) => (
-                  <button key={pid} onClick={() => { setAiProvider(pid); setAiModel(getProviders()[pid].models[0]); setCustomModel(''); }}
-                    style={{ flex: '1 0 auto', background: pid === aiProvider ? 'rgba(255,255,255,0.10)' : 'none', border: 'none', borderRadius: '9px', padding: '5px 6px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: '10px', fontWeight: pid === aiProvider ? 600 : 400, color: pid === aiProvider ? 'rgba(238,238,248,0.90)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {p.icon}{p.name}
+              {/* Provider selector — exactly two choices */}
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', padding: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', flexWrap: 'wrap', overflowX: 'auto' }}>
+                {[
+                  { id: 'omniroute', label: 'OmniRoute' },
+                  { id: 'openrouter', label: 'OpenRouter (free)' },
+                ].map(({ id, label }) => (
+                  <button key={id} onClick={() => { setAiProvider(id); setAiModel(getProviderDef(id).models[0]); setCustomModel(''); setTestStatus('idle'); setTestResult(null); }}
+                    style={{ flex: '1 1 40%', minHeight: '44px', minWidth: '44px', background: id === aiProvider ? 'rgba(255,255,255,0.10)' : 'none', border: 'none', borderRadius: '9px', padding: '5px 6px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", fontSize: '10px', fontWeight: id === aiProvider ? 600 : 400, color: id === aiProvider ? 'rgba(238,238,248,0.90)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {label}
                   </button>
                 ))}
               </div>
+
+              {/* Model select */}
               <div style={{ marginTop: '8px' }}><span style={sLabel}>Model</span>
-                <select value={aiModel} onChange={e => { setAiModel(e.target.value); if (e.target.value === 'custom') setCustomModel(''); }} style={selStyle}>
+                <select value={aiModel} onChange={e => { setAiModel(e.target.value); if (e.target.value === 'custom') setCustomModel(''); setTestStatus('idle'); setTestResult(null); }} style={selStyle}>
                   {(providerDef?.models || []).map(m => <option key={m} value={m}>{m}</option>)}
                   <option value="custom">Custom model ID…</option>
                 </select>
               </div>
+
+              {/* Custom model input */}
               {(aiModel === 'custom' || (providerDef && !providerDef.models.includes(aiModel))) && (
                 <div style={{ marginTop: '8px' }}><span style={sLabel}>Custom model ID</span>
-                  <input type="text" placeholder="e.g. llama-3.3-70b-versatile" value={customModel} onChange={e => setCustomModel(e.target.value)} style={textInputStyle} />
+                  <input type="text" placeholder="e.g. z-ai/glm-5.2:free" value={customModel} onChange={e => setCustomModel(e.target.value)} style={textInputStyle} />
                 </div>
               )}
+
+              {/* API Key */}
               {providerDef?.needsKey !== false && (
                 <div style={{ marginTop: '10px' }}><span style={sLabel}>{providerDef?.keyLabel || 'API Key'}</span>
                   <input type="password" value={aiKey} onChange={e => setAiKey(e.target.value)} placeholder={providerDef?.keyPlaceholder || 'Enter API key'} style={textInputStyle} />
@@ -504,11 +558,48 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                   </div>
                 </div>
               )}
-              {aiProvider === 'ollama' && (
-                <div style={{ marginTop: '10px' }}><span style={sLabel}>Endpoint</span>
-                  <input type="text" value={aiEndpoint} onChange={e => setAiEndpoint(e.target.value)} placeholder="http://localhost:11434" style={textInputStyle} />
+
+              {/* Base URL (omniroute only) */}
+              {providerDef?.showBaseURL && (
+                <div style={{ marginTop: '10px' }}><span style={sLabel}>Base URL</span>
+                  <input type="text" value={aiEndpoint} onChange={e => setAiEndpoint(e.target.value)} placeholder="http://127.0.0.1:20128/v1/chat/completions" style={textInputStyle} />
+                  <div style={{ fontSize: '10px', color: '#888', marginTop: '4px' }}>
+                    Leave blank for default. On HTTPS sites, calls are proxied through /api/chat automatically.
+                  </div>
                 </div>
               )}
+
+              {/* Test connection */}
+              <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button
+                  onClick={handleTestConnection}
+                  disabled={testStatus === 'pending'}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    minHeight: '44px', minWidth: '44px', padding: '8px 16px',
+                    borderRadius: '10px', border: '1px solid var(--color-border)',
+                    background: testStatus === 'pending' ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.06)',
+                    color: 'var(--text-primary)', cursor: testStatus === 'pending' ? 'wait' : 'pointer',
+                    fontFamily: "'DM Sans',sans-serif", fontSize: '12px', fontWeight: 500,
+                  }}
+                >
+                  {testStatus === 'pending' ? (
+                    <><span className="lg-orb-dots" style={{ display: 'inline-flex', gap: 3 }}><span /><span /><span /></span> Testing…</>
+                  ) : (
+                    <>⚡ Test connection</>
+                  )}
+                </button>
+                {testStatus === 'ok' && testResult && (
+                  <div style={{ fontSize: '11px', color: '#22c55e', padding: '6px 10px', borderRadius: '8px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                    ✓ Connected · {testResult.model}
+                  </div>
+                )}
+                {testStatus === 'error' && testResult && (
+                  <div style={{ fontSize: '11px', color: '#ef4444', padding: '6px 10px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    ✗ {testResult.status ? `${testResult.status} ` : ''}{testResult.message}
+                  </div>
+                )}
+              </div>
             </SettingsSection>
           )}
 
@@ -521,9 +612,9 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ padding: '12px 20px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <span style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', color: 'var(--text-disabled)', letterSpacing: '0.06em' }}>V0.1 · LOOKING GLASS</span>
-          <button onClick={handleSave} style={{ padding: '8px 20px', borderRadius: '8px', border: 'none', background: saved ? 'rgba(34,197,94,0.2)' : 'var(--color-accent, #8B5CF6)', color: saved ? '#22c55e' : '#fff', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', transition: 'all 0.2s ease' }}>
+          <button onClick={handleSave} style={{ padding: '8px 20px', minHeight: '44px', minWidth: '44px', borderRadius: '8px', border: 'none', background: saved ? 'rgba(34,197,94,0.2)' : 'var(--color-accent, #8B5CF6)', color: saved ? '#22c55e' : '#fff', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', transition: 'all 0.2s ease' }}>
             {saved ? '✓ SAVED' : 'SAVE'}
           </button>
         </div>
@@ -561,7 +652,7 @@ function ColorRow({ label, value, onChange, placeholder }) {
       <span style={sLabel}>{label}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         <input type="color" value={value || '#000000'} onChange={e => onChange(e.target.value)}
-          style={{ width: '30px', height: '30px', border: 'none', padding: 0, cursor: 'pointer', borderRadius: '6px', background: 'none' }} />
+          style={{ width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', border: 'none', padding: 0, cursor: 'pointer', borderRadius: '6px', background: 'none' }} />
         <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder || '#000000'}
           style={{ width: '80px', padding: '4px 6px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: '10px', outline: 'none' }} />
       </div>
@@ -585,12 +676,12 @@ function ToggleRow({ label, enabled, onChange }) {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <span style={sLabel}>{label}</span>
       <button onClick={() => onChange(!enabled)} style={{
-        width: '36px', height: '22px', borderRadius: '11px', border: 'none',
+        width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', borderRadius: '22px', border: 'none',
         background: enabled ? 'var(--color-accent, #8B5CF6)' : 'rgba(255,255,255,0.10)',
         cursor: 'pointer', position: 'relative', transition: 'background 0.15s',
       }}>
         <span style={{
-          position: 'absolute', top: '2px', left: enabled ? '18px' : '2px',
+          position: 'absolute', top: '13px', left: enabled ? '22px' : '4px',
           width: '18px', height: '18px', borderRadius: '50%',
           background: '#fff', transition: 'left 0.15s',
         }} />
@@ -601,6 +692,6 @@ function ToggleRow({ label, enabled, onChange }) {
 
 // Styles
 const sLabel = { fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--text-secondary)', letterSpacing: '0.04em' };
-const textInputStyle = { width: '100%', padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: '11px', outline: 'none', marginTop: '4px', boxSizing: 'border-box' };
-const selStyle = { width: '100%', padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', fontSize: '11px', outline: 'none', marginTop: '4px', cursor: 'pointer', appearance: 'none' };
-const actBtnStyle = { display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '12px', textAlign: 'left' };
+const textInputStyle = { width: '100%', padding: '7px 10px', minHeight: '44px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: '11px', outline: 'none', marginTop: '4px', boxSizing: 'border-box' };
+const selStyle = { width: '100%', padding: '7px 10px', minHeight: '44px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', fontSize: '11px', outline: 'none', marginTop: '4px', cursor: 'pointer', appearance: 'none' };
+const actBtnStyle = { display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', minHeight: '44px', minWidth: '44px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '12px', textAlign: 'left' };

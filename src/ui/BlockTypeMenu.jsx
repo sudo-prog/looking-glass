@@ -77,6 +77,7 @@ function activeBlockId(editor) {
 export function BlockTypeMenu({ editor }) {
   const [open, setOpen] = useState(false);
   const [handleTop, setHandleTop] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef(null);
 
   // Track the vertical position of the block the cursor currently sits in,
@@ -119,6 +120,17 @@ export function BlockTypeMenu({ editor }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  // Track viewport width so the menu can switch to a bottom sheet on mobile
+  // (MOBILE-UI-STANDARD S-3 / S-1: mobile menus dock as a full-width sheet
+  // with safe-area padding instead of an inline popup that can overflow).
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
   const handleSelect = useCallback(
     (id) => {
       if (!editor) return;
@@ -132,11 +144,58 @@ export function BlockTypeMenu({ editor }) {
 
   const current = activeBlockId(editor);
 
+  // Responsive menu container: inline popup on desktop, full-width bottom
+  // sheet (safe-area aware, above the toolbar) on mobile (<=767px).
+  const menuStyle = isMobile
+    ? {
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100dvh',
+        maxHeight: '100dvh',
+        borderRadius: '16px 16px 0 0',
+        background: 'rgba(18,18,18,0.98)',
+        backdropFilter: 'blur(24px) saturate(120%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(120%)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        borderBottom: 'none',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), 0 -16px 40px rgba(0,0,0,0.60)',
+        padding: '8px 8px calc(8px + env(safe-area-inset-bottom))',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1px',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        zIndex: 1000,
+        animation: 'btm-in 0.14s ease both',
+      }
+    : {
+        position: 'absolute',
+        top: '22px',
+        left: 0,
+        width: '208px',
+        borderRadius: '12px',
+        background: 'rgba(18,18,18,0.97)',
+        backdropFilter: 'blur(24px) saturate(120%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(120%)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), 0 16px 40px rgba(0,0,0,0.60)',
+        padding: '6px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1px',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        animation: 'btm-in 0.14s ease both',
+      };
+
   return (
     <div
       ref={menuRef}
       contentEditable={false}
-      style={{ position: 'absolute', left: '-26px', top: `${handleTop}px`, zIndex: 5 }}
+      style={{ position: 'absolute', left: isMobile ? '14px' : '-26px', top: `${handleTop}px`, zIndex: isMobile ? 1000 : 5 }}
       onMouseDown={(e) => e.preventDefault()}
     >
       <button
@@ -150,6 +209,10 @@ export function BlockTypeMenu({ editor }) {
           justifyContent: 'center',
           width: '18px',
           height: '18px',
+          minWidth: '48px',
+          minHeight: '48px',
+          marginLeft: '-13px',
+          marginTop: '-13px',
           borderRadius: '50%',
           border: 'none',
           background: open ? 'var(--state-active)' : 'var(--state-hover)',
@@ -163,25 +226,19 @@ export function BlockTypeMenu({ editor }) {
       </button>
 
       {open && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '22px',
-            left: 0,
-            width: '208px',
-            borderRadius: '12px',
-            background: 'rgba(18,18,18,0.97)',
-            backdropFilter: 'blur(24px) saturate(120%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(120%)',
-            border: '1px solid rgba(255,255,255,0.10)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), 0 16px 40px rgba(0,0,0,0.60)',
-            padding: '6px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1px',
-            animation: 'btm-in 0.14s ease both',
-          }}
-        >
+        <>
+          {isMobile && (
+            <div
+              onClick={() => setOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.45)',
+                zIndex: 999,
+              }}
+            />
+          )}
+          <div style={menuStyle}>
           <style>{`@keyframes btm-in { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform: translateY(0); } }`}</style>
 
           {BLOCK_TYPES.map((bt) => (
@@ -197,7 +254,9 @@ export function BlockTypeMenu({ editor }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
+                  flexWrap: 'wrap',
                   height: '32px',
+                  minHeight: '48px',
                   padding: '0 8px',
                   borderRadius: '7px',
                   border: 'none',
@@ -224,7 +283,7 @@ export function BlockTypeMenu({ editor }) {
             </React.Fragment>
           ))}
         </div>
-      )}
+      </>)}
     </div>
   );
 }

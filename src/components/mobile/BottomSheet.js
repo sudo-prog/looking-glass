@@ -47,16 +47,25 @@ export class BottomSheet {
     this._backdrop = document.createElement('div');
     this._backdrop.className = 'bs-backdrop';
     this._backdrop.setAttribute('aria-hidden', 'true');
+    this._backdrop.style.height = '100dvh';
+    this._backdrop.style.paddingBottom = 'env(safe-area-inset-bottom)';
 
     // Sheet container
     this._sheet = document.createElement('div');
     this._sheet.className = 'bs-sheet';
     this._sheet.setAttribute('role', 'dialog');
     this._sheet.setAttribute('aria-modal', 'true');
+    this._sheet.style.maxHeight = 'calc(100dvh - env(safe-area-inset-bottom))';
+    this._sheet.style.paddingBottom = 'env(safe-area-inset-bottom)';
+    this._sheet.style.display = 'flex';
+    this._sheet.style.flexDirection = 'column';
+    this._sheet.style.flexWrap = 'wrap';
 
     // Drag handle
     this._handle = document.createElement('div');
     this._handle.className = 'bs-handle';
+    this._handle.style.minHeight = '44px';
+    this._handle.style.touchAction = 'none';
     const handleBar = document.createElement('div');
     handleBar.className = 'bs-handle-bar';
     this._handle.appendChild(handleBar);
@@ -64,6 +73,9 @@ export class BottomSheet {
     // Content area
     this._contentEl = document.createElement('div');
     this._contentEl.className = 'bs-content';
+    this._contentEl.style.overflowX = 'auto';
+    this._contentEl.style.flex = '1';
+    this._contentEl.style.minHeight = '0';
     this._contentEl.innerHTML = this._content;
 
     this._sheet.appendChild(this._handle);
@@ -73,6 +85,10 @@ export class BottomSheet {
     this._wrapper = document.createElement('div');
     this._wrapper.className = 'bs-wrapper';
     this._wrapper.style.display = 'none';
+    this._wrapper.style.height = '100dvh';
+    this._wrapper.style.paddingBottom = 'env(safe-area-inset-bottom)';
+    this._wrapper.style.flexDirection = 'column';
+    this._wrapper.style.flexWrap = 'wrap';
     this._wrapper.appendChild(this._backdrop);
     this._wrapper.appendChild(this._sheet);
   }

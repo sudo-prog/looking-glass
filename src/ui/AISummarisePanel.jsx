@@ -53,45 +53,36 @@ import {
 // AI API CALL
 // ─────────────────────────────────────────────────────────────
 
+import { loadAIConfig, getProviderDef, resolveModelAlias, resolveEndpoint } from '../utils/aiConfig.js';
+
+// ─────────────────────────────────────────────────────────────
+// AI API CALL
+// ─────────────────────────────────────────────────────────────
+
 async function callAI(messages, { signal } = {}) {
-  let config;
-  try {
-    const raw = localStorage.getItem('lg-ai-config') || '{}';
-    const parsed = JSON.parse(raw);
-    // Deobfuscate (matches AIModal's obfuscate)
-    const deob = (enc) => atob(enc).split('').reverse().join('');
-    config = {
-      provider: parsed.provider || 'anthropic',
-      model:    parsed.model    || 'claude-sonnet-4-5',
-      key:      parsed.key ? deob(parsed.key) : '',
-    };
-  } catch {
-    throw new Error('No AI provider configured. Open Settings → AI Assistant.');
+  const config = loadAIConfig();
+  const provider = getProviderDef(config.provider);
+  const model = resolveModelAlias(config.model);
+  const key = config.key;
+
+  if (!model) throw new Error(`No model selected. Open Settings → AI Assistant.`);
+  if (provider.needsKey && !key) {
+    throw new Error(`No API key found for ${provider.name}. Open Settings → AI Assistant.`);
   }
 
-  if (!config.key) {
-    throw new Error('No API key found. Open Settings → AI Assistant to configure.');
+  // ── OpenAI-compatible path (omniroute and openrouter) ──────────
+  const headers = { 'Content-Type': 'application/json' };
+  if (key) headers['Authorization'] = `Bearer ${key}`;
+  if (config.provider === 'openrouter') {
+    headers['HTTP-Referer'] = 'https://looking-glass.app';
+    headers['X-Title'] = 'Looking Glass';
   }
 
-  const endpoints = {
-    openrouter: { url: 'https://openrouter.ai/api/v1/chat/completions',   headers: { 'Authorization': `Bearer ${config.key}` } },
-    openai:     { url: 'https://api.openai.com/v1/chat/completions',       headers: { 'Authorization': `Bearer ${config.key}` } },
-    anthropic:  { url: 'https://api.anthropic.com/v1/messages',            headers: { 'x-api-key': config.key, 'anthropic-version': '2023-06-01' } },
-    litellm:    { url: `${config.key.startsWith('http') ? config.key : 'http://localhost:4000'}/chat/completions`, headers: { 'Authorization': `Bearer ${config.key}` } },
-  };
-
-  const ep = endpoints[config.provider] || endpoints.openrouter;
-
-  // Anthropic uses a different schema
-  const isAnthropic = config.provider === 'anthropic';
-  const body = isAnthropic
-    ? { model: config.model, max_tokens: 1024, messages }
-    : { model: config.model, max_tokens: 1024, messages };
-
-  const resp = await fetch(ep.url, {
+  const url = resolveEndpoint(config.provider, provider);
+  const resp = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...ep.headers },
-    body: JSON.stringify(body),
+    headers,
+    body: JSON.stringify({ model, max_tokens: 1024, temperature: 0.3, stream: false, messages }),
     signal,
   });
 
@@ -101,10 +92,6 @@ async function callAI(messages, { signal } = {}) {
   }
 
   const data = await resp.json();
-  // Normalise response
-  if (isAnthropic) {
-    return data.content?.[0]?.text || '';
-  }
   return data.choices?.[0]?.message?.content || '';
 }
 
@@ -290,27 +277,29 @@ export function AISummarisePanel({
   return (
     <>
       {/* Overlay */}
+      {/* LG-POINTER-FIX: this whole subtree is only mounted by App.jsx when
+          aiSummarise != null (i.e. the panel is OPEN). When the panel is
+          closed it is unmounted, so it can't intercept pointer events on the
+          sidebar. The explicit pointer-events below are defensive: the panel
+          captures input only while mounted/open, never as a hidden overlay. */}
       <div
         onClick={onClose}
         style={{
           position: 'fixed', inset: 0,
           zIndex: 'calc(var(--z-modal) - 1)',
           background: 'rgba(0,0,0,0.30)',
+          pointerEvents: 'auto',
         }}
       />
 
       {/* Panel */}
       <div
+        className="ai-summarise-panel"
         role="dialog"
         aria-label={`AI: ${titles[mode]}`}
         aria-modal="true"
         style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          width: 'min(420px, calc(100vw - 48px))',
-          maxHeight: '70vh',
-          zIndex: 'var(--z-modal)',
+          pointerEvents: 'auto',
           borderRadius: '16px',
           background: 'rgba(14,14,14,0.97)',
           backdropFilter: 'blur(40px) saturate(120%)',
@@ -329,6 +318,33 @@ export function AISummarisePanel({
             from { opacity: 0; transform: translateY(16px) scale(0.97); }
             to   { opacity: 1; transform: translateY(0)    scale(1); }
           }
+          /* Panel positioning. Per-component CSS lives alongside the component. */
+          .ai-summarise-panel {
+            position: fixed;
+            bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+            right: 24px;
+            width: min(420px, calc(100vw - 48px));
+            max-height: 70dvh;
+            z-index: var(--z-modal);
+          }
+          @media (max-width: 767px) {
+            .ai-summarise-panel {
+              left: 12px;
+              right: 12px;
+              bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+              width: auto;
+              max-height: calc(70dvh - 64px - env(safe-area-inset-bottom));
+            }
+          }
+          @media (max-width: 640px) {
+            .ai-summarise-footer {
+              flex-direction: column;
+            }
+            .ai-summarise-footer button {
+              width: 100%;
+              justify-content: center;
+            }
+          }
         `}</style>
 
         {/* Header */}
@@ -336,6 +352,7 @@ export function AISummarisePanel({
           style={{
             display: 'flex',
             alignItems: 'center',
+            flexWrap: 'wrap',
             gap: '8px',
             padding: '14px 16px',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
@@ -353,7 +370,7 @@ export function AISummarisePanel({
           </div>
           <button
             onClick={onClose}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', borderRadius: '6px', flexShrink: 0 }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', borderRadius: '6px', flexShrink: 0 }}
             aria-label="Close"
           >
             <X size={14} weight="regular" />
@@ -383,13 +400,23 @@ export function AISummarisePanel({
 
           {status === 'done' && (
             <>
-              <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: '13px', lineHeight: 1.65, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '13px',
+                  lineHeight: 1.65,
+                  color: 'var(--text-primary)',
+                  whiteSpace: 'pre-wrap',
+                  overflowWrap: 'anywhere',
+                }}
+              >
                 {result}
               </p>
 
               {/* Organise mode: show proposed groups */}
               {mode === 'organise' && parsed?.groups && parsed.groups.length > 0 && (
-                <div style={{ marginTop: '16px' }}>
+                <div style={{ marginTop: '16px', overflowX: 'auto' }}>
                   <div style={{ fontFamily: 'var(--font-ui)', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--text-disabled)', marginBottom: '8px', textTransform: 'uppercase' }}>
                     PROPOSED GROUPS ({parsed.groups.length})
                   </div>
@@ -398,6 +425,7 @@ export function AISummarisePanel({
                       key={i}
                       style={{
                         display: 'flex',
+                        flexWrap: 'wrap',
                         alignItems: 'center',
                         gap: '8px',
                         padding: '8px 10px',
@@ -414,10 +442,10 @@ export function AISummarisePanel({
                           flexShrink: 0,
                         }}
                       />
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', flex: 1 }}>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', flex: 1, minWidth: 0 }}>
                         {group.name}
                       </span>
-                      <span style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', color: 'var(--text-disabled)' }}>
+                      <span style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', color: 'var(--text-disabled)', flexShrink: 0 }}>
                         {group.item_ids?.length || 0} cards
                       </span>
                     </div>
@@ -431,8 +459,10 @@ export function AISummarisePanel({
         {/* Footer actions */}
         {status === 'done' && (
           <div
+            className="ai-summarise-footer"
             style={{
               display: 'flex',
+              flexWrap: 'wrap',
               gap: '8px',
               padding: '12px 16px',
               borderTop: '1px solid rgba(255,255,255,0.08)',
@@ -477,8 +507,10 @@ export function AISummarisePanel({
 const footerBtn = {
   display: 'inline-flex',
   alignItems: 'center',
+  justifyContent: 'center',
   gap: '5px',
-  height: '30px',
+  minHeight: '44px',
+  minWidth: '44px',
   padding: '0 12px',
   borderRadius: '7px',
   border: '1px solid rgba(255,255,255,0.10)',

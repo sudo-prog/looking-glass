@@ -108,7 +108,7 @@ function MenuItem({ icon: Icon, label, danger, active, disabled, onClick, kbd })
         alignItems: 'center',
         gap: '10px',
         width: '100%',
-        height: '38px',
+        minHeight: '44px',
         padding: '0 14px',
         border: 'none',
         background: hovered ? 'var(--state-hover)' : 'transparent',
@@ -266,6 +266,7 @@ export function ContextMenu({
         left: pos.x,
         top:  pos.y,
         width: `${MENU_WIDTH}px`,
+        maxWidth: 'calc(100vw - 16px)',
         zIndex: 'var(--z-dropdown)',
         borderRadius: '12px',
         background: 'rgba(16,16,16,0.96)',
@@ -276,7 +277,9 @@ export function ContextMenu({
           'inset 0 1px 0 rgba(255,255,255,0.10), 0 16px 48px rgba(0,0,0,0.75), 0 4px 12px rgba(0,0,0,0.40)',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        overflowY: 'auto',
+        maxHeight: 'calc(100dvh - 16px)',
         animation: 'ctx-appear 0.15s cubic-bezier(0.34,1.56,0.64,1) both',
       }}
     >
@@ -353,6 +356,7 @@ export function ContextMenu({
         style={{
           display: 'flex',
           alignItems: 'center',
+          flexWrap: 'wrap',
           gap: '8px',
           padding: '6px 14px 8px',
         }}
@@ -362,10 +366,10 @@ export function ContextMenu({
           onClick={() => act('color-none')}
           title="Remove colour"
           style={{
-            width: '16px', height: '16px',
-            borderRadius: '50%',
-            border: '1px solid rgba(255,255,255,0.20)',
+            width: '44px', height: '44px',
             background: 'transparent',
+            border: 'none',
+            borderRadius: '50%',
             cursor: 'pointer',
             padding: 0,
             flexShrink: 0,
@@ -373,7 +377,16 @@ export function ContextMenu({
           }}
           aria-label="Remove colour"
         >
-          <X size={8} weight="bold" style={{ color: 'var(--text-disabled)' }} />
+          <span
+            style={{
+              width: '24px', height: '24px',
+              borderRadius: '50%',
+              border: '1px solid rgba(255,255,255,0.30)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <X size={12} weight="bold" style={{ color: 'var(--text-disabled)' }} />
+          </span>
         </button>
 
         {COLOR_SWATCHES.map((swatch, i) => (
@@ -383,12 +396,10 @@ export function ContextMenu({
             title={swatch.label}
             aria-label={swatch.label}
             style={{
-              width: '16px', height: '16px',
+              width: '44px', height: '44px',
+              background: 'transparent',
+              border: 'none',
               borderRadius: '50%',
-              border: item.meta?.color === swatch.color
-                ? '2px solid rgba(255,255,255,0.60)'
-                : '1px solid rgba(255,255,255,0.10)',
-              background: swatch.color,
               cursor: 'pointer',
               padding: 0,
               flexShrink: 0,
@@ -396,7 +407,18 @@ export function ContextMenu({
             }}
             onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.30)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-          />
+          >
+            <span
+              style={{
+                width: '24px', height: '24px',
+                borderRadius: '50%',
+                background: swatch.color,
+                border: item.meta?.color === swatch.color
+                  ? '2px solid rgba(255,255,255,0.60)'
+                  : '1px solid rgba(255,255,255,0.10)',
+              }}
+            />
+          </button>
         ))}
       </div>
 
@@ -478,7 +500,13 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
           borderBottom: 'none',
           boxShadow: '0 -8px 48px rgba(0,0,0,0.60)',
           animation: 'sheet-rise 0.28s cubic-bezier(0.34,1.2,0.64,1) both',
+          boxSizing: 'border-box',
           paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingLeft: 'env(safe-area-inset-left)',
+          paddingRight: 'env(safe-area-inset-right)',
+          maxHeight: 'calc(100dvh - 16px)',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         <style>{`
@@ -512,14 +540,14 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
           <MenuItem icon={Tag}          label="Edit Tags"   onClick={() => act('edit-tags')} />
           <Divider />
           {/* Colour row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px', padding: '10px 16px' }}>
             {COLOR_SWATCHES.map((swatch, i) => (
               <button
                 key={i}
                 onClick={() => act(`color-${i}`)}
                 title={swatch.label}
                 style={{
-                  flex: 1, height: '32px', borderRadius: '8px',
+                  flex: '1 0 44px', minHeight: '44px', minWidth: '44px', borderRadius: '8px',
                   border: item.meta?.color === swatch.color ? '2px solid rgba(255,255,255,0.60)' : '1px solid rgba(255,255,255,0.10)',
                   background: swatch.color + '55',
                   cursor: 'pointer',

@@ -9,7 +9,6 @@
  *  - wheel event registered as { passive: false } via useEffect so preventDefault works
  *  - unused draggedType variable removed
  *  - panning lastPointer updated outside rAF to avoid stale reads on fast swipes
- *  - PINCH TO ZOOM for mobile devices
  */
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
@@ -36,6 +35,7 @@ export function Canvas({
   onAddToStack,
   onCreateFolder,
   onAddToFolder,
+  onAddToFichario,
   onContextMenu,
   onOpenFolder,
   onColorSelected,
@@ -54,10 +54,10 @@ export function Canvas({
   const hasMoved     = useRef(false);
   const transformRef = useRef(transform); // always-current transform for rAF closures
 
-  // ── Pinch-to-zoom state (mobile) ─────────────────────────────────────
-  const pointers    = useRef(new Map()); // Track active pointers by ID
-  const initialDist = useRef(0);
-  const initialScale = useRef(1);
+  // Pinch-to-zoom: tracked two-pointer distances
+  const activePointers = useRef(new Map()); // pointerId → {x, y}
+  const lastPinchDist  = useRef(0);
+  const lastPinchMid   = useRef({ x: 0, y: 0 });
 
   // Drop-mode picker state
   const [picker, setPicker] = useState(null); // { x, y, draggedId, targetId }
@@ -126,20 +126,24 @@ export function Canvas({
     return () => el.removeEventListener('wheel', handler);
   }, [onViewportChange]);
 
-  // ── Pinch-to-zoom handlers (mobile) ────────────────────────────────────
+  // ── Panning + drag-to-select ─────────────────────────────────────────
 
   const handlePointerDown = useCallback((e) => {
-    // Track pointers for pinch detection
-    if (e.pointerId) {
-      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    }
-    if (pointers.current.size === 2) {
-      // Two fingers down - start pinch zoom
-      const pts = [...pointers.current.values()];
-      const dx = pts[0].x - pts[1].x;
-      const dy = pts[0].y - pts[1].y;
-      initialDist.current = Math.sqrt(dx * dx + dy * dy);
-      initialScale.current = transformRef.current.scale;
+    // Track pointer for pinch-to-zoom
+    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // If two or more pointers are now down, lock into pinch-zoom mode
+    if (activePointers.current.size >= 2) {
+      const pts = [...activePointers.current.values()];
+      lastPinchDist.current = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      lastPinchMid.current = {
+        x: (pts[0].x + pts[1].x) / 2,
+        y: (pts[0].y + pts[1].y) / 2,
+      };
+      isPanning.current = false;
+      isBoxSelecting.current = false;
+      setSelectBox(null);
+      return;
     }
 
     if (e.target.closest('.canvas-card')) return;
@@ -169,28 +173,36 @@ export function Canvas({
   }, []);
 
   const handlePointerMove = useCallback((e) => {
-    // Update pointer positions for pinch detection
-    if (pointers.current.has(e.pointerId)) {
-      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    }
-
-    // Handle pinch zoom
-    if (pointers.current.size === 2) {
-      const pts = [...pointers.current.values()];
-      const dx = pts[0].x - pts[1].x;
-      const dy = pts[0].y - pts[1].y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (initialDist.current > 0) {
-        const scaleFactor = dist / initialDist.current;
-        const newScale = Math.min(3, Math.max(0.1, initialScale.current * scaleFactor));
-        const t = transformRef.current;
-        const newTransform = { ...t, scale: newScale };
-        setTransform(newTransform);
-        isInternalChange.current = true;
-        onViewportChange(newTransform);
-        lastExternalViewport.current = newTransform;
+    // ── Pinch-to-zoom: two-finger gesture ──────────────────────────────────
+    if (activePointers.current.size >= 2) {
+      activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const pts = [...activePointers.current.values()];
+      if (pts.length >= 2) {
+        const newDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        const newMid  = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+        if (lastPinchDist.current > 0) {
+          const scaleFactor = newDist / lastPinchDist.current;
+          const t = transformRef.current;
+          const newScale = Math.min(3, Math.max(0.1, t.scale * scaleFactor));
+          const rect = viewportRef.current?.getBoundingClientRect();
+          if (rect) {
+            const cx = lastPinchMid.current.x - rect.left;
+            const cy = lastPinchMid.current.y - rect.top;
+            const newTransform = {
+              x: cx - (cx - t.x) * (newScale / t.scale),
+              y: cy - (cy - t.y) * (newScale / t.scale),
+              scale: newScale,
+            };
+            setTransform(newTransform);
+            isInternalChange.current = true;
+            onViewportChange(newTransform);
+            lastExternalViewport.current = newTransform;
+          }
+        }
+        lastPinchDist.current = newDist;
+        lastPinchMid.current  = newMid;
       }
-      return;
+      return; // suppress panning/drag while pinching
     }
 
     if (isBoxSelecting.current) {
@@ -255,27 +267,68 @@ export function Canvas({
         dragItem.current.style.pointerEvents = '';
 
         const target = el?.closest('.canvas-card');
-        document.querySelectorAll('.drop-target-stack, .drop-target-folder').forEach((el) => {
-          el.classList.remove('drop-target-stack', 'drop-target-folder');
+        document.querySelectorAll('.drop-target-stack, .drop-target-folder, .drop-target-fichario').forEach((el) => {
+          el.classList.remove('drop-target-stack', 'drop-target-folder', 'drop-target-fichario');
         });
         if (target && target !== dragItem.current) {
           const t = target.dataset.type;
-          if (t === ITEM_TYPES.FOLDER)      target.classList.add('drop-target-folder');
+          if (t === ITEM_TYPES.FICHARIO && dragItem.current.dataset.type === ITEM_TYPES.FICHARIO) target.classList.add('drop-target-fichario');
+          else if (t === ITEM_TYPES.FOLDER)      target.classList.add('drop-target-folder');
           else if (t === ITEM_TYPES.STACK)  target.classList.add('drop-target-stack');
           else                              target.classList.add('drop-target-folder');
         }
       });
     }
-  }, [onViewportChange]);
+  }, []);
+
+  const finishBoxSelect = useCallback(() => {
+    if (!selectBox || !worldRef.current) return;
+    const { x, y, w, h } = selectBox;
+
+    // Only commit a selection if the box actually has area — otherwise
+    // this was just a click, which the existing clear-selection logic below
+    // already handles.
+    if (w > DRAG_SELECT_THRESHOLD || h > DRAG_SELECT_THRESHOLD) {
+      const viewportRect = viewportRef.current.getBoundingClientRect();
+      const boxScreen = {
+        left: viewportRect.left + x,
+        top: viewportRect.top + y,
+        right: viewportRect.left + x + w,
+        bottom: viewportRect.top + y + h,
+      };
+
+      const hitIds = [];
+      worldRef.current.querySelectorAll('.canvas-card').forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const overlaps = !(r.right < boxScreen.left || r.left > boxScreen.right || r.bottom < boxScreen.top || r.top > boxScreen.bottom);
+        if (overlaps && el.dataset.id) hitIds.push(el.dataset.id);
+      });
+
+      if (hitIds.length > 0) {
+        if (boxAdditive.current) {
+          onSetSelection?.(new Set([...selectedIds, ...hitIds]));
+        } else {
+          onSetSelection?.(new Set(hitIds));
+        }
+      } else if (!boxAdditive.current) {
+        onClearSelection();
+      }
+    }
+
+    setSelectBox(null);
+    isBoxSelecting.current = false;
+  }, [selectBox, selectedIds, onSetSelection, onClearSelection]);
 
   const handlePointerUp = useCallback((e) => {
-    // Clean up pointer tracking
-    pointers.current.delete(e.pointerId);
-    initialDist.current = 0;
+    // Clean up pinch-zoom pointer tracking
+    activePointers.current.delete(e.pointerId);
+    if (activePointers.current.size < 2) {
+      lastPinchDist.current = 0;
+    }
 
     // Clear all drop highlights
-    document.querySelectorAll('.drop-target-stack, .drop-target-folder').forEach((el) => {
-      el.classList.remove('drop-target-stack', 'drop-target-folder');
+    document.querySelectorAll('.drop-target-stack, .drop-target-folder, .drop-target-fichario').forEach((el) => {
+      el.classList.remove('drop-target-stack', 'drop-target-folder', 'drop-target-fichario');
     });
 
     const wasBoxSelecting = isBoxSelecting.current;
@@ -315,8 +368,14 @@ export function Canvas({
       if (target && target !== dragItem.current) {
         const targetId   = target.dataset.id;
         const targetType = target.dataset.type;
+        const draggedType = dragItem.current.dataset.type;
 
-        if (targetType === ITEM_TYPES.FOLDER) {
+        if (targetType === ITEM_TYPES.FICHARIO && draggedType === ITEM_TYPES.FICHARIO) {
+          onAddToFichario?.(draggedId, targetId);
+          dragItem.current = null;
+          hasMoved.current = false;
+          return;
+        } else if (targetType === ITEM_TYPES.FOLDER) {
           onAddToFolder?.(draggedId, targetId);
           dragItem.current = null;
           hasMoved.current = false;
@@ -349,45 +408,7 @@ export function Canvas({
 
     dragItem.current = null;
     hasMoved.current = false;
-  }, [selectBox, finishBoxSelect, onViewportChange, onItemMove, onAddToStack, onAddToFolder, onClearSelection]);
-
-  const finishBoxSelect = useCallback(() => {
-    if (!selectBox || !worldRef.current) return;
-    const { x, y, w, h } = selectBox;
-
-    // Only commit a selection if the box actually has area — otherwise
-    // this was just a click, which the existing clear-selection logic below
-    // already handles.
-    if (w > DRAG_SELECT_THRESHOLD || h > DRAG_SELECT_THRESHOLD) {
-      const viewportRect = viewportRef.current.getBoundingClientRect();
-      const boxScreen = {
-        left: viewportRect.left + x,
-        top: viewportRect.top + y,
-        right: viewportRect.left + x + w,
-        bottom: viewportRect.top + y + h,
-      };
-
-      const hitIds = [];
-      worldRef.current.querySelectorAll('.canvas-card').forEach((el) => {
-        const r = el.getBoundingClientRect();
-        const overlaps = !(r.right < boxScreen.left || r.left > boxScreen.right || r.bottom < boxScreen.top || r.top > boxScreen.bottom);
-        if (overlaps && el.dataset.id) hitIds.push(el.dataset.id);
-      });
-
-      if (hitIds.length > 0) {
-        if (boxAdditive.current) {
-          onSetSelection?.(new Set([...selectedIds, ...hitIds]));
-        } else {
-          onSetSelection?.(new Set(hitIds));
-        }
-      } else if (!boxAdditive.current) {
-        onClearSelection();
-      }
-    }
-
-    setSelectBox(null);
-    isBoxSelecting.current = false;
-  }, [selectBox, selectedIds, onSetSelection, onClearSelection]);
+  }, [selectBox, finishBoxSelect, onViewportChange, onItemMove, onAddToStack, onAddToFolder, onAddToFichario, onClearSelection]);
 
   // ── Card drag start ────────────────────────────────────────────────────
 
@@ -447,6 +468,14 @@ export function Canvas({
         flex: 1,
         position: 'relative',
         overflow: 'hidden',
+        /* MOBILE-UI-STANDARD L-1/L-4: guarantee the canvas container can never
+           exceed the viewport width (no flex min-content blow-out, no overflow).
+           The large 5000px world inside is intentionally clipped by this
+           overflow:hidden ancestor — the standard's sanctioned infinite-canvas
+           pattern — so it is correctly excluded from per-element overflow. */
+        minWidth: 0,
+        maxWidth: '100%',
+        minHeight: '100dvh',
         cursor: 'grab',
         touchAction: 'none',
       }}
@@ -465,6 +494,7 @@ export function Canvas({
           minHeight: '5000px',
           transformOrigin: '0 0',
           willChange: 'transform',
+          overflow: 'hidden',
         }}
       >
         {items.map((item) => (
@@ -514,20 +544,45 @@ export function Canvas({
         document.body
       )}
 
-      <SelectionToolbar
-        count={selectedIds.size}
-        canStack={selectedIds.size > 1}
-        canFolder={selectedIds.size > 1}
-        canArrange={selectedIds.size > 1}
-        activeColor={selectedColor}
-        onColor={(hex) => onColorSelected?.(hex)}
-        onStack={() => onCreateStack?.(selectedArray)}
-        onFolder={() => onCreateFolder?.(selectedArray, 'Folder name', '')}
-        onArrange={() => onArrangeSelected?.(selectedArray)}
-        onCopyLink={() => onCopyLinkSelected?.()}
-        onDelete={() => onDeleteSelected?.()}
-        onClear={() => onClearSelection()}
-      />
+      <div
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          boxSizing: 'border-box',
+          zIndex: 'var(--z-canvas-ui)',
+          /* MOBILE-UI-STANDARD (2): the wide SelectionToolbar (color/stack/
+             folder/arrange/copy/delete/clear) can exceed the 390px viewport on
+             small phones, so this docked ancestor is an overflow-x-auto scroller.
+             The standard excludes overflow-x:auto ancestors from per-element
+             horizontal-overflow checks — the toolbar stays reachable, never
+             clipped, and the rest of the layout is untouched. */
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          /* S-1: bottom-docked UI honours the safe-area insets (never bare
+             bottom:0) so the toolbar clears the home indicator / notches. */
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingLeft: 'env(safe-area-inset-left)',
+          paddingRight: 'env(safe-area-inset-right)',
+        }}
+      >
+        <SelectionToolbar
+          count={selectedIds.size}
+          canStack={selectedIds.size > 1}
+          canFolder={selectedIds.size > 1}
+          canArrange={selectedIds.size > 1}
+          activeColor={selectedColor}
+          onColor={(hex) => onColorSelected?.(hex)}
+          onStack={() => onCreateStack?.(selectedArray)}
+          onFolder={() => onCreateFolder?.(selectedArray, 'Folder name', '')}
+          onArrange={() => onArrangeSelected?.(selectedArray)}
+          onCopyLink={() => onCopyLinkSelected?.()}
+          onDelete={() => onDeleteSelected?.()}
+          onClear={() => onClearSelection()}
+        />
+      </div>
     </div>
   );
 }

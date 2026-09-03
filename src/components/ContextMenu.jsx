@@ -64,6 +64,11 @@ import {
   X,
   MinusCircle,
   Eraser,
+  Plus,
+  ArrowUpRight,
+  SignIn,
+  Sliders,
+  Copy,
 } from '@phosphor-icons/react';
 
 // ─────────────────────────────────────────────────────────────
@@ -99,7 +104,8 @@ function MenuItem({ icon: Icon, label, danger, active, disabled, onClick, kbd })
         alignItems: 'center',
         gap: '10px',
         width: '100%',
-        height: '38px',
+        minHeight: '44px',
+        height: '44px',
         padding: '0 14px',
         border: 'none',
         background: hovered ? 'var(--state-hover)' : 'transparent',
@@ -244,6 +250,8 @@ export function ContextMenu({
   const hasUrl        = !!item.content?.url;
   const isFolder       = item.type === 'folder';
   const isStack        = item.type === 'stack';
+  const isFichario     = item.type === 'fichario';
+  const ficharioPageCount = isFichario ? (item.content?.pages?.length || 1) : 0;
   const multiSelected = selectedIds.size > 1;
   const hasAI         = !!(() => {
     try { return JSON.parse(localStorage.getItem('lg-ai-config') || '{}').key; } catch { return false; }
@@ -279,6 +287,42 @@ export function ContextMenu({
           to   { opacity: 1; transform: scale(1)    translateY(0);    }
         }
       `}</style>
+
+      {/* ── Section 0a: Fichário specific ── */}
+      {isFichario && (
+        <>
+          <div style={{ paddingTop: '4px' }}>
+            <MenuItem
+              icon={Plus}
+              label="Add Page"
+              onClick={() => act('fichario-add-page')}
+            />
+            <MenuItem
+              icon={Copy}
+              label="Duplicate Page"
+              onClick={() => act('fichario-duplicate-page')}
+            />
+            {ficharioPageCount > 1 && (
+              <MenuItem
+                icon={ArrowUpRight}
+                label="Extract Front Page"
+                onClick={() => act('fichario-extract-page')}
+              />
+            )}
+            <MenuItem
+              icon={SignIn}
+              label="Place in Fichário"
+              onClick={() => act('fichario-place')}
+            />
+            <MenuItem
+              icon={Sliders}
+              label="Style…"
+              onClick={() => act('fichario-style')}
+            />
+          </div>
+          <Divider />
+        </>
+      )}
 
       {/* ── Section 0: Folder / Stack specific ── */}
       {(isFolder || isStack) && (
@@ -338,7 +382,7 @@ export function ContextMenu({
             onClick={() => act('copy-link')}
           />
         )}
-        {!hasUrl && !isFolder && !isStack && (
+        {!hasUrl && !isFolder && !isStack && !isFichario && (
           <MenuItem
             icon={PencilSimple}
             label="Rename"
@@ -387,9 +431,11 @@ export function ContextMenu({
       <div
         style={{
           display: 'flex',
+          flexWrap: 'wrap',
           alignItems: 'center',
           gap: '8px',
           padding: '6px 14px 8px',
+          overflowX: 'auto',
         }}
       >
         {/* Neutral / remove */}
@@ -397,7 +443,7 @@ export function ContextMenu({
           onClick={() => act('color-none')}
           title="Remove colour"
           style={{
-            width: '16px', height: '16px',
+            minWidth: '44px', minHeight: '44px',
             borderRadius: '50%',
             border: '1px solid rgba(255,255,255,0.20)',
             background: 'transparent',
@@ -418,7 +464,7 @@ export function ContextMenu({
             title={swatch.label}
             aria-label={swatch.label}
             style={{
-              width: '16px', height: '16px',
+              minWidth: '44px', minHeight: '44px',
               borderRadius: '50%',
               border: item.meta?.color === swatch.color
                 ? '2px solid rgba(255,255,255,0.60)'
@@ -463,13 +509,26 @@ export function ContextMenu({
 
 export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), onClose, onAction }) {
   const sheetRef = useRef(null);
+  // Timestamp when the sheet opened. A long-press ends with a finger-lift that
+  // the browser turns into a synthetic click; without this gate that click
+  // lands on the freshly-mounted overlay and instantly re-closes the sheet
+  // (the classic long-press → tap-through bug). Ignore clicks for a short
+  // window after open. Mirrors the ScratchPad click-outside guard.
+  const openedAtRef = useRef(0);
 
   useEffect(() => {
     if (!isOpen) return;
+    openedAtRef.current = Date.now();
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
+
+  const handleOverlayClick = useCallback(() => {
+    // Swallow the tap-through click that immediately follows the opening long-press.
+    if (Date.now() - openedAtRef.current < 400) return;
+    onClose();
+  }, [onClose]);
 
   const act = useCallback(
     (action) => {
@@ -484,13 +543,15 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
   const hasUrl        = !!item.content?.url;
   const isFolder       = item.type === 'folder';
   const isStack        = item.type === 'stack';
+  const isFichario     = item.type === 'fichario';
+  const ficharioPageCount = isFichario ? (item.content?.pages?.length || 1) : 0;
   const multiSelected = selectedIds.size > 1;
 
   return (
     <>
       {/* Overlay */}
       <div
-        onClick={onClose}
+        onClick={handleOverlayClick}
         style={{
           position: 'fixed', inset: 0,
           zIndex: 'calc(var(--z-bottom-sheet) - 1)',
@@ -505,7 +566,7 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
         aria-label="Card actions"
         style={{
           position: 'fixed',
-          left: 0, right: 0, bottom: 0,
+          left: 0, right: 0, bottom: 0, maxHeight: '90dvh', overflowY: 'auto',
           zIndex: 'var(--z-bottom-sheet)',
           borderRadius: '20px 20px 0 0',
           background: 'rgba(16,16,16,0.98)',
@@ -515,7 +576,7 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
           borderBottom: 'none',
           boxShadow: '0 -8px 48px rgba(0,0,0,0.60)',
           animation: 'sheet-rise 0.28s cubic-bezier(0.34,1.2,0.64,1) both',
-          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
         <style>{`
@@ -540,6 +601,12 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
 
         {/* Actions */}
         <div style={{ padding: '8px 0' }}>
+          {isFichario && <MenuItem icon={Plus} label="Add Page" onClick={() => act('fichario-add-page')} />}
+          {isFichario && <MenuItem icon={Copy} label="Duplicate Page" onClick={() => act('fichario-duplicate-page')} />}
+          {isFichario && ficharioPageCount > 1 && <MenuItem icon={ArrowUpRight} label="Extract Front Page" onClick={() => act('fichario-extract-page')} />}
+          {isFichario && <MenuItem icon={SignIn} label="Place in Fichário" onClick={() => act('fichario-place')} />}
+          {isFichario && <MenuItem icon={Sliders} label="Style…" onClick={() => act('fichario-style')} />}
+          {isFichario && <Divider />}
           {isFolder && <MenuItem icon={FolderOpen} label="Open Folder" onClick={() => act('open-folder')} />}
           {isStack && <MenuItem icon={ArrowsOutCardinal} label="Break Stack" onClick={() => act('unstack')} />}
           {isFolder && <MenuItem icon={MinusCircle} label="Remove from Folder" onClick={() => act('remove-from-folder')} />}
@@ -555,14 +622,14 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
           <MenuItem icon={Tag}          label="Edit Tags"   onClick={() => act('edit-tags')} />
           <Divider />
           {/* Colour row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', padding: '10px 16px', overflowX: 'auto' }}>
             {COLOR_SWATCHES.map((swatch, i) => (
               <button
                 key={i}
                 onClick={() => act(`color-${i}`)}
                 title={swatch.label}
                 style={{
-                  flex: 1, height: '32px', borderRadius: '8px',
+                  flex: 1, minWidth: '44px', minHeight: '44px', height: '44px', borderRadius: '8px',
                   border: item.meta?.color === swatch.color ? '2px solid rgba(255,255,255,0.60)' : '1px solid rgba(255,255,255,0.10)',
                   background: swatch.color + '55',
                   cursor: 'pointer',
@@ -589,7 +656,17 @@ export function BottomSheetContextMenu({ isOpen, item, selectedIds = new Set(), 
  * ContextMenu on desktop and BottomSheetContextMenu on mobile.
  */
 export function SmartContextMenu(props) {
-  const isMobile = window.innerWidth < 768;
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    const onChange = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
   return isMobile
     ? <BottomSheetContextMenu {...props} />
     : <ContextMenu {...props} />;

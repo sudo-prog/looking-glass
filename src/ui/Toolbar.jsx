@@ -14,12 +14,14 @@ import {
   Plus,
   Trash,
   X,
+  Rows,
 } from '@phosphor-icons/react';
 
 export function Toolbar({
   zoom,
   searchQuery,
   onAddNote,
+  onAddFichario,
   onDelete,
   onUndo,
   onRedo,
@@ -72,6 +74,8 @@ export function Toolbar({
         WebkitBackdropFilter: 'blur(20px) saturate(120%)',
         border: '1px solid rgba(255,255,255,0.08)',
         boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       <style>{`
@@ -79,8 +83,10 @@ export function Toolbar({
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 32px;
-          height: 32px;
+          width: 44px;
+          height: 44px;
+          min-width: 44px;
+          min-height: 44px;
           border-radius: 8px;
           border: none;
           background: transparent;
@@ -95,7 +101,7 @@ export function Toolbar({
         .toolbar-btn:disabled:hover { background: transparent; }
         .toolbar-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.12); margin: 0 2px; flex-shrink: 0; }
         .toolbar-zoom { font-family: var(--font-mono, monospace); font-size: 11px; color: var(--text-secondary, #999); min-width: 40px; text-align: center; flex-shrink: 0; }
-        .toolbar-group { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+        .toolbar-group { display: flex; align-items: center; gap: 2px; flex-shrink: 0; flex-wrap: wrap; }
 
         /* Mobile: dock toolbar at bottom with adequate touch targets */
         @media (max-width: 767px) {
@@ -104,7 +110,21 @@ export function Toolbar({
           .toolbar-zoom { display: none; }
           .toolbar-sep { display: none; }
           .toolbar-hide-mobile { display: none !important; }
-          .toolbar-search-input { width: min(120px, 30vw) !important; }
+          .toolbar-search-input {
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.15);
+          border-radius: 8px;
+          padding: 4px 8px;
+          min-height: 44px;
+          min-width: 44px;
+          font-size: 12px;
+          color: var(--text-primary, #e0e0e0);
+          outline: none;
+          max-width: 140px;
+          width: 100%;
+          font-family: var(--font-ui);
+          touch-action: manipulation;
+        }
           [role="toolbar"] {
             position: fixed !important;
             top: auto !important;
@@ -112,26 +132,41 @@ export function Toolbar({
             left: 0 !important;
             right: 0 !important;
             padding: 8px 12px calc(8px + env(safe-area-inset-bottom)) !important;
+            padding-left: max(12px, env(safe-area-inset-left)) !important;
+            padding-right: max(12px, env(safe-area-inset-right)) !important;
             border-radius: 16px 16px 0 0 !important;
             justify-content: space-around !important;
             box-shadow: 0 -4px 24px rgba(0,0,0,0.5) !important;
             z-index: var(--z-toolbar, 100) !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
           }
         }
         @media (max-width: 374px) {
           .toolbar-btn { width: 44px; height: 44px; }
           .toolbar-search-input { width: min(90px, 25vw) !important; }
-          [role="toolbar"] { padding: 6px 8px calc(6px + env(safe-area-inset-bottom)) !important; }
+          [role="toolbar"] {
+            padding: 6px 8px calc(6px + env(safe-area-inset-bottom)) !important;
+            padding-left: max(8px, env(safe-area-inset-left)) !important;
+            padding-right: max(8px, env(safe-area-inset-right)) !important;
+          }
         }
-        @media (max-width: 320px) {
-          .toolbar-btn { width: 40px; height: 40px; }
-          [role="toolbar"] { padding: 4px 4px calc(4px + env(safe-area-inset-bottom)) !important; gap: 2px; }
+        @media (max-width: 640px) {
+          [role="toolbar"] {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 8px !important;
+          }
         }
       `}</style>
 
       {/* Primary actions (always visible) */}
       <button className="toolbar-btn" title="Add note (N)" aria-label="Add note" onClick={onAddNote}>
         <Plus size={16} weight="regular" />
+      </button>
+
+      <button className="toolbar-btn" title="Add Fichário (binder)" aria-label="Add Fichário" onClick={onAddFichario}>
+        <Rows size={16} weight="regular" />
       </button>
 
       <button
@@ -147,26 +182,30 @@ export function Toolbar({
       <div className="toolbar-sep toolbar-hide-mobile" />
 
       {/* Undo / Redo */}
-      <button className="toolbar-btn toolbar-hide-mobile" title="Undo (Ctrl+Z)" aria-label="Undo" onClick={onUndo} disabled={!canUndo}>
-        <ArrowUUpLeft size={16} weight="regular" />
-      </button>
-      <button className="toolbar-btn toolbar-hide-mobile" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" onClick={onRedo} disabled={!canRedo}>
-        <ArrowUUpRight size={16} weight="regular" />
-      </button>
+      <div className="toolbar-group" style={{flexWrap: 'wrap'}}>
+        <button className="toolbar-btn toolbar-hide-mobile" title="Undo (Ctrl+Z)" aria-label="Undo" onClick={onUndo} disabled={!canUndo}>
+          <ArrowUUpLeft size={16} weight="regular" />
+        </button>
+        <button className="toolbar-btn toolbar-hide-mobile" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" onClick={onRedo} disabled={!canRedo}>
+          <ArrowUUpRight size={16} weight="regular" />
+        </button>
+      </div>
 
       <div className="toolbar-sep" />
 
       {/* Zoom controls */}
-      <button className="toolbar-btn" title="Zoom out" aria-label="Zoom out" onClick={onZoomOut}>
-        <Minus size={14} weight="regular" />
-      </button>
-      <span className="toolbar-zoom">{Math.round((zoom || 1) * 100)}%</span>
-      <button className="toolbar-btn" title="Zoom in" aria-label="Zoom in" onClick={onZoomIn}>
-        <Plus size={14} weight="regular" />
-      </button>
-      <button className="toolbar-btn toolbar-hide-mobile" title="Fit to view" aria-label="Fit to view" onClick={onFit}>
-        <ArrowsOut size={14} weight="regular" />
-      </button>
+      <div className="toolbar-group" style={{flexWrap: 'wrap'}}>
+        <button className="toolbar-btn" title="Zoom out" aria-label="Zoom out" onClick={onZoomOut}>
+          <Minus size={14} weight="regular" />
+        </button>
+        <span className="toolbar-zoom">{Math.round((zoom || 1) * 100)}%</span>
+        <button className="toolbar-btn" title="Zoom in" aria-label="Zoom in" onClick={onZoomIn}>
+          <Plus size={14} weight="regular" />
+        </button>
+        <button className="toolbar-btn toolbar-hide-mobile" title="Fit to view" aria-label="Fit to view" onClick={onFit}>
+          <ArrowsOut size={14} weight="regular" />
+        </button>
+      </div>
 
       <div className="toolbar-sep toolbar-hide-mobile" />
 
@@ -182,7 +221,7 @@ export function Toolbar({
 
       {/* Search toggle */}
       {searchOpen ? (
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
           <input
             type="text"
             value={localQuery}
@@ -195,11 +234,15 @@ export function Toolbar({
               border: '1px solid rgba(255,255,255,0.15)',
               borderRadius: '8px',
               padding: '4px 8px',
+              minHeight: '44px',
+              minWidth: '44px',
               fontSize: '12px',
               color: 'var(--text-primary, #e0e0e0)',
               outline: 'none',
-              width: '140px',
+              maxWidth: '140px',
+              width: '100%',
               fontFamily: 'var(--font-ui)',
+              touchAction: 'manipulation',
             }}
           />
           <button type="button" className="toolbar-btn" title="Clear search" aria-label="Clear search" onClick={handleSearchClear}>

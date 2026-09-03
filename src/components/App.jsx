@@ -21,6 +21,7 @@ import { TagFilterBar, TagsPanel } from '../ui/TagsSystem.jsx';
 import { CommandPalette } from '../ui/CommandPalette.jsx';
 import { SpacesManager } from '../ui/SpacesManager.jsx';
 import { FolderViewModal } from '../ui/FolderViewModal.jsx';
+import { FicharioStyleEditor } from '../ui/FicharioStyleEditor.jsx';
 import LiquidOrb from '../ui/LiquidOrb.jsx';
 
 export function App() {
@@ -84,6 +85,7 @@ export function App() {
   const [showTags, setShowTags] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [openFolderId, setOpenFolderId] = useState(null);
+  const [ficharioStyleTargetId, setFicharioStyleTargetId] = useState(null);
 
   // Initialize
   useEffect(() => {
@@ -432,12 +434,48 @@ export function App() {
       case 'archive':
         updateItem(item.id, { meta: { archived: true } });
         break;
-      case 'delete':
-        deleteItem(item.id);
+      case 'delete': {
+        const state = useStore.getState();
+        const target = state.items.find((i) => i.id === item.id);
+        if (target) {
+          history.current.push(new DeleteItemCommand(target, state.items));
+        }
+        deleteItem(target?.id ?? item.id);
         break;
+      }
       case 'edit-tags':
         // Tag editor is inline on card — no-op at app level
         break;
+      case 'fichario-add-page':
+        useStore.getState().ficharioAddPage(item.id);
+        break;
+      case 'fichario-style':
+        setFicharioStyleTargetId(item.id);
+        break;
+      case 'fichario-duplicate-page': {
+        const activeId = item.content?.activePageId;
+        if (activeId) useStore.getState().ficharioDuplicatePage(item.id, activeId);
+        break;
+      }
+      case 'fichario-extract-page': {
+        const activeId = item.content?.activePageId;
+        if (activeId) useStore.getState().ficharioExtractPage(item.id, activeId);
+        break;
+      }
+      case 'fichario-place': {
+        // Dock this (usually single-page) Fichário onto the nearest other Fichário.
+        const state = useStore.getState();
+        const binders = state.items.filter((i) => i.type === 'fichario' && i.id !== item.id);
+        if (binders.length === 0) break;
+        let nearest = binders[0];
+        let best = Infinity;
+        for (const b of binders) {
+          const d = Math.hypot(b.x - item.x, b.y - item.y);
+          if (d < best) { best = d; nearest = b; }
+        }
+        state.ficharioMergeInto(item.id, nearest.id);
+        break;
+      }
       case 'color-none':
         updateItem(item.id, { meta: { color: null } });
         break;
@@ -479,11 +517,14 @@ export function App() {
     }
   }, [addToFolder]);
 
+  // Fichário merge handler (drag a card onto a Fichário card to merge it in)
+  const handleAddToFichario = useCallback(async (sourceId, targetId) => {
+    await useStore.getState().ficharioMergeInto(sourceId, targetId);
+  }, []);
+
   // filteredItems must be computed before any useCallback that references it
   // (temporal dead zone fix - this was causing ReferenceError)
   const filteredItems = getFilteredItems();
-  
-  // Drop handler for DropZoneHandler
   const handleDrop = useCallback(async (drops) => {
     for (const drop of drops) {
       switch (drop.kind) {
@@ -542,7 +583,7 @@ export function App() {
   }, [filteredItems, selectedIds]);
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
+    <div className="flex flex-col sm:flex-row" style={{ width: '100%', height: '100dvh', overflow: 'hidden', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <Toaster
         position="bottom-center"
         toastOptions={{
@@ -554,6 +595,7 @@ export function App() {
             backdropFilter: 'blur(16px)',
             fontFamily: 'var(--font-ui)',
             fontSize: '12px',
+            marginBottom: 'env(safe-area-inset-bottom)',
           },
         }}
       />
@@ -562,21 +604,20 @@ export function App() {
         onTagsOpen={() => setShowTags(true)}
         onAIOrganise={handleAIOrganise}
         onAISummarise={handleAISummarise}
-        onAddUrl={async (url) => {
-          if (url) {
-            await addUrl(url);
-          }
-        }}
-        onSearch={() => setCommandPaletteOpen(true)}
+        onSearch={search}
+        onAddNote={addNote}
+        onAddUrl={addUrl}
         onExport={handleExport}
       />
-      <div data-main-content style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+      <div data-main-content style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <DropZoneHandler viewport={viewport} onDrop={handleDrop}>
-          <TagFilterBar
-            activeTagFilters={activeTagFilters}
-            onToggleTag={toggleTagFilter}
-            onClearTags={clearTagFilters}
-          />
+          <div style={{ overflowX: 'auto' }}>
+            <TagFilterBar
+              activeTagFilters={activeTagFilters}
+              onToggleTag={toggleTagFilter}
+              onClearTags={clearTagFilters}
+            />
+          </div>
           <Canvas
             items={filteredItems}
             viewport={viewport}
@@ -593,6 +634,7 @@ export function App() {
             onAddToStack={handleAddToStack}
             onCreateFolder={createFolder}
             onAddToFolder={handleAddToFolder}
+            onAddToFichario={handleAddToFichario}
             onContextMenu={(item, x, y) => setContextMenu({ item, x, y })}
             onOpenFolder={setOpenFolderId}
             onColorSelected={handleColorSelected}
@@ -607,6 +649,7 @@ export function App() {
           zoom={viewport.scale}
           searchQuery={searchQuery}
           onAddNote={addNote}
+          onAddFichario={() => useStore.getState().addFichario()}
           onDelete={handleDeleteSelected}
           onUndo={handleUndo}
           onRedo={handleRedo}
@@ -648,6 +691,18 @@ export function App() {
           onDescription={(desc) => updateFolderDescription(openFolder.id, desc)}
         />
       )}
+
+      {/* Fichário style editor */}
+      {ficharioStyleTargetId && (() => {
+        const target = items.find((i) => i.id === ficharioStyleTargetId);
+        if (!target) return null;
+        return (
+          <FicharioStyleEditor
+            item={target}
+            onClose={() => setFicharioStyleTargetId(null)}
+          />
+        );
+      })()}
 
       {/* ScratchPad overlay */}
       <ScratchPad />
@@ -699,10 +754,11 @@ export function App() {
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
+            paddingBottom: 'env(safe-area-inset-bottom)'
           }}>
-            <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ fontFamily: 'var(--font-ui)', fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>TAGS</span>
-              <button onClick={() => setShowTags(false)} style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>✕</button>
+              <button onClick={() => setShowTags(false)} style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', minWidth: '44px', minHeight: '44px' }}>✕</button>
             </div>
             <TagsPanel
               items={items}

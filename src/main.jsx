@@ -7,11 +7,14 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './components/App.jsx';
+import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+import { initErrorTelemetry } from './utils/errorTelemetry.js';
 import './styles/tokens.css';
 import './styles/reset.css';
 import './styles/canvas.css';
 import './styles/tiptap.css';
 import './styles/stack-folder.css';
+import './styles/fichario.css';
 import './styles/glass-fallback.css';
 import './styles/ui-chrome.css';
 import './styles/responsive.css';
@@ -33,6 +36,25 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Install global client-side error telemetry (window.onerror +
+// window.onunhandledrejection → /api/log). Best-effort, fire-and-forget.
+initErrorTelemetry();
+
 const container = document.getElementById('app');
+// Mobile-safe root container (MOBILE-UI-STANDARD)
+container.style.height = '100vh';
+container.style.height = '100dvh';
+container.style.width = '100%';
+container.style.maxWidth = '100%';
+container.style.overflowX = 'hidden';
+container.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+container.style.paddingBottom = 'env(safe-area-inset-bottom, 0px)';
+container.style.paddingLeft = 'env(safe-area-inset-left, 0px)';
+container.style.paddingRight = 'env(safe-area-inset-right, 0px)';
+container.style.boxSizing = 'border-box';
 const root = createRoot(container);
-root.render(<App />);
+root.render(
+  <ErrorBoundary name="root">
+    <App />
+  </ErrorBoundary>
+);

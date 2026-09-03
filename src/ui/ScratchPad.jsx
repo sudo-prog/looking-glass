@@ -164,6 +164,7 @@ export function ScratchPad() {
         role="dialog"
         aria-label="Scratch pad — capture a thought"
         aria-modal="true"
+        className="lg-scratch-pad"
         style={{
           position: 'fixed',
           top: '50%',
@@ -189,6 +190,29 @@ export function ScratchPad() {
             from { opacity: 0; transform: translate(-50%,-50%) scale(0.90); }
             to   { opacity: 1; transform: translate(-50%,-50%) scale(1); }
           }
+
+          /* MOBILE-UI-STANDARD (<=767px): bottom-dock the capture panel so the
+             auto-focused textarea clears the on-screen keyboard, and lift it
+             off the iOS home indicator. Desktop keeps the centered modal.
+             !important beats the inline styles above (top/left/width/transform). */
+          @media (max-width: 640px) {
+            .lg-scratch-pad {
+              top: auto !important;
+              left: calc(12px + env(safe-area-inset-left, 0px)) !important;
+              right: calc(12px + env(safe-area-inset-right, 0px)) !important;
+              bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+              width: auto !important;
+              transform: none !important;
+              animation-name: scratch-appear-mobile !important;
+              max-height: calc(100dvh - 24px - env(safe-area-inset-bottom, 0px));
+              overflow-y: auto !important;
+            }
+
+            @keyframes scratch-appear-mobile {
+              from { opacity: 0; transform: translateY(16px) scale(0.97); }
+              to   { opacity: 1; transform: none; }
+            }
+          }
         `}</style>
 
         {/* Header */}
@@ -197,12 +221,19 @@ export function ScratchPad() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            rowGap: '10px',
             padding: '12px 16px 8px',
             borderBottom: `1px solid ${color.border}`,
           }}
         >
           <div
             style={{
+              flex: '1 1 auto',
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
               fontFamily: 'var(--font-ui)',
               fontSize: '9px',
               letterSpacing: '0.15em',
@@ -214,26 +245,41 @@ export function ScratchPad() {
           </div>
 
           {/* Colour picker dots */}
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
             {STICKY_COLORS.map((c, i) => (
               <button
                 key={i}
                 aria-label={`Color: ${c.label}`}
                 onClick={() => setColorIdx(i)}
                 style={{
-                  width: i === colorIdx ? '10px' : '6px',
-                  height: i === colorIdx ? '10px' : '6px',
-                  borderRadius: '50%',
-                  background: c.border,
-                  border: i === colorIdx
-                    ? '2px solid rgba(255,255,255,0.50)'
-                    : '1px solid rgba(255,255,255,0.15)',
+                  minHeight: '44px',
+                  minWidth: '44px',
+                  width: '44px',
+                  height: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'transparent',
+                  border: 'none',
                   cursor: 'pointer',
                   padding: 0,
                   transition: 'all 0.15s ease',
                   flexShrink: 0,
                 }}
-              />
+              >
+                <span
+                  style={{
+                    width: i === colorIdx ? '10px' : '6px',
+                    height: i === colorIdx ? '10px' : '6px',
+                    borderRadius: '50%',
+                    background: c.border,
+                    border: i === colorIdx
+                      ? '2px solid rgba(255,255,255,0.50)'
+                      : '1px solid rgba(255,255,255,0.15)',
+                    transition: 'all 0.15s ease',
+                  }}
+                />
+              </button>
             ))}
           </div>
         </div>
@@ -251,6 +297,7 @@ export function ScratchPad() {
             border: 'none',
             outline: 'none',
             resize: 'none',
+            minHeight: '140px',
             background: 'transparent',
             color: 'var(--text-primary)',
             fontFamily: 'var(--font-body)',
@@ -269,6 +316,8 @@ export function ScratchPad() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            rowGap: '10px',
             padding: '10px 16px',
             borderTop: `1px solid ${color.border}`,
           }}
@@ -284,11 +333,13 @@ export function ScratchPad() {
             {text.length > 0 ? `${text.length} chars` : 'Esc to dismiss'}
           </span>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button
               onClick={() => { setOpen(false); setText(''); }}
               style={{
-                height: '34px',
+                minHeight: '44px',
+                minWidth: '44px',
+                height: '44px',
                 padding: '0 14px',
                 borderRadius: '8px',
                 border: `1px solid ${color.border}`,
@@ -307,7 +358,9 @@ export function ScratchPad() {
               onClick={handleSave}
               disabled={saving || !text.trim()}
               style={{
-                height: '34px',
+                minHeight: '44px',
+                minWidth: '44px',
+                height: '44px',
                 padding: '0 18px',
                 borderRadius: '8px',
                 border: 'none',

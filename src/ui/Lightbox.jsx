@@ -89,7 +89,7 @@ export function Lightbox({ item, onClose, onColor }) {
   const url = item.content?.url;
 
   // Detect mobile for layout adjustments
-  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth <= 640;
   const isVerySmall = typeof window !== 'undefined' && window.innerWidth < 375;
 
   return createPortal(
@@ -102,6 +102,7 @@ export function Lightbox({ item, onClose, onColor }) {
       style={{
         position: 'fixed',
         inset: 0,
+        minHeight: '100dvh',
         zIndex: 'var(--z-lightbox)',
         background: 'rgba(8,8,8,0.94)',
         backdropFilter: 'blur(6px)',
@@ -116,6 +117,7 @@ export function Lightbox({ item, onClose, onColor }) {
           display: 'flex',
           alignItems: 'center',
           padding: '18px 20px',
+          paddingTop: 'calc(18px + env(safe-area-inset-top, 0px))',
           flexShrink: 0,
         }}
         onClick={(e) => e.stopPropagation()}
@@ -127,8 +129,10 @@ export function Lightbox({ item, onClose, onColor }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '36px',
-            height: '36px',
+            minWidth: '44px',
+            minHeight: '44px',
+            width: '44px',
+            height: '44px',
             borderRadius: '10px',
             border: '1px solid rgba(255,255,255,0.10)',
             background: 'rgba(255,255,255,0.06)',
@@ -149,7 +153,7 @@ export function Lightbox({ item, onClose, onColor }) {
           justifyContent: 'center',
           gap: isMobileViewport ? '12px' : 'clamp(16px, 4vw, 56px)',
           padding: isMobileViewport ? '0 12px' : '0 24px',
-          overflow: 'hidden',
+          overflow: isMobileViewport ? 'visible' : 'hidden',
           minHeight: 0,
           flexDirection: isMobileViewport ? 'column' : 'row',
         }}
@@ -160,6 +164,8 @@ export function Lightbox({ item, onClose, onColor }) {
           style={{
             display: 'flex',
             flexDirection: isMobileViewport ? 'row' : 'column',
+            flexWrap: 'wrap',
+            justifyContent: isMobileViewport ? 'center' : 'flex-start',
             gap: '14px',
             flexShrink: 0,
             order: isMobileViewport ? 2 : 0,
@@ -171,8 +177,10 @@ export function Lightbox({ item, onClose, onColor }) {
               onClick={() => handlePickColor(hex)}
               aria-label={`Tag color ${hex}`}
               style={{
-                width: '32px',
-                height: '32px',
+                minWidth: '44px',
+                minHeight: '44px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '50%',
                 border: activeColor === hex
                   ? '2px solid rgba(255,255,255,0.85)'
@@ -208,7 +216,7 @@ export function Lightbox({ item, onClose, onColor }) {
               onLoad={(e) => setNaturalSize({ w: e.target.naturalWidth, h: e.target.naturalHeight })}
               style={{
                 maxWidth: '100%',
-                maxHeight: '52vh',
+                maxHeight: '52dvh',
                 objectFit: 'contain',
                 borderRadius: '6px',
                 boxShadow: '0 24px 64px rgba(0,0,0,0.55)',
@@ -243,6 +251,7 @@ export function Lightbox({ item, onClose, onColor }) {
             flexShrink: 0,
             minWidth: '0',
             maxWidth: '160px',
+            overflowX: 'auto',
           }}
         >
           {[
@@ -283,6 +292,7 @@ export function Lightbox({ item, onClose, onColor }) {
           display: 'flex',
           justifyContent: 'center',
           padding: '20px',
+          paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
           flexShrink: 0,
         }}
         onClick={(e) => e.stopPropagation()}
@@ -291,6 +301,8 @@ export function Lightbox({ item, onClose, onColor }) {
           style={{
             display: 'flex',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
             gap: '4px',
             padding: '6px',
             borderRadius: '14px',
@@ -347,6 +359,7 @@ const lightboxBtnStyle = {
   justifyContent: 'center',
   width: '44px',
   height: '44px',
+  minHeight: '44px',
   borderRadius: '10px',
   border: 'none',
   background: 'transparent',

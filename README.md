@@ -1,68 +1,77 @@
 # Looking Glass
 
-Looking Glass is a sophisticated spatial visual memory system that transforms the way you capture and organize information. By utilizing an infinite canvas workspace, it allows you to map out ideas, research, and memories using a flexible arrangement of cards, stacks, and folders, all augmented by integrated AI assistance.
+A spatial visual memory system — infinite canvas workspace with cards, stacks, folders, tags, and AI assistance.
 
-## Key Features
+## 🚀 Live Demo
 
-### 🌌 Spatial Workspace
-- **Infinite Canvas** — Pan and zoom across a boundless workspace to visualize connections between disparate pieces of information.
-- **Diverse Card Types** — Capture everything from simple notes and bookmarks to images, videos, audio files, PDFs, and rich web clips.
-- **Organization Layers** — Use Stacks (with elegant fan animations) and Folders (with thumbnail browsing) to manage complexity without losing spatial context.
-- **Smart Tagging** — Automatic tag extraction from #hashtags for rapid filtering and retrieval.
-- **Spaces** — Create multiple distinct canvas workspaces for different projects or domains of knowledge.
-
-### 🤖 AI Intelligence
-- **Automated Summarization** — Quickly distill long-form content into concise summaries.
-- **Intelligent Organization** — Leverage AI to help categorize and structure your spatial memory.
-
-### 🛠️ Power User Tools
-- **Command Palette (Ctrl+K)** — Rapidly navigate and execute actions without leaving the keyboard.
-- **Scratch Pad (Alt+Space)** — A dedicated area for temporary notes and rapid capture.
-- **Fuzzy Search** — Find any card or tag instantly using a powerful search interface.
-- **Multi-Format Export** — Export your knowledge maps as JSON, PNG, PDF, or Markdown.
-
-### 📱 Modern Experience
-- **Glass Aesthetic** — A refined, modern UI with comprehensive dark and light theme support.
-- **PWA Support** — Fully installable Progressive Web App with service worker integration for offline access.
+**https://looking-glass-eta.vercel.app/**
 
 ## Tech Stack
 
-- **Frontend:** React 18, JavaScript (JSX), Vite 5
-- **State Management:** Zustand
-- **Rich Text:** Tiptap
-- **Icons:** Phosphor Icons
-- **Utilities:** Fuse.js (Fuzzy Search), html2canvas & jsPDF (Exports)
-- **Notifications:** react-hot-toast
-- **Persistence:** IndexedDB for local-first data storage
-- **Package Manager:** pnpm
+- **React 19** + **TypeScript** + **Vite 5**
+- **Zustand** for state management
+- **pnpm** package manager
+- **Tiptap** rich text editor
+- **Phosphor Icons**
+- **html2canvas** + **jsPDF** for PNG/PDF export
+- **react-hot-toast** for notifications
+- **IndexedDB** (via idb) for local persistence
 
-## Getting Started
+## Quick Start
 
-### Prerequisites
-- Node.js (Latest LTS)
-- pnpm (`npm install -g pnpm`)
-
-### Installation
 ```bash
-# Clone the repository
-git clone https://github.com/sudo-prog/looking-glass.git
-cd looking-glass
-
-# Install dependencies
-pnpm install --no-frozen-lockfile
+pnpm install && pnpm run dev
 ```
 
-### Development
+## Features
+
+- Infinite pan/zoom canvas
+- Cards: notes, bookmarks, images, video, audio, PDF, web clips
+- Stacks (fan animation) and Folders (tab/thumbnail browser)
+- Tags with auto-extraction from #hashtags
+- AI summarisation and organisation
+- Command Palette (Ctrl+K)
+- Scratch Pad (Ctrl+Shift+N)
+- Spaces (multi-canvas workspaces)
+- **Cloud sync (Supabase)** — sign in to access your canvases across desktop, tablet, and mobile from one source (IndexedDB local-first, mirrored to Supabase with row-level security)
+- Dark/light theme with glass aesthetic
+- PWA with service worker
+
+## Mobile UI
+
+Verified on a 390x844 touch viewport against `quality/mobile-ui-verification-standard` (screenshots + DOM hit-tests, not just a build). The seeded welcome card and its overflow menu stay inside the viewport; the orb chat clears the safe-area (`env(safe-area-inset-bottom)`). Gate harness: `_verify_mobile.cjs` (`node _verify_mobile.cjs`, `LG_URL=...`). Whenever you touch the orb, sidebar, bottom toolbar, or canvas cards, keep the MOBILE-UI-STANDARD rules: tap targets >=44x44px, no `tap-swallow`, no horizontal overflow, safe-area on docked UI.
+
+## AI Provider
+
+AI is configured in **one place only**: the **side panel → Settings → AI Assistant**. The orb is chat-only and reads that same shared config — there is no second setup flow inside the orb.
+
+Two providers are offered, both free-tier:
+
+| Provider | Endpoint | Notes |
+|---|---|---|
+| **OmniRoute** (default) | `http://127.0.0.1:20128/v1/chat/completions` | Local gateway, OpenAI-compatible. Key is the literal string `omniroute`. |
+| **OpenRouter (free)** | `https://openrouter.ai/api/v1/chat/completions` | Needs a real `sk-or-v1-…` key. Only `:free` models are listed. |
+
+Default model is `openrouter/free` (OmniRoute resolves it across the free OpenRouter pool). Also available: `auto/best-free`, `auto/coding:free`, `auto/best-chat`, `auto/best-coding-fast`.
+
+No paid models and no Anthropic/OpenAI/Groq/Gemini/Ollama/LiteLLM keys are used anywhere.
+
+**Important — requests must be non-streaming.** The OmniRoute gateway streams by default and returns Server-Sent-Events (`data: {...}`), which breaks `response.json()`. Every client call therefore sends `"stream": false`. Do not remove it.
+
+Server-side (`api/chat.js`) config via `.env.local`:
+
 ```bash
-# Run the development server
-pnpm run dev
+LLM_BASE_URL=http://127.0.0.1:20128/v1   # tailnet: http://100.125.198.47:20128/v1
+LLM_API_KEY=omniroute                      # literal string, no real key required
+LLM_MODEL=auto/best-coding-fast
 ```
 
-### Deployment
-- **Platform:** Vercel
-- **Build Command:** `pnpm build`
-- **Output Directory:** `dist/`
+Note: the gateway is local-only, so Vercel production needs a tunnel or hosted endpoint for AI to work in the deployed app.
 
-## License
+## Orb debug mode
 
-This project is licensed under the MIT License.
+The orb has a built-in debug facility, useful for diagnosing AI problems:
+
+- Type `/debug` in the orb to toggle debug mode (AI inspects the live DOM for real fixes).
+- The **⚠ button** in the orb toolbar opens the **Debug Log** viewer, which records mutations, window errors, unhandled rejections, `console.error`, and AI call failures.
+- The log can be copied or exported as markdown for bug reports.

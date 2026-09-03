@@ -169,7 +169,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
   useEffect(() => {
     const cfg = loadThemeConfig();
     const order = cfg.menuIconOrder || [];
-    setMenuIcons(order);
+    setMenuIcons(order.filter(id => id !== 'settings'));
   }, []);
 
   // Listen for theme changes
@@ -178,6 +178,15 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     window.addEventListener('theme-change', handler);
     return () => window.removeEventListener('theme-change', handler);
   }, []);
+
+  // Toggle a body class while the mobile bottom nav is open so the floating
+  // toolbar (which occupies the same bottom strip) can be hidden to stop it
+  // from intercepting taps meant for the nav items.
+  useEffect(() => {
+    const open = isMobile && mobileExpanded;
+    document.body.classList.toggle('lg-mobile-menu-open', open);
+    return () => document.body.classList.remove('lg-mobile-menu-open');
+  }, [isMobile, mobileExpanded]);
 
   // Mobile detection
   useEffect(() => {
@@ -211,15 +220,19 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
 
   const handleFabClick = useCallback(() => {
     if (isMobile) {
-      // On mobile: do NOT open expanding panel — just trigger nav action directly
-      // The FAB on mobile is a quick-access button, not a menu toggle
+      // On mobile: toggle the bottom nav bar open/closed
+      setMobileExpanded((prev) => !prev);
       setCollapsed(false);
-      setMobileExpanded(false); // keep it as FAB-only on mobile
     } else {
       setCollapsed(false);
       setMobileExpanded(true);
     }
   }, [isMobile]);
+
+  const closeMobile = useCallback(() => {
+    setMobileExpanded(false);
+    setCollapsed(true);
+  }, []);
 
   const handleNavClick = useCallback((id) => {
     setActiveItem(id);
@@ -336,13 +349,14 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
   }
 
   // On mobile: never show the expanding panel — just keep the FAB
+  // (the expanded sidebar is a bottom nav rendered below when mobileExpanded)
   if (isMobile && !mobileExpanded) {
     return (
       <>
         <button
           ref={sidebarRef}
           className="lg-sidebar-fab"
-          onClick={() => setCollapsed(true)}
+          onClick={handleFabClick}
           aria-label="Open menu"
           title="Menu"
         >
@@ -359,8 +373,43 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
 
   return (
     <>
-      {/* Click-outside backdrop */}
-      <div className="lg-sidebar-backdrop" onClick={() => { setCollapsed(true); setMobileExpanded(false); }} />
+      <style>{`
+        .lg-sidebar-fab,
+        .lg-sidebar__nav-item,
+        .lg-sidebar__flyout-item,
+        .lg-sidebar__flyout-close,
+        .lg-sidebar__theme-btn,
+        .lg-sidebar__settings-btn,
+        .lg-sidebar__nav-theme,
+        .lg-sidebar__close {
+          min-height: 44px !important;
+          min-width: 44px !important;
+        }
+        .lg-sidebar__nav {
+          flex-wrap: wrap !important;
+        }
+        @media (max-width: 640px) {
+          .lg-sidebar__nav {
+            flex-direction: column !important;
+          }
+          .lg-sidebar__nav-item {
+            width: 100% !important;
+            justify-content: flex-start !important;
+          }
+        }
+        .lg-sidebar--expanded {
+          min-height: 100dvh !important;
+          padding-bottom: env(safe-area-inset-bottom) !important;
+        }
+        .lg-sidebar__flyout {
+          overflow-x: auto !important;
+        }
+      `}</style>
+      {/* Click-outside backdrop (shown on mobile while the bottom nav is open) */}\n      <div
+
+        className={`lg-sidebar-backdrop${isMobile && mobileExpanded ? ' lg-sidebar-backdrop--mobile-visible' : ''}`}
+        onClick={closeMobile}
+      />
 
       <aside
         ref={sidebarRef}
@@ -423,6 +472,27 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
               <circle cx="15" cy="19" r="1.5" fill="currentColor" />
             </svg>
           </div>
+          {/* Mobile-only: theme toggle + close affordance for the bottom nav */}
+          {isMobile && mobileExpanded && (
+            <>
+              <button
+                className="lg-sidebar__nav-theme"
+                onClick={handleThemeToggle}
+                aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+                title="Toggle theme"
+              >
+                {dark ? <Sun size={20} weight="regular" /> : <Moon size={20} weight="regular" />}
+              </button>
+              <button
+                className="lg-sidebar__close"
+                onClick={closeMobile}
+                aria-label="Close menu"
+                title="Close"
+              >
+                <X size={20} weight="regular" />
+              </button>
+            </>
+          )}
         </nav>
 
         {/* ── Flyout panel ── */}

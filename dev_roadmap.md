@@ -2,7 +2,7 @@
 
 > Last updated: 2026-06-27
 > Repo: git@github.com:Sudo-Prog/looking-glass.git
-> Branch: develop → main → Vercel (auto-deploy)
+> Branch: main → Vercel auto-deploy (GitHub Pages / develop are stale)
 
 ---
 
@@ -65,12 +65,29 @@
 
 ## Phase 7 — Commercial ⚪
 
-- [ ] Cloud sync (Supabase)
+- [x] **LG-9: Cloud sync (Supabase) — LIVE 2026-07-16** ✅ — dedicated Supabase project
+      `ljlrqqzsowaaimvzbsqp`; tables `canvases` + `items`; RLS locked to `auth.uid()`;
+      IndexedDB↔Supabase LWW sync (`src/lib/sync.js`); email/password auth (`AuthPanel.jsx`).
+      Verified end-to-end (sign-in → insert → read-back → RLS isolation). Deployed to
+      `https://looking-glass-eta.vercel.app`. NOTE: Supabase "Confirm email" is ON (user aware,
+      left ON for account security) — new signups click confirm email before first sync; dashboard
+      toggle to disable for instant signup.
 - [ ] Real-time collaboration (Yjs CRDT)
 - [ ] Version history / timeline
 - [ ] Browser extension
 - [ ] Plugin system
 - [ ] Monetisation (Stripe / Lemon Squeezy)
+
+---
+
+## Phase 8 — External Integrations ⚪
+
+- [ ] **Immich integration** — self-hosted photo/video backup server (immich.app). Looking Glass is visual-first (image/bookmark cards), so Immich is a natural asset source + backup target.
+  - [ ] Settings panel: Immich server URL + API key (Immich REST v1 `/api/*`, key from Admin → API Keys). Same pattern as the existing AI provider config (stored obfuscated, client-side only — no server).
+  - [ ] **Import:** "Add from Immich" — browse Albums/Assets via `/api/album` + `/api/asset` and drop selected photos as Image cards on the canvas (reuse the existing image-card path). Pagination + thumbnails.
+  - [ ] **Backup (optional):** auto-save captured screenshots / WebClip screenshots to a dedicated Immich album (`POST /api/asset`) so canvas captures survive browser-clearing (today everything lives only in IndexedDB — see Architecture Notes).
+  - [ ] New `src/utils/immich.js` client (token auth, paginated list, asset download/upload). No new backend — talks to the user's own Immich instance directly from the browser (CORS: Immich allows configuring allowed origins).
+  - [ ] NOTE: does NOT replace the local-first IndexedDB store; it's an import/export bridge. (See Phase 7 cloud-sync for the full multi-device sync story.)
 
 ---
 
@@ -107,7 +124,94 @@ Applied from video reference analysis (Web_clip.mp4, Visuals.mp4, Stacks.mp4, ST
 
 - **State:** Zustand (useStore.js) — no Redux, no Drizzle
 - **Persistence:** IndexedDB via `idb` library (not PostgreSQL)
-- **Build:** Vite 5, base path `/` for Vercel
+- **Build:** Vite 5, base path `/` for Vercel (deploy branch is `main`)
 - **Glass:** WebGPU + SVG feDisplacementMap + CSS backdrop-filter with tiered fallback (1→2→3)
 - **Theme:** Inline script in index.html sets data-theme before React hydration to prevent FOUC
 - **Entry:** React 18, main.jsx → App.jsx → Canvas.jsx → CanvasCard.jsx
+
+---
+
+## Main-Branch Audit Remediation — 2026-07-14 (LOOKING_GLASS_AUDIT_MAIN_BRANCH.md)
+
+Committed `d61369ff` on `main`, pushed, deployed to looking-glass-eta. Covers the REAL "AI broken" root causes (not the stale develop audit).
+
+- [x] **LG-1:** Fix right-click Delete crash (TDZ/shadowed `item` → `target`)
+- [x] **LG-2:** Mobile — CanvasCard long-press + kebab menu (touch can reach card actions)
+- [x] **LG-3:** AISummarisePanel uses shared `aiConfig.js` (was hardcoded `anthropic`, threw on gemini-web2api)
+- [x] **LG-4:** AISummarisePanel docks as bottom sheet on mobile
+- [x] **LG-5:** Gate unsandboxed `new Function(op.code)()` EVAL behind `window.confirm`
+- [x] **LG-6:** Verified `GEMINI_WEB2API_URL` dependency (503 if unset, no fallback) — ops item, no code change
+- [x] **LG-7:** Remove dead responsive.css blocks; vercel.json already correct
+
+**Deferred:** stack/folder data-model refactor (structural, larger task).
+
+---
+
+## Main-Branch Mobile Remediation — 2026-07-15 (runtime-verified)
+
+Process change after repeated false "fixed" claims: verification is now **runtime DOM
+assertion on a 390×844 mobile viewport via Playwright**, not code-reading or screenshots
+(see `mobile-ui-verification-standard` skill). `vercel deploy --prod` is mandatory — git
+push alone does NOT update the live site (this was the core reason prior fixes looked
+absent: `looking-glass-eta` still aliased a 6h-old build).
+
+### Commits
+- `b09e012e` — CanvasCard long-press (500ms) + ⋯ button open context menu on touch (§1a).
+- `eda5f161` — New items spawn at **viewport center** (was hardcoded screen (400,300) →
+  off the right edge on a 390px phone). `newItemScreenCenter(vp)` helper in useStore.js,
+  applied to all 9 `add*` functions (addNote/addUrl/addImage/addAudio/addVideo/addPDF/
+  addWebClipScreenshot). `window.innerWidth/innerHeight` used; SSR-safe fallback 1280×800.
+- Live alias `looking-glass-eta.vercel.app` → build `l0zejpjw1` then `3ewjdom82`
+  (re-deployed after each fix).
+
+### Runtime verification (Playwright, 390×844, hasTouch, CDP long-press)
+- `cardOnScreen: true` — new card renders centered (x≈212, y≈413 on a 390px viewport).
+- `roleMenuPresent: true` after long-press; menu items Delete/Stack/Folder/Summarise/
+  Edit Tags/Archive visible.
+- `toolbarSwallows: false` — menu not covered by floating toolbar (the 2026-07-14
+  "menu disappears on tap" root cause).
+- `overflow: false` — no horizontal page overflow.
+- `consoleErrors: []` — zero runtime errors.
+- OVERALL_PASS: true.
+
+### Root-cause note (why prior "clean" audits missed this)
+New-item spawn used a DESKTOP-ASSUMED coordinate (400,300). On mobile the card was
+created off-screen, so it was never tappable/long-pressable — but the app still "built"
+and rendered fine on desktop, so layout-only audits passed. Proven only by reading
+proven only by reading `getBoundingClientRect()` at runtime on a phone viewport.
+
+---
+
+## Phase 9 — Bookmark / Import Feature Gaps (audit 2026-08-20)
+
+Audited `src/ui/BookmarksPanel.jsx`, `src/ui/DropZoneHandler.jsx`, `src/components/App.jsx`,
+`src/utils/*` for the three requested feature areas. Status below reflects **shipped code**, not roadmap intent.
+
+### 1. Immich integration — ❌ NOT IMPLEMENTED (already tracked in Phase 8 above)
+No client code exists (`src/utils/immich.js` absent; zero `immich` references outside this roadmap).
+The Phase 8 Immich item already covers this; no new entry needed. Re-link for visibility:
+- [ ] **Immich integration** (Phase 8) — browse/link/back-up photos from a self-hosted Immich server (`/api/album`, `/api/asset`). See Phase 8 block for full sub-tasks.
+
+### 2. Drag-and-drop bookmarks — ⚠️ PARTIAL (reordering MISSING)
+- [x] **URL-drop-to-create** — EXISTS. Canvas `DropZoneHandler` → `App.handleDrop` accepts a dropped
+      URL and creates a BOOKMARK / WebClip card. No change needed.
+- [ ] **Drag-and-drop bookmark REORDERING** — MISSING. `BookmarksPanel` lists bookmarks with no
+      sortable/reorder UI; there is no `@dnd-kit` / `react-dnd` dependency anywhere in the app.
+      Existing "drag to reorder" code is only for the sidebar menu-icon pool (`LiquidGlassSidebar.jsx`,
+      `SettingsPanel.jsx`), NOT bookmarks.
+  - [ ] Implement `@dnd-kit` (`@dnd-kit/core` + `@dnd-kit/sortable`) in `BookmarksPanel` for
+        folder/item reordering.
+  - [ ] Persist new order to the store (Zustand `useStore`) so reorders survive reload / IndexedDB write.
+
+### 3. Auto-import bookmarks from browsers/apps — ⚠️ PARTIAL (GitHub MISSING)
+- [x] **Safari / Firefox / Chrome / Edge HTML import** — EXISTS. `parseBrowserBookmarksHTML()` in
+      `BookmarksPanel.jsx` parses Netscape-format bookmark exports (covers Safari + Firefox). No change needed.
+- [x] **Twitter / X.com import (URL paste)** — EXISTS. `handleTwitterImport()` adds a pasted
+      x.com / twitter.com URL as a bookmark card.
+- [ ] **Twitter / X.com archive import** — MISSING (only URL paste done). `dev roadmap.md` tracks this:
+  - [ ] Parse X/Twitter `bookmarks.js` / `bookmarks.json` data export → extract, dedupe (URL hash),
+        bulk-create bookmark cards.
+- [ ] **GitHub stars auto-import** — MISSING (no GitHub import code anywhere in `src`).
+  - [ ] Add "Import from GitHub" to `BookmarksPanel`: OAuth PAT or `GET /user/starred` fetch →
+        map starred repos (name, html_url, description) to bookmark cards; dedupe by URL.
+  - [ ] Alternate: parse GitHub "stars" HTML/export if API auth is undesired (lower fidelity).

@@ -133,8 +133,10 @@ export function SpacesManager({ isOpen, onClose }) {
           position: 'fixed',
           top: 0,
           left: 0,
-          bottom: 0,
-          width: '260px',
+          height: '100dvh',
+          minHeight: '100dvh',
+          width: '100%',
+          maxWidth: '260px',
           zIndex: 'var(--z-toolbar)',
           display: 'flex',
           flexDirection: 'column',
@@ -149,6 +151,7 @@ export function SpacesManager({ isOpen, onClose }) {
         <div
           style={{
             display: 'flex',
+            flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '16px 16px 12px',
@@ -176,7 +179,7 @@ export function SpacesManager({ isOpen, onClose }) {
         </div>
 
         {/* Space list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '8px 8px' }}>
           {spaces.map((space) => {
             const isActive  = space.id === activeSpaceId;
             const isEditing = space.id === editingId;
@@ -190,9 +193,12 @@ export function SpacesManager({ isOpen, onClose }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
+                  flexWrap: 'wrap',
                   gap: '6px',
                   borderRadius: '8px',
                   padding: '0 4px',
+                  minHeight: '44px',
+                  cursor: 'pointer',
                   marginBottom: '2px',
                   background: isActive ? 'var(--state-active)' : 'transparent',
                   transition: 'background 0.1s ease',
@@ -225,7 +231,7 @@ export function SpacesManager({ isOpen, onClose }) {
                     }}
                     style={{
                       flex: 1,
-                      height: '32px',
+                      minHeight: '44px',
                       border: '1px solid var(--color-border-active)',
                       borderRadius: '6px',
                       background: 'var(--color-bg-raised)',
@@ -241,10 +247,11 @@ export function SpacesManager({ isOpen, onClose }) {
                     onClick={() => handleSelect(space.id)}
                     style={{
                       flex: 1,
+                      minWidth: 0,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      height: '36px',
+                      minHeight: '44px',
                       padding: '0 4px',
                       border: 'none',
                       background: 'transparent',
@@ -283,7 +290,7 @@ export function SpacesManager({ isOpen, onClose }) {
 
                 {/* Action buttons (on hover) */}
                 {isHovered && !isEditing && (
-                  <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: '2px', flexShrink: 0, flexWrap: 'wrap' }}>
                     <button
                       onClick={(e) => startEdit(space, e)}
                       title="Rename"
@@ -314,6 +321,7 @@ export function SpacesManager({ isOpen, onClose }) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                flexWrap: 'wrap',
                 gap: '6px',
                 padding: '4px 4px',
               }}
@@ -331,7 +339,7 @@ export function SpacesManager({ isOpen, onClose }) {
                 placeholder="Space name…"
                 style={{
                   flex: 1,
-                  height: '32px',
+                  minHeight: '44px',
                   border: '1px solid var(--color-border-active)',
                   borderRadius: '6px',
                   background: 'var(--color-bg-raised)',
@@ -360,6 +368,8 @@ export function SpacesManager({ isOpen, onClose }) {
             alignItems: 'center',
             gap: '8px',
             padding: '14px 16px',
+            paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
+            minHeight: '44px',
             border: 'none',
             background: 'transparent',
             color: 'var(--text-secondary)',
@@ -387,8 +397,10 @@ const iconBtnStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  width: '24px',
-  height: '24px',
+  width: '44px',
+  height: '44px',
+  minWidth: '44px',
+  minHeight: '44px',
   border: 'none',
   background: 'transparent',
   color: 'var(--text-secondary)',

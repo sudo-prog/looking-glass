@@ -79,6 +79,8 @@ function TagChip({ tag, count, active, onRemove, onClick, size = 'sm' }) {
         transition: 'all 0.12s ease',
         userSelect: 'none',
         flexShrink: 0,
+        minHeight: '44px',
+        minWidth: '44px',
       }}
       role={onClick ? 'button' : undefined}
       aria-pressed={onClick ? active : undefined}
@@ -119,8 +121,10 @@ function TagChip({ tag, count, active, onRemove, onClick, size = 'sm' }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '14px',
-            height: '14px',
+            width: '24px',
+            height: '24px',
+            minWidth: '44px',
+            minHeight: '44px',
             border: 'none',
             background: 'transparent',
             color: 'var(--text-secondary)',
@@ -131,7 +135,7 @@ function TagChip({ tag, count, active, onRemove, onClick, size = 'sm' }) {
             flexShrink: 0,
           }}
         >
-          <X size={8} weight="bold" />
+          <X size={10} weight="bold" />
         </button>
       )}
     </div>
@@ -191,7 +195,8 @@ export function TagsPanel({ items = [], activeTagFilters = new Set(), onToggleTa
           placeholder="Filter tags…"
           style={{
             width: '100%',
-            height: '30px',
+            minHeight: '44px',
+            height: '44px',
             border: '1px solid var(--color-border)',
             borderRadius: '6px',
             background: 'var(--color-bg-raised)',
@@ -211,7 +216,9 @@ export function TagsPanel({ items = [], activeTagFilters = new Set(), onToggleTa
           onClick={onClearTags}
           style={{
             margin: '0 12px 6px',
-            height: '28px',
+            minWidth: '44px',
+            minHeight: '44px',
+            height: '44px',
             border: '1px solid var(--color-border)',
             borderRadius: '6px',
             background: 'transparent',
@@ -246,6 +253,7 @@ export function TagsPanel({ items = [], activeTagFilters = new Set(), onToggleTa
                 cursor: 'pointer',
                 transition: 'background 0.08s ease',
                 width: '100%',
+                minHeight: '44px',
               }}
               onMouseEnter={(e) => {
                 if (!active) e.currentTarget.style.background = 'var(--state-hover)';
@@ -345,8 +353,9 @@ export function TagEditor({ tags = [], onChange, compact = false }) {
         gap: '4px',
         alignItems: 'center',
         padding: '6px 16px',
+        paddingBottom: 'calc(6px + env(safe-area-inset-bottom))',
         borderTop: '1px solid var(--color-border)',
-        minHeight: '32px',
+        minHeight: '44px',
       }}
     >
       {displayTags.map((tag) => (
@@ -369,6 +378,8 @@ export function TagEditor({ tags = [], onChange, compact = false }) {
             border: 'none',
             cursor: 'pointer',
             padding: '2px 4px',
+            minWidth: '44px',
+            minHeight: '44px',
           }}
         >
           +{tags.length - 3} more
@@ -380,6 +391,7 @@ export function TagEditor({ tags = [], onChange, compact = false }) {
         <Hash size={9} weight="regular" style={{ color: 'var(--text-disabled)' }} />
         <input
           ref={inputRef}
+          className="lg-tag-input"
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -398,6 +410,9 @@ export function TagEditor({ tags = [], onChange, compact = false }) {
             width: `${Math.max(30, inputVal.length * 7 + 30)}px`,
             minWidth: '30px',
             maxWidth: '120px',
+            height: '28px',
+            minHeight: '44px',
+            padding: '4px 2px',
             caretColor: 'var(--text-primary)',
           }}
         />
@@ -420,30 +435,30 @@ export function TagFilterBar({ activeTagFilters = new Set(), onToggleTag, onClea
   if (activeTagFilters.size === 0) return null;
 
   return (
-    <div
-      role="toolbar"
-      aria-label="Active tag filters"
-      style={{
-        position: 'absolute',
-        top: '12px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 'var(--z-canvas-ui)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '6px 10px',
-        borderRadius: '9999px',
-        background: 'var(--glass-frost)',
-        backdropFilter: 'blur(var(--glass-blur-lg))',
-        WebkitBackdropFilter: 'blur(var(--glass-blur-lg))',
-        border: '1px solid var(--color-border)',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
-        maxWidth: 'calc(100vw - 320px)',
-        flexWrap: 'nowrap',
-        overflowX: 'auto',
-      }}
-    >
+    <div className="overflow-x-auto">
+      <div
+        role="toolbar"
+        aria-label="Active tag filters"
+        style={{
+          position: 'absolute',
+          top: 'calc(12px + env(safe-area-inset-top))',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 'var(--z-canvas-ui)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '6px 10px',
+          borderRadius: '9999px',
+          background: 'var(--glass-frost)',
+          backdropFilter: 'blur(var(--glass-blur-lg))',
+          WebkitBackdropFilter: 'blur(var(--glass-blur-lg))',
+          border: '1px solid var(--color-border)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
+          maxWidth: 'calc(100vw - 24px)',
+          flexWrap: 'wrap',
+        }}
+      >
       <span
         style={{
           fontFamily: 'var(--font-ui)',
@@ -474,8 +489,10 @@ export function TagFilterBar({ activeTagFilters = new Set(), onToggleTag, onClea
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: '20px',
-          height: '20px',
+          width: '32px',
+          height: '32px',
+          minWidth: '44px',
+          minHeight: '44px',
           border: 'none',
           background: 'transparent',
           color: 'var(--text-disabled)',
@@ -486,10 +503,11 @@ export function TagFilterBar({ activeTagFilters = new Set(), onToggleTag, onClea
         }}
         aria-label="Clear all tag filters"
       >
-        <X size={10} weight="bold" />
+        <X size={12} weight="bold" />
       </button>
     </div>
-  );
+  </div>
+);
 }
 
 export default { TagsPanel, TagEditor, TagFilterBar, extractHashtags, normaliseTag, aggregateTags };

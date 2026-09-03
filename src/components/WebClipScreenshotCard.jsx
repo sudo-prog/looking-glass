@@ -283,8 +283,10 @@ export function WebClipScreenshotCard({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '26px',
-                  height: '26px',
+                  minWidth: '44px',
+                  minHeight: '44px',
+                  width: '44px',
+                  height: '44px',
                   borderRadius: '50%',
                   border: 'none',
                   background: 'var(--state-hover)',
@@ -384,6 +386,8 @@ export function WebClipScreenshotCard({
                   fontSize: '9px',
                   cursor: 'pointer',
                   letterSpacing: '0.08em',
+                  minWidth: '44px',
+                  minHeight: '44px',
                 }}
               >
                 <Camera size={11} weight="regular" />
@@ -393,7 +397,7 @@ export function WebClipScreenshotCard({
           </div>
         )}
 
-        {/* Recapture button (top-right, on hover) */}
+        {/* Recapture button (top-right) */}
         {loadStatus === 'ok' && item.content?.url && (
           <button
             className="webclip-recapture-btn"
@@ -406,25 +410,28 @@ export function WebClipScreenshotCard({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '28px',
-              height: '28px',
+              minWidth: '44px',
+              minHeight: '44px',
+              width: '44px',
+              height: '44px',
               borderRadius: '8px',
               border: '1px solid rgba(255,255,255,0.15)',
               background: 'rgba(0,0,0,0.60)',
               color: 'rgba(255,255,255,0.70)',
               cursor: 'pointer',
               backdropFilter: 'blur(8px)',
-              opacity: 0,
-              transition: 'opacity 0.15s ease',
+              opacity: 1,
+              transition: 'opacity 0.15s ease, background 0.15s ease',
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.80)'; e.currentTarget.style.color = 'rgba(255,255,255,0.95)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.60)'; e.currentTarget.style.color = 'rgba(255,255,255,0.70)'; }}
           >
             <ArrowClockwise size={12} weight="regular" />
           </button>
         )}
 
-        {/* Shim: show recapture button on hover via CSS */}
+        {/* Shim: removed hover-only opacity */}
         <style>{`
-          .card-webclip-screenshot:hover .webclip-recapture-btn { opacity: 1 !important; }
           @keyframes shimmer {
             0%   { background-position: 200% 0; }
             100% { background-position: -200% 0; }
@@ -489,11 +496,14 @@ export function WebClipScreenshotCard({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '8px',
           padding: '8px 14px',
           borderTop: '1px solid rgba(255,255,255,0.06)',
+          overflowX: 'auto',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '5px' }}>
           {/* Favicon */}
           {domain && (
             <img
@@ -521,7 +531,7 @@ export function WebClipScreenshotCard({
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
           <span
             style={{
               fontFamily: 'var(--font-ui)',
@@ -541,8 +551,9 @@ export function WebClipScreenshotCard({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '22px',
-                height: '22px',
+                minWidth: '44px',
+                minHeight: '44px',
+                padding: '8px',
                 borderRadius: '6px',
                 border: '1px solid rgba(255,255,255,0.10)',
                 background: 'transparent',

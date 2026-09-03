@@ -149,11 +149,12 @@
 
 .lg-orb-pill-actions{display:flex;align-items:center;gap:3px;overflow:hidden}
 .lg-orb-pill-action{
-  font-family:var(--orb-font);font-size:12px;font-weight:400;
+  font-family:var(--orb-font);font-size:13px;font-weight:400;
   color:var(--orb-fg2);
   background:rgba(255,255,255,0.05);
   border:1px solid rgba(255,255,255,0.06);
-  border-radius:16px;padding:5px 12px;cursor:pointer;
+  border-radius:16px;padding:10px 14px;cursor:pointer;
+  min-height:44px;min-width:44px;
   white-space:nowrap;letter-spacing:-0.01em;
   transition:background 0.13s,color 0.13s,transform 0.13s var(--orb-spring);
   -webkit-tap-highlight-color:transparent;
@@ -172,7 +173,7 @@
 
 /* CHAT */
 .lg-orb-chat{
-  position:absolute;bottom:0;left:50%;
+  position:absolute;bottom:0;left:50%;z-index:95;
   width:min(460px,95vw);
   transform:translateX(-50%) translateY(10px) scale(0.95);
   transform-origin:center bottom;
@@ -180,7 +181,7 @@
   transition:opacity 0.3s var(--orb-out),transform 0.36s var(--orb-spring);
 }
 .lg-orb-chat.visible{opacity:1;transform:translateX(-50%) translateY(0) scale(1);pointer-events:auto}
-.lg-orb-chat-inner{border-radius:26px;position:relative;overflow:hidden}
+.lg-orb-chat-inner{border-radius:26px;position:relative;overflow:hidden;padding-bottom:env(safe-area-inset-bottom)}
 .lg-orb-chat-sheen{position:absolute;top:0;left:0;right:0;height:1px;z-index:5;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,0.10) 25%,rgba(255,255,255,0.18) 50%,rgba(255,255,255,0.10) 75%,transparent);pointer-events:none}
 .lg-orb-chat-rim{position:absolute;inset:0;border-radius:inherit;
@@ -229,8 +230,8 @@
 .lg-orb-chat-row{padding:13px 15px 4px;position:relative;z-index:2}
 .lg-orb-ta{width:100%;background:transparent;border:none;outline:none;resize:none;
   font-family:var(--orb-font);font-size:15px;font-weight:400;color:var(--orb-fg);
-  line-height:1.55;min-height:26px;max-height:190px;overflow-y:auto;scrollbar-width:none;
-  caret-color:rgba(210,210,228,0.9);letter-spacing:-0.01em}
+  line-height:1.55;min-height:44px;max-height:190px;overflow-y:auto;scrollbar-width:none;
+  caret-color:rgba(210,210,228,0.9);letter-spacing:-0.01em;padding:11px 0}
 .lg-orb-ta::placeholder{color:var(--orb-fg2)}
 .lg-orb-ta::-webkit-scrollbar{display:none}
 
@@ -239,7 +240,7 @@
   padding:5px 9px 11px;gap:6px;position:relative;z-index:2}
 .lg-orb-tb-l,.lg-orb-tb-r{display:flex;align-items:center;gap:2px}
 .lg-orb-tool{background:none;border:none;cursor:pointer;color:var(--orb-fg2);
-  width:34px;height:34px;border-radius:10px;
+  width:44px;height:44px;border-radius:10px;
   display:flex;align-items:center;justify-content:center;
   transition:background 0.13s,color 0.13s;-webkit-tap-highlight-color:transparent}
 .lg-orb-tool:hover{background:rgba(255,255,255,0.06);color:var(--orb-fg)}
@@ -292,9 +293,65 @@
 @media(max-width:767px){
   .lg-orb{bottom:calc(72px + env(safe-area-inset-bottom, 0px)) !important}
 }
+
+/* ── MOBILE BOTTOM-CLUSTER (no overlap, 44px targets) ───────────────
+   On mobile the toolbar docks to a fixed bottom bar (≈60px tall incl.
+   safe-area). The orb root is also fixed at the bottom-center, so it
+   would overlap the docked toolbar / "Add note" button. Lift the orb
+   root ABOVE the docked bar and raise its stacking so it never covers
+   interactive toolbar controls. The pill/chat are centered modals that
+   only appear when active (phase pill/chat) and sit above everything. */
+@media(max-width:767px){
+  .lg-orb-root{
+    bottom:calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index:120 !important;
+  }
+  /* Let the pill wrap instead of clipping action labels on narrow screens */
+  .lg-orb-pill-inner{
+    flex-wrap:wrap;
+    max-width:calc(100vw - 24px);
+    border-radius:24px;
+  }
+  .lg-orb-pill-actions{
+    flex-wrap:wrap;
+    justify-content:center;
+    overflow:visible;
+    min-width:100%;
+    gap:6px;
+    padding:2px 0 4px;
+  }
+  .lg-orb-pill-action{
+    min-width:44px;
+    min-height:44px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .lg-orb-pill-divider{display:none}
+  .lg-orb-chat{
+    bottom:calc(78px + env(safe-area-inset-bottom, 0px));
+    width:calc(100vw - 24px);
+  }
+}
+
 @media(max-width:480px){
   .lg-orb-pill-action{font-size:11px;padding:4px 9px}
   .lg-orb-ta{font-size:16px}
+}
+
+/* ── TOUCH TARGET FLOOR (coarse pointers / mobile) ──────────────
+   Enforce the 44px tap-target floor (MOBILE-UI-STANDARD T-1 / iOS HIG /
+   WCAG 2.5.5) on every interactive orb control so none falls below 44px.
+   (responsive.css owns the authoritative !important overrides.) */
+@media (pointer: coarse) {
+  .lg-orb{width:44px;height:44px}
+  .lg-orb-pill-brand{padding:7px 12px 7px 6px;min-height:44px}
+  .lg-orb-pill-orb{width:44px;height:44px}
+  .lg-orb-pill-action{min-height:44px;padding:10px 14px;border-radius:18px}
+  .lg-orb-pill-close{width:44px;height:44px}
+  .lg-orb-tool{width:44px;height:44px}
+  .lg-orb-send{width:44px;height:44px}
+  .lg-orb-att-rm{width:44px;height:44px}
 }
 @media(prefers-reduced-motion:reduce){
   .lg-orb,.lg-orb-pill,.lg-orb-chat{transition:opacity .18s!important}

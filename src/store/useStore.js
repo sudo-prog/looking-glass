@@ -4,10 +4,21 @@
  */
 import { create } from 'zustand';
 import { store as idbStore } from '../data/store.js';
-import { createItem, ITEM_TYPES } from '../data/schema.js';
+import { createItem, ITEM_TYPES, createFicharioPage, FICHARIO_COLOR_ORDER, FICHARIO_PAGE_KINDS } from '../data/schema.js';
 import { spacesSlice } from '../ui/spacesSlice.js';
 
 let viewportSaveTimer = null;
+
+// World-space spawn position centered in the actual browser viewport.
+// Falls back to a 1280x800 desktop size when `window` is undefined (SSR/build).
+function newItemScreenCenter(vp) {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+  return {
+    x: (-vp.x + vw / 2) / vp.scale,
+    y: (-vp.y + vh / 2) / vp.scale,
+  };
+}
 
 export const useStore = create((set, get) => ({
   // Spread spacesSlice — provides spaces, activeSpaceId, initSpaces, switchSpace, createSpace, renameSpace, deleteSpace, refreshSpaceCount
@@ -19,7 +30,7 @@ export const useStore = create((set, get) => ({
   viewport: { x: 0, y: 0, scale: 1 },
   items: [],
   selectedIds: new Set(),
-  activeFilters: new Set(['bookmark', 'web_clip', 'note', 'image', 'video', 'audio', 'pdf', 'web_clip_screenshot', 'group', 'stack', 'folder']),
+  activeFilters: new Set(['bookmark', 'web_clip', 'note', 'image', 'video', 'audio', 'pdf', 'web_clip_screenshot', 'group', 'stack', 'folder', 'fichario']),
   searchQuery: '',
   searchResults: null,
 
@@ -76,8 +87,9 @@ export const useStore = create((set, get) => ({
     const vp = state.viewport;
     // Small random jitter so consecutive notes don't stack exactly on top of each other
     const jitter = () => (Math.random() - 0.5) * 40;
-    const x = (-vp.x + 400) / vp.scale + jitter();
-    const y = (-vp.y + 300) / vp.scale + jitter();
+    const center = newItemScreenCenter(vp);
+    const x = center.x + jitter();
+    const y = center.y + jitter();
     return get().addItem({
       type: ITEM_TYPES.NOTE,
       x,
@@ -90,8 +102,9 @@ export const useStore = create((set, get) => ({
   addUrl: async (url = '', meta = null) => {
     const state = get();
     const vp = state.viewport;
-    const x = (-vp.x + 400) / vp.scale;
-    const y = (-vp.y + 300) / vp.scale;
+    const center = newItemScreenCenter(vp);
+    const x = center.x;
+    const y = center.y;
     const domain = url ? (() => { try { return new URL(url).hostname; } catch { return null; } })() : null;
     return get().addItem({
       type: ITEM_TYPES.BOOKMARK,
@@ -106,8 +119,9 @@ export const useStore = create((set, get) => ({
   addImage: async (imageUrl = '') => {
     const state = get();
     const vp = state.viewport;
-    const x = (-vp.x + 400) / vp.scale;
-    const y = (-vp.y + 300) / vp.scale;
+    const center = newItemScreenCenter(vp);
+    const x = center.x;
+    const y = center.y;
     return get().addItem({
       type: ITEM_TYPES.IMAGE,
       x,
@@ -120,10 +134,11 @@ export const useStore = create((set, get) => ({
   addAudio: async () => {
     const state = get();
     const vp = state.viewport;
+    const center = newItemScreenCenter(vp);
     return get().addItem({
       type: ITEM_TYPES.AUDIO,
-      x: (-vp.x + 400) / vp.scale,
-      y: (-vp.y + 300) / vp.scale,
+      x: center.x,
+      y: center.y,
       width: 300,
       content: { title: `Memo ${new Date().toLocaleTimeString()}`, audio_blob_id: null, duration_ms: 0 },
     });
@@ -136,8 +151,8 @@ export const useStore = create((set, get) => ({
     await idbStore.saveBlob(blobId, file);
     return get().addItem({
       type: ITEM_TYPES.VIDEO,
-      x: (-vp.x + 400) / vp.scale,
-      y: (-vp.y + 300) / vp.scale,
+      x: newItemScreenCenter(vp).x,
+      y: newItemScreenCenter(vp).y,
       width: 320,
       content: { title: file.name.replace(/\.[^.]+$/, ''), video_blob_id: blobId, object_url: objectUrl },
     });
@@ -150,8 +165,8 @@ export const useStore = create((set, get) => ({
     await idbStore.saveBlob(blobId, file);
     return get().addItem({
       type: ITEM_TYPES.PDF,
-      x: (-vp.x + 300) / vp.scale,
-      y: (-vp.y + 200) / vp.scale,
+      x: newItemScreenCenter(vp).x,
+      y: newItemScreenCenter(vp).y,
       width: 220,
       content: { title: file.name.replace(/\.pdf$/i, ''), pdf_blob_id: blobId, page_count: 0 },
     });
@@ -160,14 +175,196 @@ export const useStore = create((set, get) => ({
   addWebClipScreenshot: async (url, meta = {}) => {
     const state = get();
     const vp = state.viewport;
+    const center = newItemScreenCenter(vp);
     return get().addItem({
       type: ITEM_TYPES.WEB_CLIP_SCREENSHOT,
-      x: (-vp.x + 400) / vp.scale,
-      y: (-vp.y + 300) / vp.scale,
+      x: center.x,
+      y: center.y,
       width: 320,
       content: { title: meta.title || url, description: meta.description || '', url, image_url: meta.image_url || null, screenshot_blob_id: null },
       meta: { domain: (() => { try { return new URL(url).hostname; } catch { return null; } })() },
     });
+  },
+
+  // ── Fichário (binder) ───────────────────────────────────
+  // Unified model matching the source demo: there is no separate
+  // "extracted page" type. Every Fichário holds 1+ pages; the tab
+  // rail only renders once a binder holds 2+ pages (see FicharioCard).
+  // Extraction = split a page out into its own single-page Fichário.
+  // Dropping one Fichário onto another docks its pages in as new tabs.
+
+  addFichario: async (pos = null) => {
+    const state = get();
+    const vp = state.viewport;
+    const x = pos?.x ?? (-vp.x + 400) / vp.scale;
+    const y = pos?.y ?? (-vp.y + 300) / vp.scale;
+    const firstPage = createFicharioPage({ title: 'New page', color: FICHARIO_COLOR_ORDER[0] });
+    return get().addItem({
+      type: ITEM_TYPES.FICHARIO,
+      x,
+      y,
+      width: 360,
+      content: {
+        title: 'Fichário',
+        pages: [firstPage],
+        activePageId: firstPage.id,
+      },
+    });
+  },
+
+  ficharioSetActivePage: async (ficharioId, pageId) => {
+    const state = get();
+    const item = state.items.find((i) => i.id === ficharioId);
+    if (!item || item.type !== ITEM_TYPES.FICHARIO) return;
+    await get().updateItem(ficharioId, { content: { activePageId: pageId } });
+  },
+
+  ficharioAddPage: async (ficharioId, overrides = {}) => {
+    const state = get();
+    const item = state.items.find((i) => i.id === ficharioId);
+    if (!item || item.type !== ITEM_TYPES.FICHARIO) return;
+    const pages = item.content.pages || [];
+    const color = FICHARIO_COLOR_ORDER[pages.length % FICHARIO_COLOR_ORDER.length];
+    const isReport = !overrides.kind || overrides.kind === FICHARIO_PAGE_KINDS.REPORT;
+    const page = createFicharioPage({
+      title: 'New page',
+      color,
+      justCreated: isReport, // only the report format does the typing-in effect
+      ...overrides,
+    });
+    await get().updateItem(ficharioId, {
+      content: { pages: [...pages, page], activePageId: page.id },
+    });
+    return page;
+  },
+
+  // Add an image page — stores the file as a blob (same pattern as
+  // addVideo/addPDF) and references it by id rather than inlining data.
+  ficharioAddImagePage: async (ficharioId, file) => {
+    const state = get();
+    const item = state.items.find((i) => i.id === ficharioId);
+    if (!item || item.type !== ITEM_TYPES.FICHARIO) return null;
+    const pages = item.content.pages || [];
+    const color = FICHARIO_COLOR_ORDER[pages.length % FICHARIO_COLOR_ORDER.length];
+    const blobId = `fichario-img-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    await idbStore.saveBlob(blobId, file);
+    const page = createFicharioPage({
+      kind: FICHARIO_PAGE_KINDS.IMAGE,
+      title: file.name.replace(/\.[^.]+$/, '') || 'Image',
+      color,
+      imageBlobId: blobId,
+    });
+    await get().updateItem(ficharioId, {
+      content: { pages: [...pages, page], activePageId: page.id },
+    });
+    return page;
+  },
+
+  ficharioUpdatePage: async (ficharioId, pageId, updates) => {
+    const state = get();
+    const item = state.items.find((i) => i.id === ficharioId);
+    if (!item || item.type !== ITEM_TYPES.FICHARIO) return;
+    const pages = (item.content.pages || []).map((p) => (p.id === pageId ? { ...p, ...updates } : p));
+    await get().updateItem(ficharioId, { content: { pages } });
+  },
+
+  ficharioDeletePage: async (ficharioId, pageId) => {
+    const state = get();
+    const item = state.items.find((i) => i.id === ficharioId);
+    if (!item || item.type !== ITEM_TYPES.FICHARIO) return;
+    const pages = (item.content.pages || []).filter((p) => p.id !== pageId);
+    if (pages.length === 0) {
+      // Last page removed — delete the whole binder
+      await get().deleteItem(ficharioId);
+      return;
+    }
+    const activePageId = item.content.activePageId === pageId ? pages[0].id : item.content.activePageId;
+    await get().updateItem(ficharioId, { content: { pages, activePageId } });
+  },
+
+  // Duplicate a page in place (context menu "Duplicate").
+  ficharioDuplicatePage: async (ficharioId, pageId) => {
+    const state = get();
+    const item = state.items.find((i) => i.id === ficharioId);
+    if (!item || item.type !== ITEM_TYPES.FICHARIO) return;
+    const pages = item.content.pages || [];
+    const src = pages.find((p) => p.id === pageId);
+    if (!src) return;
+    const idx = pages.findIndex((p) => p.id === pageId);
+    const copy = { ...src, id: crypto.randomUUID(), title: `${src.title} copy` };
+    const next = [...pages.slice(0, idx + 1), copy, ...pages.slice(idx + 1)];
+    await get().updateItem(ficharioId, { content: { pages: next, activePageId: copy.id } });
+  },
+
+  // Pull a page out of a binder into its own single-page Fichário on the
+  // open canvas — mirrors the source demo's extraction exactly.
+  ficharioExtractPage: async (ficharioId, pageId, dropPos = null) => {
+    const state = get();
+    const item = state.items.find((i) => i.id === ficharioId);
+    if (!item || item.type !== ITEM_TYPES.FICHARIO) return null;
+    const page = (item.content.pages || []).find((p) => p.id === pageId);
+    if (!page) return null;
+
+    const remaining = item.content.pages.filter((p) => p.id !== pageId);
+    if (remaining.length === 0) {
+      await get().deleteItem(ficharioId);
+    } else {
+      const activePageId = item.content.activePageId === pageId ? remaining[0].id : item.content.activePageId;
+      await get().updateItem(ficharioId, { content: { pages: remaining, activePageId } });
+    }
+
+    const x = dropPos?.x ?? item.x + item.width + 40;
+    const y = dropPos?.y ?? item.y;
+    return get().addItem({
+      type: ITEM_TYPES.FICHARIO,
+      x,
+      y,
+      width: item.width,
+      content: {
+        title: page.title,
+        pages: [{ ...page, justExtracted: true }],
+        activePageId: page.id,
+      },
+    });
+  },
+
+  // Dock every page of `sourceId` onto `targetId` as new tabs, then
+  // remove the (now-empty) source binder. Used both by drag-and-drop
+  // (Canvas.jsx onAddToFichario) and the "Place in Fichário" menu item.
+  ficharioMergeInto: async (sourceId, targetId) => {
+    const state = get();
+    const source = state.items.find((i) => i.id === sourceId);
+    const target = state.items.find((i) => i.id === targetId);
+    if (!source || !target || source.id === target.id) return;
+    if (source.type !== ITEM_TYPES.FICHARIO || target.type !== ITEM_TYPES.FICHARIO) return;
+    const targetPages = target.content.pages || [];
+    const incoming = (source.content.pages || []).map((p) => ({ ...p, id: crypto.randomUUID(), justExtracted: false }));
+    if (incoming.length === 0) return;
+    await get().updateItem(targetId, {
+      content: { pages: [...targetPages, ...incoming], activePageId: incoming[incoming.length - 1].id },
+    });
+    await get().deleteItem(sourceId);
+  },
+
+  // Deep-merge a partial style patch into item.style.fichario (updateItem's
+  // own merge is shallow, so nested heading/body/tab objects need this).
+  ficharioSetStyle: async (ficharioId, patch) => {
+    const state = get();
+    const item = state.items.find((i) => i.id === ficharioId);
+    if (!item || item.type !== ITEM_TYPES.FICHARIO) return;
+    const current = item.style?.fichario || {};
+    const merged = {
+      ...current,
+      ...patch,
+      heading: { ...(current.heading || {}), ...(patch.heading || {}) },
+      body:    { ...(current.body || {}),    ...(patch.body || {}) },
+      tab:     { ...(current.tab || {}),     ...(patch.tab || {}) },
+    };
+    await get().updateItem(ficharioId, { style: { fichario: merged } });
+  },
+
+  ficharioResetStyle: async (ficharioId) => {
+    await get().updateItem(ficharioId, { style: { fichario: null } });
   },
 
   updateItem: async (id, updates) => {
@@ -306,7 +503,7 @@ export const useStore = create((set, get) => ({
 
   // Search
   search: async (query) => {
-    if (!query.trim()) {
+    if (!query || !query.trim()) {
       set({ searchQuery: '', searchResults: null });
       return;
     }

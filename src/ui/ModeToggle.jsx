@@ -18,7 +18,7 @@ export function ModeToggle({ isDark, onToggle }) {
 
   return (
     <button
-      className="lg-sidebar__theme-btn"
+      className="lg-sidebar__theme-btn min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
       role="switch"
       aria-checked={isDark}
       tabIndex={0}

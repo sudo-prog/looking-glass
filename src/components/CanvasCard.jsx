@@ -23,6 +23,7 @@ import { VideoCard } from './VideoCard.jsx';
 import { AudioMemoCard } from './AudioMemoCard.jsx';
 import { PDFViewerCard } from './PDFViewerCard.jsx';
 import { WebClipScreenshotCard } from './WebClipScreenshotCard.jsx';
+import { FicharioCard } from './FicharioCard.jsx';
 import { BlockTypeMenu } from '../ui/BlockTypeMenu.jsx';
 import { TagEditor } from '../ui/TagsSystem.jsx';
 
@@ -51,8 +52,8 @@ function BookmarkCard({ item, isSelected, onSelect, onDragStart, onLightbox }) {
       onPointerDown={onDragStart}
       onClick={(e) => onSelect(e.ctrlKey || e.metaKey)}
     >
-      <div className="card-header">
-        <span className="card-handle">⠿</span>
+      <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
+        <span className="card-handle" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⠿</span>
         <span className="card-title">{escapeHtml(item.content.title || 'Bookmark')}</span>
       </div>
       {item.content.image_url && (
@@ -65,10 +66,10 @@ function BookmarkCard({ item, isSelected, onSelect, onDragStart, onLightbox }) {
           <p className="card-desc">{escapeHtml(item.content.description)}</p>
         </div>
       )}
-      <div className="card-footer">
+      <div className="card-footer" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
         {item.meta?.domain && <span className="card-domain">{escapeHtml(item.meta.domain)}</span>}
         {item.content.url && (
-          <a href={escapeHtml(item.content.url)} target="_blank" rel="noopener" className="card-link" onClick={(e) => e.stopPropagation()}>↗</a>
+          <a href={escapeHtml(item.content.url)} target="_blank" rel="noopener" className="card-link" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }} onClick={(e) => e.stopPropagation()}>↗</a>
         )}
       </div>
     </div>
@@ -87,8 +88,8 @@ function ImageCard({ item, isSelected, onSelect, onDragStart, onLightbox }) {
       onPointerDown={onDragStart}
       onClick={(e) => onSelect(e.ctrlKey || e.metaKey)}
     >
-      <div className="card-header">
-        <span className="card-handle">⠿</span>
+      <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
+        <span className="card-handle" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⠿</span>
         <span className="card-title">{escapeHtml(item.content.title || 'Image')}</span>
       </div>
       {item.content.image_url && (
@@ -203,8 +204,8 @@ function NoteCard({ item, isSelected, onSelect, onDragStart, onSave }) {
       onClick={(e) => onSelect(e.ctrlKey || e.metaKey)}
       onDoubleClick={handleDoubleClick}
     >
-      <div className="card-header">
-        <span className="card-handle">⠿</span>
+      <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
+        <span className="card-handle" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⠿</span>
         <span className="card-note-icon">📝</span>
         <span className="card-title">{escapeHtml(firstLine)}</span>
       </div>
@@ -231,16 +232,16 @@ function WebClipCard({ item, isSelected, onSelect, onDragStart }) {
       onPointerDown={onDragStart}
       onClick={(e) => onSelect(e.ctrlKey || e.metaKey)}
     >
-      <div className="card-header">
-        <span className="card-handle">⠿</span>
+      <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
+        <span className="card-handle" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⠿</span>
         <span className="card-title">{escapeHtml(item.content.title || 'Web Clip')}</span>
       </div>
       {item.content.embed_html && (
         <div className="card-body" dangerouslySetInnerHTML={{ __html: item.content.embed_html }} />
       )}
       {item.content.url && (
-        <div className="card-footer">
-          <a href={escapeHtml(item.content.url)} target="_blank" rel="noopener" className="card-link" onClick={(e) => e.stopPropagation()}>↗</a>
+        <div className="card-footer" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
+          <a href={escapeHtml(item.content.url)} target="_blank" rel="noopener" className="card-link" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }} onClick={(e) => e.stopPropagation()}>↗</a>
         </div>
       )}
     </div>
@@ -259,11 +260,11 @@ function GroupCard({ item, isSelected, onSelect, onDragStart, children }) {
       onPointerDown={onDragStart}
       onClick={(e) => onSelect(e.ctrlKey || e.metaKey)}
     >
-      <div className="card-header">
-        <span className="card-handle">⠿</span>
+      <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', overflowX: 'auto' }}>
+        <span className="card-handle" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⠿</span>
         <span className="card-title">{escapeHtml(item.content.title || 'Group')}</span>
       </div>
-      <div className="group-children">
+      <div className="group-children" style={{ overflowX: 'auto' }}>
         {children}
       </div>
     </div>
@@ -389,7 +390,12 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
               <>
                 <div className="stack-count-badge">{count}</div>
                 <div className="stack-top-title">{topItem.content?.title || 'Stack'}</div>
-                <div className="stack-hint" onClick={toggleFan} onPointerDown={(e) => e.stopPropagation()}>
+                <div
+                  className="stack-hint"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }}
+                  onClick={toggleFan}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
                   Click to fan
                 </div>
               </>
@@ -415,7 +421,9 @@ function StackCard({ item, isSelected, onSelect, onDragStart }) {
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
             cursor: 'pointer',
-            padding: 0,
+            padding: '0',
+            minWidth: '44px',
+            minHeight: '44px',
           }}
         >
           Click any card to re-stack
@@ -546,6 +554,7 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave, onOpen })
               outline: 'none',
               color: 'var(--text-primary)',
               padding: '0 0 2px',
+              minHeight: '44px',
               width: '100%',
               boxSizing: 'border-box',
             }}
@@ -586,6 +595,9 @@ function FolderCard({ item, isSelected, onSelect, onDragStart, onSave, onOpen })
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            overflowX: 'auto',
+            gap: '8px',
             marginTop: '12px',
           }}
         >
@@ -629,6 +641,40 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
     onContextMenu(item, e.clientX, e.clientY);
   }, [item, onContextMenu]);
 
+  // ── Long-press to open menu (mobile / touch) ──
+  const longPressTimer = useRef(null);
+  const longPressFired = useRef(false);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleTouchStart = useCallback((e) => {
+    if (!onContextMenu || e.touches.length !== 1) return; // ignore multi-touch (pinch/pan)
+    longPressFired.current = false;
+    const touch = e.touches[0];
+    clearLongPress();
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      navigator.vibrate?.(10); // subtle haptic if supported
+      onContextMenu(item, touch.clientX, touch.clientY);
+    }, 500);
+  }, [item, onContextMenu, clearLongPress]);
+
+  const handleKebab = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onContextMenu) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    onContextMenu(item, r.left + r.width / 2, r.top + r.height / 2);
+  }, [item, onContextMenu]);
+
+  // Clean up timer on unmount
+  useEffect(() => clearLongPress, [clearLongPress]);
+
   let card;
   switch (item.type) {
     case ITEM_TYPES.BOOKMARK:
@@ -653,6 +699,8 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
       card = <PDFViewerCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} />; break;
     case ITEM_TYPES.VIDEO:
       card = <VideoCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onSave={onSave} onDelete={onDelete} onLightbox={onLightbox} />; break;
+    case ITEM_TYPES.FICHARIO:
+      card = <FicharioCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onDelete={onDelete} />; break;
     default:
       card = <BookmarkCard item={item} isSelected={isSelected} onSelect={onSelect} onDragStart={onDragStart} onLightbox={onLightbox} />; break;
   }
@@ -664,9 +712,58 @@ export function CanvasCard({ item, isSelected, scale, onSelect, onDragStart, onS
   }, [onSave]);
 
   return (
-    <div onContextMenu={handleContextMenu} style={{ display: 'contents' }}>
+    <div
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchMove={clearLongPress}
+      onTouchEnd={clearLongPress}
+      onTouchCancel={clearLongPress}
+      style={{ display: 'contents' }}
+    >
       {card}
       <TagEditor tags={itemTags} onChange={handleTagsChange} compact />
+
+      {/* Kebab: opens the card menu on touch / always-visible-but-small.
+          Positioned in the canvas coordinate space (the wrapper uses
+          display:contents, so absolute children resolve against the
+          canvas container — same space as the cards themselves).
+          On narrow viewports, clamp the button so its right edge does
+          not exceed the viewport width. */}
+      <button
+        type="button"
+        aria-label="Card actions"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={handleKebab}
+        style={{
+          position: 'absolute',
+          // Clamp within the viewport on both edges so the kebab is always
+          // reachable on mobile (canvas world-coords == screen coords at scale 1).
+          left: Math.max(
+            8,
+            Math.min((item.x + (item.width || 280)) - 34, window.innerWidth - 46)
+          ),
+          top: item.y + 6,
+          width: 44,
+          height: 44,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: 'none',
+          borderRadius: '50%',
+          background: 'rgba(0,0,0,0.45)',
+          color: '#fff',
+          fontSize: '20px',
+          lineHeight: 1,
+          cursor: 'pointer',
+          zIndex: 50,
+          opacity: 0.55,
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          transition: 'opacity 0.15s ease',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.55'; }}
+      >⋯</button>
     </div>
   );
 }

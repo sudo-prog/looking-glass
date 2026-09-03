@@ -131,24 +131,26 @@ export function CommandPalette({
 
   return (
     <div
-      className="command-palette-overlay"
+      className="command-palette-overlay min-h-[100dvh]"
       onClick={onClose}
       role="presentation"
     >
       <div
         className="command-palette glass-command-palette"
+        style={{ maxHeight: 'min(100dvh, 600px)', paddingBottom: 'env(safe-area-inset-bottom)' }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Command palette"
         aria-modal="true"
       >
         {/* Input */}
-        <div className="command-palette__input-wrap">
+        <div className="command-palette__input-wrap flex flex-col sm:flex-row flex-wrap">
           <MagnifyingGlass size={20} weight="regular" className="command-palette__search-icon" />
           <input
             ref={inputRef}
             type="text"
             className="command-palette__input"
+            style={{ minHeight: '44px' }}
             placeholder="Search or paste a URL…"
             value={query}
             onChange={handleChange}
@@ -159,6 +161,7 @@ export function CommandPalette({
           />
           <button
             className="command-palette__close"
+            style={{ minWidth: '44px', minHeight: '44px' }}
             onClick={() => { onClearSearch?.(); onClose(); }}
             type="button"
             aria-label="Close command palette"
@@ -177,14 +180,15 @@ export function CommandPalette({
               <button
                 key={item.id}
                 data-idx={idx}
-                className={`command-palette__result ${isActive ? 'command-palette__result--active' : ''}`}
+                className={`command-palette__result flex flex-wrap ${isActive ? 'command-palette__result--active' : ''}`}
+                style={{ minHeight: '48px', minWidth: '44px' }}
                 onClick={() => executeItem(item)}
                 type="button"
                 role="option"
                 aria-selected={isActive}
               >
                 {Icon && <Icon size={16} weight="regular" className="command-palette__result-icon" />}
-                <span className="command-palette__result-label">{item.label}</span>
+                <span className="command-palette__result-label overflow-x-auto block">{item.label}</span>
               </button>
             );
           })}

@@ -93,7 +93,7 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
 
   if (!isOpen) return null;
 
-  const translateY = `${yFrac * 100}vh`;
+  const translateY = `${yFrac * 100}dvh`;
 
   return createPortal(
     <div
@@ -109,13 +109,19 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
           left:       0,
           right:      0,
           bottom:     0,
+          // Respect device safe-area so sheet content isn't hidden behind the home
+          // indicator or clipped by top/side insets (notched devices, landscape phones)
+          paddingTop:    'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingLeft:   'env(safe-area-inset-left, 0px)',
+          paddingRight:  'env(safe-area-inset-right, 0px)',
           // Use transform instead of top so bottom:0 doesn't stretch the element
           transform:  `translateY(${translateY})`,
           transition: isDragging.current
             ? 'none'
             : 'transform 280ms cubic-bezier(0.32,0.72,0,1)',
           borderRadius: 'var(--radius-2xl) var(--radius-2xl) 0 0',
-          maxHeight:    '92vh',
+          maxHeight:    '92dvh',
           overflowY:    'auto',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -123,14 +129,16 @@ export function BottomSheet({ isOpen, onClose, snap = 'half', children }) {
         aria-modal="true"
       >
         <div
-          className="bottom-sheet__handle"
-          style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.20)', borderRadius: 2, margin: '10px auto 6px', cursor: 'grab' }}
+          className="bottom-sheet__handle min-h-[44px]"
+          style={{ width: 48, height: 48, minWidth: 48, minHeight: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', background: 'transparent', cursor: 'grab', touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-        />
-        <div className="bottom-sheet__content">{children}</div>
+        >
+          <div style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.20)', borderRadius: 2 }} />
+        </div>
+        <div className="bottom-sheet__content overflow-x-auto">{children}</div>
       </div>
     </div>,
     document.body
