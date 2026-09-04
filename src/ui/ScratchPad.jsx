@@ -173,7 +173,6 @@ export function ScratchPad() {
             maxWidth: 'min(500px, calc(100vw - 16px))',
             width: 'min(500px, calc(100vw - 16px))',
             maxHeight: '90dvh',
-            maxHeight: '90vh',
             overflow: 'hidden',
             borderRadius: 'var(--radius-2xl)',
             background: color.bg,

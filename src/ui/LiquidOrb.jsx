@@ -958,7 +958,6 @@ export default function LiquidOrb() {
               fontFamily: 'var(--font-body)',
               color: 'var(--text-primary)',
               maxHeight: 'calc(100dvh - 24px)',
-              maxHeight: 'calc(100vh - 24px)',
               overflowY: 'auto',
             }}
           >

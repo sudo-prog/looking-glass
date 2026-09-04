@@ -170,7 +170,6 @@ export function FolderViewModal({ folder, onClose, onRemoveItem, onEmptyAll, onR
           width: 'min(820px, 100%)',
           height: 'min(84dvh, 100%)',
           maxHeight: '90dvh',
-          maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
           borderRadius: '20px',
