@@ -212,6 +212,47 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     }));
   }, []);
 
+  // FIX 12 (Phase 2) — Re-dispatch glass-surface-mount whenever the mobile
+  // bottom-bar expands so the WebGPU/SVG renderer can pick up the new
+  // on-screen rect, backdrop, and z-index layer.
+  useEffect(() => {
+    if (!isMobile || !mobileExpanded || !sidebarRef.current) return;
+    window.dispatchEvent(new CustomEvent('glass-surface-mount', {
+      detail: {
+        id: 'sidebar-mobile',
+        element: sidebarRef.current,
+        uniforms: {
+          dark:  { refractionStrength: 0.28, blurRadius: 24, specularIntensity: 0.34, shadowIntensity: 0.18 },
+          light: { refractionStrength: 0.22, blurRadius: 24, specularIntensity: 0.55, shadowIntensity: 0.12 },
+        },
+      },
+    }));
+  }, [isMobile, mobileExpanded]);
+
+  // FIX 12 (Phase 2) — Swipe-down to dismiss the mobile bottom-bar.
+  // Only triggers when the nav is open on mobile and the user drags the
+  // handle / nav bar downward past a small threshold.
+  const touchStart = useRef(null);
+  const handleTouchStart = useCallback((e) => {
+    if (!isMobile || !mobileExpanded) return;
+    const t = e.touches?.[0];
+    if (!t) return;
+    touchStart.current = { y: t.clientY, t: Date.now() };
+  }, [isMobile, mobileExpanded]);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (!isMobile || !mobileExpanded || !touchStart.current) return;
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+    const dy = t.clientY - touchStart.current.y;
+    // Drag down by > 60px dismisses
+    if (dy > 60) {
+      setMobileExpanded(false);
+      setCollapsed(true);
+    }
+    touchStart.current = null;
+  }, [isMobile, mobileExpanded]);
+
   const handleThemeToggle = useCallback(() => {
     const newDark = !dark;
     toggleTheme(newDark ? 'dark' : 'light');
@@ -369,7 +410,9 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
   }
 
   const isExpanded = !collapsed;
-  const expandedClass = isMobile ? (mobileExpanded ? 'lg-sidebar--expanded' : '') : (isExpanded ? 'lg-sidebar--expanded' : '');
+  const expandedClass = isMobile
+    ? (mobileExpanded ? 'lg-sidebar--expanded' : '')
+    : (isExpanded ? 'lg-sidebar--expanded lg-sidebar--desktop' : 'lg-sidebar--desktop');
 
   return (
     <>
@@ -416,10 +459,23 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
         className={`lg-sidebar ${expandedClass}`}
         aria-label="Looking Glass navigation"
         data-glass-surface="toolbar"
+        data-testid="lg-sidebar"
         style={{
           borderRadius: 'var(--glass-menu-radius, 24px)',
         }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
+        {/* Mobile drag handle (FIX 12) — visual affordance for swipe-down dismiss */}
+        {isMobile && mobileExpanded && (
+          <div className="lg-sidebar__handle" aria-hidden="true">
+            <span className="lg-sidebar__handle-bar" />
+          </div>
+        )}
+        {/* Wordmark (FIX 12) — visible on mobile expanded */}
+        {isMobile && mobileExpanded && (
+          <div className="lg-sidebar__wordmark">Looking Glass</div>
+        )}
         {/* ── Navigation icons ── */}
         <nav className="lg-sidebar__nav" aria-label="Main navigation">
           {menuIcons.map((id, index) => {

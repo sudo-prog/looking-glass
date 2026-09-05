@@ -1,0 +1,573 @@
+{
+  "pipeline": "looking-glass-ui-audit",
+  "phase": "audit",
+  "timestamp": "2026-09-05T16:16:00.909Z",
+  "build_status": "pass",
+  "viewport_results": {
+    "mobile_390": {
+      "geom": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "bodyScrollWidth": 390,
+        "bodyClientWidth": 390,
+        "scrollHeight": 664,
+        "clientHeight": 664,
+        "innerWidth": 390,
+        "innerHeight": 664,
+        "dpr": 3,
+        "overflowX": false,
+        "hasTouch": true,
+        "isMobileUA": true,
+        "glassTier": "2",
+        "theme": "light",
+        "bodyClasses": "",
+        "title": "Looking Glass",
+        "taps": [
+          {
+            "sel": ".lg-sidebar-fab",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 16,
+            "y": 548,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".lg-tag-input",
+            "tag": "INPUT",
+            "role": null,
+            "x": 27,
+            "y": 7,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": "BUTTON",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 270,
+            "y": 146,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 173,
+            "y": 447,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 173,
+            "y": 499,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 150,
+            "y": 559,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 196,
+            "y": 559,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 173,
+            "y": 611,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb",
+            "tag": "DIV",
+            "role": "button",
+            "x": 173,
+            "y": 476,
+            "w": 45,
+            "h": 45,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-pill-brand",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 85,
+            "y": 548,
+            "w": 170,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-pill-close",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 260,
+            "y": 548,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": "BUTTON",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 25,
+            "y": 349,
+            "w": 168,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": "BUTTON",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 197,
+            "y": 349,
+            "w": 168,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-tool",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 22,
+            "y": 468,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-tool",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 278,
+            "y": 468,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-send",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 324,
+            "y": 468,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          }
+        ],
+        "smallTaps": []
+      },
+      "screenshotPath": "/tmp/lg_audit/mobile_390_initial.png"
+    },
+    "desktop_1280": {
+      "geom": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "bodyScrollWidth": 1280,
+        "bodyClientWidth": 1280,
+        "scrollHeight": 900,
+        "clientHeight": 900,
+        "innerWidth": 1280,
+        "innerHeight": 900,
+        "dpr": 2,
+        "overflowX": false,
+        "hasTouch": false,
+        "isMobileUA": false,
+        "glassTier": "2",
+        "theme": "light",
+        "bodyClasses": "",
+        "title": "Looking Glass",
+        "taps": [
+          {
+            "sel": ".lg-sidebar-fab",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 16,
+            "y": 16,
+            "w": 48,
+            "h": 48,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".lg-tag-input",
+            "tag": "INPUT",
+            "role": null,
+            "x": 27,
+            "y": 7,
+            "w": 30,
+            "h": 44,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": "BUTTON",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 270,
+            "y": 146,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 661,
+            "y": 19,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 709,
+            "y": 19,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn.toolbar-hide-mobile",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 757,
+            "y": 19,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn.toolbar-hide-mobile",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 814,
+            "y": 19,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn.toolbar-hide-mobile",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 860,
+            "y": 19,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 917,
+            "y": 19,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 1005,
+            "y": 19,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn.toolbar-hide-mobile",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 1051,
+            "y": 19,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn.toolbar-hide-mobile",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 1108,
+            "y": 19,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn.toolbar-hide-mobile",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 1156,
+            "y": 19,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".toolbar-btn",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 1213,
+            "y": 19,
+            "w": 44,
+            "h": 44,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb",
+            "tag": "DIV",
+            "role": "button",
+            "x": 610,
+            "y": 813,
+            "w": 59,
+            "h": 59,
+            "small": false,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-pill-brand",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 566,
+            "y": 836,
+            "w": 107,
+            "h": 36,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-pill-close",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 682,
+            "y": 836,
+            "w": 31,
+            "h": 37,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": "BUTTON",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 434,
+            "y": 717,
+            "w": 204,
+            "h": 42,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": "BUTTON",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 642,
+            "y": 717,
+            "w": 204,
+            "h": 42,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-tool",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 431,
+            "y": 829,
+            "w": 42,
+            "h": 42,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-tool",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 764,
+            "y": 829,
+            "w": 42,
+            "h": 42,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-send",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 807,
+            "y": 829,
+            "w": 42,
+            "h": 42,
+            "small": true,
+            "visible": true
+          }
+        ],
+        "smallTaps": [
+          {
+            "sel": ".lg-tag-input",
+            "tag": "INPUT",
+            "role": null,
+            "x": 27,
+            "y": 7,
+            "w": 30,
+            "h": 44,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-pill-brand",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 566,
+            "y": 836,
+            "w": 107,
+            "h": 36,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-pill-close",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 682,
+            "y": 836,
+            "w": 31,
+            "h": 37,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": "BUTTON",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 434,
+            "y": 717,
+            "w": 204,
+            "h": 42,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": "BUTTON",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 642,
+            "y": 717,
+            "w": 204,
+            "h": 42,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-tool",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 431,
+            "y": 829,
+            "w": 42,
+            "h": 42,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-tool",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 764,
+            "y": 829,
+            "w": 42,
+            "h": 42,
+            "small": true,
+            "visible": true
+          },
+          {
+            "sel": ".lg-orb-send",
+            "tag": "BUTTON",
+            "role": null,
+            "x": 807,
+            "y": 829,
+            "w": 42,
+            "h": 42,
+            "small": true,
+            "visible": true
+          }
+        ]
+      },
+      "screenshotPath": "/tmp/lg_audit/desktop_1280_initial.png"
+    }
+  },
+  "violations": [],
+  "console_errors": [],
+  "phase2_fixes_check": {
+    "FIX_2_lockfile": true,
+    "FIX_10_server_js": true,
+    "FIX_14_bottomsheet_font": true,
+    "FIX_17_glass_tier_index": true,
+    "FIX_12_mobile_sidebar": true
+  },
+  "overall_pass": true
+}

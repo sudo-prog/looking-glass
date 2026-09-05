@@ -14,6 +14,18 @@
   animation: lg-sidebar-fade-in 140ms var(--ease-out) both;
 }
 
+/* Desktop sidebar variant (FIX 12) — full pill on desktop. */
+.lg-sidebar--desktop {
+  /* Defaults to the existing pill layout — keep as identity marker. */
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  bottom: 16px;
+  width: 64px;
+  flex-direction: column;
+  align-items: stretch;
+}
+
 @keyframes lg-sidebar-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -456,6 +468,39 @@
 
 /* ── Responsive ─────────────────────────────── */
 @media (max-width: 767px) {
+  /* Drag handle (FIX 12) */
+  .lg-sidebar__handle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 8px 0 4px;
+    flex-shrink: 0;
+    cursor: grab;
+    touch-action: pan-y;
+  }
+  .lg-sidebar__handle-bar {
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-handle, rgba(255, 255, 255, 0.35));
+  }
+  /* Wordmark (FIX 12) */
+  .lg-sidebar__wordmark {
+    flex-shrink: 0;
+    padding: 0 12px 6px;
+    font-family: var(--font-ui, 'Space Grotesk', system-ui, sans-serif);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-secondary, #999);
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+  }
+
   .lg-sidebar-fab {
     top: auto;
     bottom: calc(72px + env(safe-area-inset-bottom));

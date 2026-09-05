@@ -1,0 +1,120 @@
+{
+  "pipeline": "looking-glass-ui-verify",
+  "phase": "verify",
+  "timestamp": "2026-09-05T16:24:44.309Z",
+  "build_status": "pass",
+  "build_output_tail": "- Using dynamic import() to code-split the application\n- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.\n✓ built in 16.46s\n",
+  "per_bug": [
+    {
+      "bug": "FIX_2",
+      "name": "Lockfile cleanup",
+      "pass": true,
+      "evidence": "no package-lock.json, pnpm-lock.yaml only"
+    },
+    {
+      "bug": "FIX_10",
+      "name": "Add missing server.js",
+      "pass": true,
+      "evidence": "server.js exists at root with pnpm start"
+    },
+    {
+      "bug": "FIX_14",
+      "name": "BottomSheet font token",
+      "pass": true,
+      "evidence": "BottomSheet.css contains no -apple-system font-family declaration"
+    },
+    {
+      "bug": "FIX_17",
+      "name": "Glass tier detection in index.html",
+      "pass": true,
+      "evidence": "glassTier=2 on mobile (tier 2 expected for backdrop-filter capable env)"
+    },
+    {
+      "bug": "FIX_12",
+      "name": "Mobile sidebar bottom bar (LIQUID GLASS SIDEBAR)",
+      "pass": true,
+      "evidence": "sidebarOpened=true, handleVisible=true, wordmarkVisible=true, handleBarWidth=36, overflow=false, smallTaps=0"
+    }
+  ],
+  "mobile": {
+    "geom": {
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "overflow": false,
+      "glassTier": "2",
+      "smallTaps": [],
+      "smallCount": 0
+    },
+    "sidebarOpened": true,
+    "handleVisible": true,
+    "wordmarkVisible": true,
+    "handleBarWidth": 36,
+    "screenshots": {
+      "initial": "/tmp/lg_verify/mobile_390_initial.png"
+    }
+  },
+  "desktop": {
+    "geom": {
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "overflow": false,
+      "glassTier": "2",
+      "smallTaps": [
+        {
+          "tag": "INPUT",
+          "w": 30,
+          "h": 44,
+          "text": ""
+        },
+        {
+          "tag": "BUTTON",
+          "w": 107,
+          "h": 36,
+          "text": "Looking Glass AI"
+        },
+        {
+          "tag": "BUTTON",
+          "w": 31,
+          "h": 37,
+          "text": ""
+        },
+        {
+          "tag": "BUTTON",
+          "w": 204,
+          "h": 42,
+          "text": "Edit UI"
+        },
+        {
+          "tag": "BUTTON",
+          "w": 204,
+          "h": 42,
+          "text": "Chat"
+        },
+        {
+          "tag": "BUTTON",
+          "w": 42,
+          "h": 42,
+          "text": ""
+        },
+        {
+          "tag": "BUTTON",
+          "w": 42,
+          "h": 42,
+          "text": "⚠"
+        },
+        {
+          "tag": "BUTTON",
+          "w": 42,
+          "h": 42,
+          "text": ""
+        }
+      ],
+      "smallCount": 8
+    },
+    "screenshots": {
+      "initial": "/tmp/lg_verify/desktop_1280_initial.png"
+    }
+  },
+  "console_errors": [],
+  "OVERALL_PASS": true
+}
