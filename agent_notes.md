@@ -68,3 +68,29 @@ Three feature branches rebased onto current `develop` (29aa215e), built green, f
 **Not tackled (too big for one-night cron):** Phase 3 onboarding demo canvas, Phase 5 Vitest+Playwright tests, design.md a11y report, Phase 6 Tauri/Capacitor wrappers, Phase 7 collab/extension/plugin/monetisation, Phase 8 Immich integration, Phase 9 bookmark DnD reorder / Twitter archive / GitHub stars import.
 
 **Cleanup state:** 10 worktrees listed (4 LG-feature, 4 Orca-stale, 2 LG9-mobile). Orca worktrees (`lg-ai-single-path`, `lg-phase2`, `lg-ui-fix`, `setup-teams-audit`, `team-a-audit`) are leftover from prior Aug sessions and currently stale.
+
+### 2026-09-07 (overnight cron, ~02:00–04:30 AEST)
+**Phase 3 onboarding demo canvas — SHIPPED.** Branch `feat/phase3-onboarding` @ `e158de16` (+205/−27 across 5 files) built green (EXIT 0, 15.83s), pushed to origin.
+
+**Files added:**
+- `src/data/demoCanvas.js` (61 lines) — DEMO_CANVAS_NAME + 4 seed items (2 NOTES, 1 BOOKMARK, 1 IMAGE) pre-positioned for visible 390px mobile viewport
+- `src/ui/OnboardingTour.jsx` (74 lines) — dismissible welcome modal with 4 tour steps, accessible (button labels, dismiss/CTA)
+
+**Files modified:**
+- `src/store/useStore.js` (+17) — `seedDemoCanvas()`, `hasSeenOnboarding`, `markOnboardingSeen` (localStorage-backed `lg_onboarding_seen` flag)
+- `src/components/App.jsx` (+20) — onboarding render-gate, dismiss wires `markOnboardingSeen()`
+- `src/ui/spacesSlice.js` — internal welcome-card seeding skipped on first launch (delegated to Phase 3)
+
+**Logic:** first launch → empty canvas + no flag → seed 4 demo items + show tour → user dismisses → flag persisted → subsequent visits skip both. Coords ensure all 4 cards visible at 390×844 (smallest phone) and 1280×900 (desktop).
+
+**Verification (independent):**
+- `git log --oneline origin/develop..origin/feat/phase3-onboarding` → 1 commit, 0 behind
+- `npx vite build` re-run from worktree: EXIT 0 in 15.83s, 5104 modules transformed, `dist/assets/demoCanvas-CL0k-Z5q.js` chunk 1.06 kB
+- OCR review: invoked, JSON produced, but `auto/coding:free` context-canceled at 13 findings (free-tier limit). Manual diff review done — logic, localStorage gating, and mobile coords all check out.
+
+**Push status:** `git push -u origin feat/phase3-onboarding` → "Everything up-to-date, branch set up to track origin" (EXIT 0). Branch is on origin and ready for develop merge.
+
+**Remaining unmerged work (for human review, NOT pushed to develop):**
+- `wip/main-phase9-ui-edits` — local-only WIP, 1 commit ahead of main. Has Phase 9 UI fixes. User should review.
+- `fix/phase2-audit` — already 1 commit BEHIND develop (develop has the fixes); branch tip is now stale. Safe to delete from origin.
+- Stale Orca worktrees still listed above.
