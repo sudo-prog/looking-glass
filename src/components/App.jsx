@@ -23,6 +23,7 @@ import { SpacesManager } from '../ui/SpacesManager.jsx';
 import { FolderViewModal } from '../ui/FolderViewModal.jsx';
 import { FicharioStyleEditor } from '../ui/FicharioStyleEditor.jsx';
 import LiquidOrb from '../ui/LiquidOrb.jsx';
+import { OnboardingTour } from '../ui/OnboardingTour.jsx';
 
 export function App() {
   const initialized = useRef(false);
@@ -76,6 +77,9 @@ export function App() {
     clearTagFilters,
     spaces,
     activeSpaceId,
+    seedDemoCanvas,
+    hasSeenOnboarding,
+    markOnboardingSeen,
   } = useStore();
 
   const [lightboxItem, setLightboxItem] = useState(null);
@@ -86,14 +90,22 @@ export function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [openFolderId, setOpenFolderId] = useState(null);
   const [ficharioStyleTargetId, setFicharioStyleTargetId] = useState(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Initialize
   useEffect(() => {
     if (!initialized.current) {
       initialized.current = true;
-      init();
+      (async () => {
+        await init();
+        // Onboarding: seed demo canvas if empty and first launch
+        if (items.length === 0 && !hasSeenOnboarding) {
+          await seedDemoCanvas();
+          setShowOnboarding(true);
+        }
+      })();
     }
-  }, [init]);
+  }, [init, items.length, hasSeenOnboarding, seedDemoCanvas]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -783,6 +795,16 @@ export function App() {
       )}
       {/* AI Orb — bottom center */}
       <LiquidOrb />
+
+      {/* Onboarding Tour — first launch only */}
+      {showOnboarding && (
+        <OnboardingTour
+          onDismiss={() => {
+            setShowOnboarding(false);
+            markOnboardingSeen();
+          }}
+        />
+      )}
     </div>
   );
 }

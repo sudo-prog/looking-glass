@@ -38,26 +38,33 @@ export function spacesSlice(set, get) {
         };
         await idbStore.saveCanvas(defaultCanvas);
 
-        // Seed a welcome card so first-time visitors see content
-        const seedItem = createItem({
-          canvas_id: defaultCanvas.id,
-          type: ITEM_TYPES.NOTE,
-          // Top-left so the welcome card is fully on-screen even on a 390px phone
-          // (previous x:200/width:280 put its right edge at 480px -> clipped on mobile).
-          x: 24,
-          y: 140,
-          width: 280,
-          content: { title: 'Welcome', text: 'Welcome to Looking Glass!' },
-        });
-        await idbStore.upsertItem(seedItem);
-
-        spaces.push({
-          id:         defaultCanvas.id,
-          name:       defaultCanvas.name,
-          created_at: defaultCanvas.created_at,
-          viewport:   defaultCanvas.viewport,
-          item_count: 1,
-        });
+        // Skip internal seeding for first launch — Phase 3 onboarding will seed demo items
+        if (get().hasSeenOnboarding) {
+          const seedItem = createItem({
+            canvas_id: defaultCanvas.id,
+            type: ITEM_TYPES.NOTE,
+            x: 24,
+            y: 140,
+            width: 280,
+            content: { title: 'Welcome', text: 'Welcome to Looking Glass!' },
+          });
+          await idbStore.upsertItem(seedItem);
+          spaces.push({
+            id:         defaultCanvas.id,
+            name:       defaultCanvas.name,
+            created_at: defaultCanvas.created_at,
+            viewport:   defaultCanvas.viewport,
+            item_count: 1,
+          });
+        } else {
+          spaces.push({
+            id:         defaultCanvas.id,
+            name:       defaultCanvas.name,
+            created_at: defaultCanvas.created_at,
+            viewport:   defaultCanvas.viewport,
+            item_count: 0,
+          });
+        }
       }
 
       // Enrich with item counts
@@ -79,11 +86,8 @@ export function spacesSlice(set, get) {
       set({ items: items || [] });
 
       // ── Seed a welcome board if the canvas is empty (LG-EMPTY-BOARD) ──
-      // A brand-new canvas has 0 items and nothing to show. Drop a welcome
-      // NOTE + a BOOKMARK at the *visible* viewport center so the user never
-      // stares at a blank screen. Coords are world-space, derived from the
-      // space viewport + live window size (never hardcoded desktop numbers).
-      if (!items || items.length === 0) {
+      // Skip on first launch — Phase 3 onboarding handles demo seeding.
+      if ((!items || items.length === 0) && get().hasSeenOnboarding) {
         const vp = spaces[0]?.viewport || { x: 0, y: 0, scale: 1 };
         const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
         const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
