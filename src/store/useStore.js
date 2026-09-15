@@ -54,6 +54,23 @@ export const useStore = create((set, get) => ({
     set({ items: items || [] });
   },
 
+  // Seed the canvas with demo items on first launch
+  seedDemoCanvas: async () => {
+    const { DEMO_ITEMS } = await import('../data/demoCanvas.js');
+    const cid = get().canvasId;
+    for (const item of DEMO_ITEMS) {
+      await idbStore.upsertItem({ ...item, canvas_id: cid });
+    }
+    const items = await idbStore.exportCanvas(cid);
+    set({ items: [...(items || []), ...DEMO_ITEMS] });
+  },
+
+  hasSeenOnboarding: localStorage.getItem('lg_onboarding_seen') === 'true',
+  markOnboardingSeen: () => {
+    localStorage.setItem('lg_onboarding_seen', 'true');
+    set({ hasSeenOnboarding: true });
+  },
+
   // Switch to a different canvas (Space)
   switchCanvas: async (canvasId) => {
     const canvas = await idbStore.getCanvas(canvasId);
