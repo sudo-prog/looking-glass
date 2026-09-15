@@ -136,6 +136,7 @@ export const createItem = (overrides = {}) => {
     meta: {
       source:       'manual',
       tags:         [],
+      rating:       null,
       color:        null,
       pinned:       false,
       archived:     false,

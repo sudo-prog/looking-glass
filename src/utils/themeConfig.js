@@ -43,7 +43,7 @@ export const THEME_DEFAULTS = {
   // Canvas texture
   canvasTexture: 'dot-grid',  // 'none' | 'dot-grid' | 'linen' | 'graph-paper'
   menuIconOrder: [
-    'canvas', 'search', 'library', 'spaces', 'tags', 'saved',
+    'canvas', 'search', 'library', 'spaces', 'tags', 'ratings', 'saved', 'settings',
   ],
   removedIcons: [],
   allIconIds: [
