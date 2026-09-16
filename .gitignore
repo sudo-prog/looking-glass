@@ -36,3 +36,9 @@ lg-verify-report.json
 # agent verification probes (local only, not shipped)
 probe_*.cjs
 lg_ai_e2e.cjs
+
+# Containment/trash folders (consolidation artifacts, do not push)
+_CONTAINMENT*/
+_TRASH*.tar.gz
+_TRASH_*/
+BACKUP_*/
