@@ -163,6 +163,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
   const sidebarRef = useRef(null);
   const dragOverIndex = useRef(null);
   const longPressTimer = useRef(null);
+  const touchStartY = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
 
   // Load menu icon order from theme config
@@ -212,6 +213,15 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     }));
   }, []);
 
+  // Re-announce the glass surface whenever the mobile bottom bar expands
+  useEffect(() => {
+    if (!isMobile || !mobileExpanded) return;
+    if (!sidebarRef.current) return;
+    window.dispatchEvent(new CustomEvent('glass-surface-mount', {
+      detail: { surface: 'toolbar', id: 'sidebar', element: sidebarRef.current },
+    }));
+  }, [isMobile, mobileExpanded]);
+
   const handleThemeToggle = useCallback(() => {
     const newDark = !dark;
     toggleTheme(newDark ? 'dark' : 'light');
@@ -233,6 +243,19 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     setMobileExpanded(false);
     setCollapsed(true);
   }, []);
+
+  const handleTouchStart = useCallback((e) => {
+    if (!isMobile || !mobileExpanded) return;
+    touchStartY.current = e.touches[0].clientY;
+  }, [isMobile, mobileExpanded]);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (!isMobile || !mobileExpanded) return;
+    if (touchStartY.current === null) return;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartY.current = null;
+    if (deltaY > 60) closeMobile();
+  }, [isMobile, mobileExpanded, closeMobile]);
 
   const handleNavClick = useCallback((id) => {
     setActiveItem(id);
@@ -397,29 +420,52 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
             justify-content: flex-start !important;
           }
         }
+        @media (min-width: 768px) {
+          .lg-sidebar--expanded {
+            min-height: 100dvh !important;
+          }
+        }
         .lg-sidebar--expanded {
-          min-height: 100dvh !important;
           padding-bottom: env(safe-area-inset-bottom) !important;
         }
         .lg-sidebar__flyout {
           overflow-x: auto !important;
         }
       `}</style>
-      {/* Click-outside backdrop (shown on mobile while the bottom nav is open) */}\n      <div
-
+      {/* Click-outside backdrop (shown on mobile while the bottom nav is open) */}
+      <div
         className={`lg-sidebar-backdrop${isMobile && mobileExpanded ? ' lg-sidebar-backdrop--mobile-visible' : ''}`}
         onClick={closeMobile}
       />
 
       <aside
         ref={sidebarRef}
-        className={`lg-sidebar ${expandedClass}`}
+        className={`lg-sidebar ${expandedClass}${!isMobile ? ' lg-sidebar--desktop' : ''}`}
         aria-label="Looking Glass navigation"
         data-glass-surface="toolbar"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         style={{
           borderRadius: 'var(--glass-menu-radius, 24px)',
         }}
       >
+        {/* ── Mobile bottom-bar header: drag handle + wordmark ── */}
+        {isMobile && mobileExpanded && (
+          <div className="lg-sidebar__header">
+            <div className="lg-sidebar__handle" aria-hidden="true">
+              <span className="lg-sidebar__handle-bar" />
+            </div>
+            <div className="lg-sidebar__wordmark">LOOKING GLASS</div>
+            <div className="lg-sidebar__section-label">Navigate</div>
+            <input
+              type="text"
+              className="lg-sidebar__ai-input"
+              placeholder="Ask AI…"
+              aria-label="AI search"
+              onClick={(e) => { e.stopPropagation(); onSearch?.(); }}
+            />
+          </div>
+        )}
         {/* ── Navigation icons ── */}
         <nav className="lg-sidebar__nav" aria-label="Main navigation">
           {menuIcons.map((id, index) => {
