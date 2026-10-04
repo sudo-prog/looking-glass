@@ -24,7 +24,7 @@ import './components/mobile/BottomSheet.css';
 async function detectGlassTier() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return 3;
   try {
-    const adapter = await navigator.gpu.requestAdapter();
+    const adapter = await navigator.gpu?.requestAdapter();
     if (adapter) return 1;
   } catch (_) {}
   if (CSS.supports('backdrop-filter', 'blur(1px)') ||

@@ -585,10 +585,41 @@
        the toolbar is nested in [data-main-content] and paints on top otherwise. */
     z-index: calc(var(--z-toolbar) + 2);
     animation: none;
-    transform: translateY(100%);
+    /* AUDIT Fix 12 — the mobile bar is persistent: collapsed is the resting
+       state (visible, compact) and --expanded grows it into a sheet. */
+    transform: translateY(0);
+    transition: height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+                padding 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: min(80dvh, 640px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .lg-sidebar--expanded {
-    transform: translateY(0);
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Collapsed resting state — icon-only strip. */
+  .lg-sidebar__handle--collapsed {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 72px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: var(--glass-tint-dark, rgba(15, 15, 15, 0.70));
+    border-radius: 12px 12px 0 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px !important;
+    min-width: 72px !important;
+  }
+  [data-theme="light"] .lg-sidebar__handle--collapsed {
+    background: rgba(245, 242, 238, 0.85);
   }
 
   /* Mobile nav items: theme toggle + close affordance */

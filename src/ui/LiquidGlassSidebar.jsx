@@ -352,8 +352,13 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     setDraggingIndex(null);
   }, []);
 
-  // ── Collapsed: floating glass orb ──
-  if (collapsed) {
+  // On mobile the sidebar is a persistent bottom bar that expands into a
+  // full-height sheet, so it is always mounted — `collapsed` only drives the
+  // desktop FAB behaviour.
+  const mobileMode = isMobile;
+
+  // ── Collapsed (desktop only): floating glass orb ──
+  if (collapsed && !mobileMode) {
     return (
       <>
         <button
@@ -371,28 +376,12 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
     );
   }
 
-  // On mobile: never show the expanding panel — just keep the FAB
-  // (the expanded sidebar is a bottom nav rendered below when mobileExpanded)
-  if (isMobile && !mobileExpanded) {
-    return (
-      <>
-        <button
-          ref={sidebarRef}
-          className="lg-sidebar-fab"
-          onClick={handleFabClick}
-          aria-label="Open menu"
-          title="Menu"
-        >
-          <List size={22} weight="regular" />
-        </button>
-        <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
-        <BookmarksPanel isOpen={showBookmarks} onClose={() => setShowBookmarks(false)} />
-      </>
-    );
-  }
-
+  // Mobile renders the persistent bottom bar (collapsed) or the expanded
+  // sheet — handled below via `expandedClass`, so no early return here.
   const isExpanded = !collapsed;
-  const expandedClass = isMobile ? (mobileExpanded ? 'lg-sidebar--expanded' : '') : (isExpanded ? 'lg-sidebar--expanded' : '');
+  const expandedClass = isMobile
+    ? (mobileExpanded ? 'lg-sidebar--expanded' : ' lg-sidebar--collapsed'.trim())
+    : (isExpanded ? 'lg-sidebar--expanded' : '');
 
   return (
     <>
@@ -442,6 +431,7 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
         ref={sidebarRef}
         className={`lg-sidebar ${expandedClass}${!isMobile ? ' lg-sidebar--desktop' : ''}`}
         aria-label="Looking Glass navigation"
+        aria-expanded={isMobile ? mobileExpanded : isExpanded}
         data-glass-surface="toolbar"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -450,11 +440,28 @@ export default function LiquidGlassSidebar({ onSpacesOpen, onTagsOpen, onAIOrgan
         }}
       >
         {/* ── Mobile bottom-bar header: drag handle + wordmark ── */}
+        {isMobile && !mobileExpanded && (
+          <button
+            type="button"
+            className="lg-sidebar__handle lg-sidebar__handle--collapsed"
+            aria-label="Expand menu"
+            aria-expanded={false}
+            onClick={handleFabClick}
+          >
+            <span className="lg-sidebar__handle-bar" />
+          </button>
+        )}
         {isMobile && mobileExpanded && (
           <div className="lg-sidebar__header">
-            <div className="lg-sidebar__handle" aria-hidden="true">
+            <button
+              type="button"
+              className="lg-sidebar__handle"
+              aria-label="Collapse menu"
+              aria-expanded={true}
+              onClick={closeMobile}
+            >
               <span className="lg-sidebar__handle-bar" />
-            </div>
+            </button>
             <div className="lg-sidebar__wordmark">LOOKING GLASS</div>
             <div className="lg-sidebar__section-label">Navigate</div>
             <input

@@ -24,6 +24,9 @@
   left: 0;
   right: 0;
   height: 15vh; /* default collapsed */
+  /* AUDIT Fix 14 — use the design-system UI font token (Space Grotesk)
+     instead of an implicit system-stack default. */
+  font-family: var(--font-body, 'Space Grotesk', system-ui, sans-serif);
   background: var(--color-surface, #1e1e2e);
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.4);

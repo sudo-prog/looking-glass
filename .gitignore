@@ -6,8 +6,13 @@ data/bookmarks.json
 data/*.json
 .env
 .DS_Store
-yarn.lock
+# Lockfiles — pnpm is the declared packageManager (package.json#packageManager).
+# Never commit npm/yarn/bun lockfiles: they conflict with pnpm-lock.yaml.
 package-lock.json
+npm-shrinkwrap.json
+bun.lockb
+bun.lock
+yarn.lock
 pnpm-lock.yaml.bak
 VID_REF_MP4/
 *.pdf
