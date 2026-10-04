@@ -1,6 +1,27 @@
 # Agent Notes — Looking Glass
-**Last updated:** 2026-08-31
-**Status:** Single-path AI landed on branch `sudo-prog/lg-ai-single-path` + a mobile-UI pass (commit 76e653f3). AI config consolidated to the side panel (orb = chat only), providers = OmniRoute + OpenRouter free, orb bugs fixed, and the mobile viewport (390x844) gate is 8/8 (welcome card + kebab on-screen, orb chat safe-area). PR #1 open, awaiting review/merge.
+**Last updated:** 2026-10-05
+**Status:** Micro-sounds (Phase 4) landed — opt-in Web Audio blips on card create/drop/delete.
+
+---
+
+## Change Log — 2026-10-05 (Micro-sounds Phase 4)
+
+Subtle audio feedback, **off by default**, toggled in Settings → Theme → MICRO-SOUNDS. No external assets — every sound is an oscillator blip synthesised by the Web Audio API.
+
+- **NEW `src/utils/microSounds.js`** — `playSound('create'|'delete'|'drop')`, `previewSound()`, `warmAudio()`, `loadSoundConfig()` / `saveSoundConfig()`. Persists to `localStorage['lg-micro-sounds']` (`{enabled:false, volume:0.18}`).
+- **`src/store/useStore.js`** — `addItem()` → `create`; `deleteItem()` and `deleteSelected()` → `delete`; `createStack()` / `createFolder()` → `create` (they build the card outside `addItem`).
+- **`src/canvas/Canvas.jsx`** — `handlePointerUp` → `drop` on the three drop-target branches (stack / folder / fichario) and on the normal position drop.
+- **`src/ui/SettingsPanel.jsx`** — MICRO-SOUNDS section: toggle, volume slider, per-sound preview buttons. Persists on change (not on SAVE — an audio opt-in that needs a second click feels broken).
+
+**Latency (<5ms budget) — why `warmAudio()` exists.** `new AudioContext()` costs ~10-15ms of main-thread time. If it were built lazily it would land inside whichever card action happened to be first. `updateSound()` calls `warmAudio()` when the toggle flips on, so the cost is paid by the Settings screen. Context is created with `latencyHint: 'interactive'`. Measured in-browser against the real module: first interaction **0.1-0.3ms**, steady state **~0.15ms**, disabled path **~0.002ms**.
+
+**Burst coalescing.** The keyboard/context-menu delete path calls `deleteItem()` once per selected card, which would machine-gun. Per-sound minimum gaps — `create` 90ms, `drop` 90ms, `delete` 260ms — collapse a burst into one audible tick.
+
+**Gotchas found while verifying (pre-existing, NOT regressions):**
+- The **expanded sidebar** renders a full-viewport `.lg-sidebar-backdrop` at `z-index: 99` that swallows canvas pointer events — the first canvas click only closes the menu. Any canvas E2E test must start from the collapsed FAB state (or reload).
+- Cards spawn at the viewport **centre**, which at 1280x900 sits under the bottom toolbar/orb dock — hit-test a card ~14px below its top edge, not its centre.
+
+**Verification:** `NODE_OPTIONS=--max-old-space-size=3072 pnpm build` clean. `lg_microsounds_verify.mjs` (Playwright, serves `dist/`, stubs nothing but `debugLog`) — **17/17**: default-off produces zero AudioContexts even when a card is created; the Settings toggle enables + persists across reload; real UI create / drag-drop / Delete each schedule oscillator nodes; a 5-card multi-delete emits exactly one blip; the play path stays under 5ms; zero console/page errors.
 
 ---
 

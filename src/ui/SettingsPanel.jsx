@@ -4,10 +4,11 @@
  * Controls: Full theme (glass/colors/background/font), icons, AI, data.
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, GearSix, Sun, Moon, Trash, Download, Sparkle, Palette, Eye, Image, TextT, Upload } from '@phosphor-icons/react';
+import { X, GearSix, Sun, Moon, Trash, Download, Sparkle, Palette, Eye, Image, TextT, Upload, SpeakerHigh } from '@phosphor-icons/react';
 import { toggleTheme, isDark } from '../utils/theme';
 import { loadAIConfig, saveAIConfig, getProviderDef, resolveEndpoint, testConnection } from '../utils/aiConfig.js';
 import { loadThemeConfig, saveThemeConfig, applyThemeConfig, THEME_DEFAULTS, getThicknessRadius } from '../utils/themeConfig.js';
+import { loadSoundConfig, saveSoundConfig, previewSound, warmAudio, SOUND_DEFAULTS } from '../utils/microSounds.js';
 
 const ICON_POOL = [
   { id: 'canvas',   label: 'Canvas',   icon: '◈' },
@@ -76,6 +77,23 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
   const [removedIcons, setRemovedIcons] = useState([]);
   const [draggingPoolId, setDraggingPoolId] = useState(null);
 
+  // ── Micro-sounds state (opt-in, persisted separately from theme) ──
+  const [soundEnabled, setSoundEnabled] = useState(SOUND_DEFAULTS.enabled);
+  const [soundVolume, setSoundVolume] = useState(SOUND_DEFAULTS.volume);
+
+  // Sounds take effect immediately (an audio opt-in that needs a second
+  // SAVE click feels broken), so they persist on change, not on handleSave.
+  const updateSound = useCallback((partial, previewName) => {
+    const cfg = saveSoundConfig({ enabled: soundEnabled, volume: soundVolume, ...partial });
+    if ('enabled' in partial) setSoundEnabled(cfg.enabled);
+    if ('volume' in partial) setSoundVolume(cfg.volume);
+    // Build the AudioContext here, not on the user's first card action —
+    // `new AudioContext()` is ~10ms of main-thread work and must not land
+    // inside a create/drop/delete (the budget is 5ms).
+    if (cfg.enabled) warmAudio();
+    if (previewName && cfg.enabled) previewSound(previewName);
+  }, [soundEnabled, soundVolume]);
+
   // ── Live preview helper ──
   const preview = useCallback((partial) => {
     const tc = loadThemeConfig();
@@ -123,6 +141,9 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
     setFontStrokeWidth(tc.fontStrokeWidth);
     setMenuIcons(tc.menuIconOrder || []);
     setRemovedIcons(tc.removedIcons || []);
+    const sc = loadSoundConfig();
+    setSoundEnabled(sc.enabled);
+    setSoundVolume(sc.volume);
     setDark(isDark());
     setSaved(false);
     setTestStatus('idle');
@@ -338,6 +359,44 @@ export function SettingsPanel({ isOpen, onClose, onMenuIconsChange }) {
                     {dark ? <Sun size={16} /> : <Moon size={16} />}
                   </button>
                 </div>
+              </SettingsSection>
+
+              {/* ── MICRO-SOUNDS (opt-in) ── */}
+              <SettingsSection title="MICRO-SOUNDS">
+                <ToggleRow
+                  label="Sound feedback"
+                  enabled={soundEnabled}
+                  onChange={v => updateSound({ enabled: v }, 'create')}
+                />
+                <div style={{ fontSize: '10px', color: 'var(--text-disabled)', lineHeight: 1.5 }}>
+                  Short tones when you create, drop or delete a card. Off by default; generated
+                  with the Web Audio API — no audio files are downloaded.
+                </div>
+                {soundEnabled && (
+                  <>
+                    <SliderRow label="Volume" value={`${Math.round(soundVolume * 100)}%`}>
+                      <input type="range" min="0" max="1" step="0.05" value={soundVolume} onChange={e => updateSound({ volume: parseFloat(e.target.value) })} />
+                    </SliderRow>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {['create', 'drop', 'delete'].map(name => (
+                        <button
+                          key={name}
+                          onClick={() => previewSound(name)}
+                          style={{
+                            flex: '1 1 30%', minHeight: '44px', minWidth: '44px', padding: '8px 10px',
+                            borderRadius: '10px', border: '1px solid var(--color-border)',
+                            background: 'rgba(255,255,255,0.06)', color: 'var(--text-primary)',
+                            cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '10px',
+                            letterSpacing: '0.06em', textTransform: 'uppercase',
+                          }}
+                        >
+                          <SpeakerHigh size={12} style={{ verticalAlign: '-1px', marginRight: '4px' }} />
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </SettingsSection>
 
               {/* ── GLASS ── */}

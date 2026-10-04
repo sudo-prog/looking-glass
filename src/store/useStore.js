@@ -6,6 +6,7 @@ import { create } from 'zustand';
 import { store as idbStore } from '../data/store.js';
 import { createItem, ITEM_TYPES, createFicharioPage, FICHARIO_COLOR_ORDER, FICHARIO_PAGE_KINDS } from '../data/schema.js';
 import { spacesSlice } from '../ui/spacesSlice.js';
+import { playSound } from '../utils/microSounds.js';
 
 let viewportSaveTimer = null;
 
@@ -94,6 +95,9 @@ export const useStore = create((set, get) => ({
     });
     await idbStore.upsertItem(item);
     set((s) => ({ items: [...s.items, item] }));
+    // Micro-sound: single choke point for every card-creation path
+    // (addNote, addUrl, addImage, stacks, folders, fichario pages…).
+    playSound('create');
     // Refresh space item count after adding
     get().refreshSpaceCount(state.canvasId);
     return item;
@@ -413,12 +417,15 @@ export const useStore = create((set, get) => ({
       items: s.items.filter((i) => i.id !== id),
       selectedIds: new Set([...s.selectedIds].filter((sid) => sid !== id)),
     }));
+    // Micro-sound: card delete
+    playSound('delete');
     // Refresh space item count after deleting
     get().refreshSpaceCount(state.canvasId);
   },
 
   deleteSelected: async () => {
     const state = get();
+    const count = state.selectedIds.size;
     for (const id of state.selectedIds) {
       await idbStore.deleteItem(id);
     }
@@ -426,6 +433,8 @@ export const useStore = create((set, get) => ({
       items: s.items.filter((i) => !s.selectedIds.has(i.id)),
       selectedIds: new Set(),
     }));
+    // Micro-sound: one blip for the whole batch, not one per card
+    if (count > 0) playSound('delete');
     // Refresh space item count after deleting
     get().refreshSpaceCount(state.canvasId);
   },
@@ -602,6 +611,8 @@ export const useStore = create((set, get) => ({
       ],
       selectedIds: new Set([stackItem.id]),
     }));
+    // Micro-sound: a stack is a newly created card
+    playSound('create');
     // Refresh space item count after creating stack
     get().refreshSpaceCount(state.canvasId);
     return stackItem;
@@ -817,6 +828,8 @@ export const useStore = create((set, get) => ({
       ],
       selectedIds: new Set([folderItem.id]),
     }));
+    // Micro-sound: a folder is a newly created card
+    playSound('create');
     // Refresh space item count after creating folder
     get().refreshSpaceCount(state.canvasId);
     return folderItem;

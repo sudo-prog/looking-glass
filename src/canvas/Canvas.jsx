@@ -16,6 +16,7 @@ import { CanvasCard } from '../components/CanvasCard.jsx';
 import { DropModePicker } from '../components/DropModePicker.jsx';
 import { SelectionToolbar } from '../ui/SelectionToolbar.jsx';
 import { ITEM_TYPES } from '../data/schema.js';
+import { playSound } from '../utils/microSounds.js';
 
 const DRAG_SELECT_THRESHOLD = 4; // px before a click on empty canvas becomes a box-select
 
@@ -372,16 +373,19 @@ export function Canvas({
 
         if (targetType === ITEM_TYPES.FICHARIO && draggedType === ITEM_TYPES.FICHARIO) {
           onAddToFichario?.(draggedId, targetId);
+          playSound('drop');
           dragItem.current = null;
           hasMoved.current = false;
           return;
         } else if (targetType === ITEM_TYPES.FOLDER) {
           onAddToFolder?.(draggedId, targetId);
+          playSound('drop');
           dragItem.current = null;
           hasMoved.current = false;
           return;
         } else if (targetType === ITEM_TYPES.STACK) {
           onAddToStack?.(draggedId, targetId);
+          playSound('drop');
           dragItem.current = null;
           hasMoved.current = false;
           return;
@@ -404,6 +408,8 @@ export function Canvas({
       const finalX = parseFloat(dragItem.current.style.left);
       const finalY = parseFloat(dragItem.current.style.top);
       onItemMove(draggedId, finalX, finalY);
+      // Micro-sound: card settled on the canvas (one per real drop only)
+      playSound('drop');
     }
 
     dragItem.current = null;
