@@ -7,7 +7,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { useStore } from '../store/useStore.js';
 import { HistoryManager, AddItemCommand, DeleteItemCommand, MoveItemCommand, UpdateItemCommand, StackCommand, FolderCommand } from '../history/HistoryManager.js';
-import LiquidGlassSidebar from '../ui/LiquidGlassSidebar.jsx';
+import LiquidGlassSidebar from '../components/LiquidGlassSidebar.jsx';
 import { Canvas } from '../canvas/Canvas.jsx';
 import { ExportDialog } from '../utils/export/ExportDialog.jsx';
 import { Lightbox } from '../ui/Lightbox.jsx';

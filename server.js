@@ -1,6 +1,13 @@
+/**
+ * Looking Glass — production static server.
+ *
+ * Serves the Vite build output from ./dist with an SPA fallback so client-side
+ * routes resolve to index.html. Run with `npm start` (PORT overrides the port).
+ */
 import { createServer } from 'node:http';
-import { createReadStream, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
+import { createReadStream } from 'node:fs';
 
 const DIST = new URL('./dist', import.meta.url).pathname;
 const PORT = process.env.PORT ?? 3000;
@@ -18,7 +25,7 @@ const MIME = {
 };
 
 createServer((req, res) => {
-  let url = req.url.replace(/\?.*$/, '') || '/';
+  let url = req.url.replace(/\\?.*$/, '').replace(/^\\/looking-glass/, '') || '/';
   let file = join(DIST, url === '/' ? 'index.html' : url);
   if (!existsSync(file)) file = join(DIST, 'index.html');
   res.setHeader('Content-Type', MIME[extname(file)] ?? 'application/octet-stream');
@@ -26,4 +33,4 @@ createServer((req, res) => {
   createReadStream(file)
     .on('error', () => { res.writeHead(404); res.end('Not found'); })
     .pipe(res);
-}).listen(PORT, () => console.log(`Looking Glass → http://localhost:${PORT}/`));
+}).listen(PORT, () => console.log(`Looking Glass → http://localhost:${PORT}/looking-glass/`));
